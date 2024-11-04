@@ -31,9 +31,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build extensions
-        run: pnpm build:all
-
       - name: Create ZIP files
         run: pnpm zip:all
 
@@ -41,7 +38,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          files: .output/*.zip
+          files: |
+            .output/*-chrome.zip
+            .output/*-firefox.zip
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
         env:
