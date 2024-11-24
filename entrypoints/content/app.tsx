@@ -297,12 +297,14 @@ const App: FC = () => {
                                 <div className="status-badges">
                                   <StatusBadge
                                     $type={
-                                      assignment.activity_submission_id
+                                      assignment.quiz_submission_is_submitted ===
+                                      1
                                         ? "submitted"
                                         : "notSubmitted"
                                     }
                                   >
-                                    {assignment.activity_submission_id
+                                    {assignment.quiz_submission_is_submitted ===
+                                    1
                                       ? "ส่งแล้ว"
                                       : "ยังไม่ส่ง"}
                                   </StatusBadge>
