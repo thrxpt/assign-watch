@@ -2,6 +2,8 @@ import { useEffect, useState, type FC } from "react"
 import type { AssignmentResponse } from "@/types"
 import isPropValid from "@emotion/is-prop-valid"
 import { useQueries } from "@tanstack/react-query"
+import dayjs from "dayjs"
+import relativeTime from "dayjs/plugin/relativeTime"
 import { LayoutGrid, LayoutList } from "lucide-react"
 import { StyleSheetManager, ThemeProvider } from "styled-components"
 import { storage } from "wxt/storage"
@@ -35,6 +37,11 @@ import {
   NoAssignments,
 } from "@/entrypoints/content/components/styled/Typography"
 import { darkTheme, lightTheme } from "@/entrypoints/content/components/themes"
+
+import "dayjs/locale/th"
+
+dayjs.extend(relativeTime)
+dayjs.locale("th")
 
 const App: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
@@ -125,6 +132,40 @@ const App: FC = () => {
       return
     }
     setIsOpen(true)
+  }
+
+  const formatDueDate = (dueDate: string | null) => {
+    if (!dueDate) return ""
+
+    const now = dayjs()
+    const due = dayjs(dueDate)
+    const diffHours = due.diff(now, "hour")
+    const diffDays = due.diff(now, "day")
+    const diffMinutes = due.diff(now, "minute")
+
+    if (diffHours < 0) {
+      return "เลยกำหนดส่ง"
+    }
+
+    if (diffHours < 1) {
+      return `เหลือเวลาอีก ${diffMinutes} นาที`
+    }
+
+    if (diffHours < 24) {
+      const remainingHours = diffHours
+      const remainingMinutes = diffMinutes % 60
+      if (remainingMinutes > 0) {
+        return `เหลือเวลาอีก ${remainingHours} ชั่วโมง ${remainingMinutes} นาที`
+      }
+      return `เหลือเวลาอีก ${remainingHours} ชั่วโมง`
+    }
+
+    const remainingDays = diffDays
+    const remainingHours = diffHours % 24
+    if (remainingHours > 0) {
+      return `เหลือเวลาอีก ${remainingDays} วัน ${remainingHours} ชั่วโมง`
+    }
+    return `เหลือเวลาอีก ${remainingDays} วัน`
   }
 
   return (
@@ -275,23 +316,11 @@ const App: FC = () => {
                                   </a>
                                   <DueDate>
                                     กำหนดส่ง:{" "}
-                                    {new Date(
-                                      assignment.due_date!
-                                    ).toLocaleDateString("th-TH")}
+                                    {dayjs(assignment.due_date).format(
+                                      "D MMM YYYY HH:mm"
+                                    )}
                                     {" - "}
-                                    {(() => {
-                                      const daysLeft = Math.ceil(
-                                        (new Date(
-                                          assignment.due_date!
-                                        ).getTime() -
-                                          new Date().getTime()) /
-                                          (1000 * 60 * 60 * 24)
-                                      )
-                                      if (daysLeft < 0) return "เลยกำหนดส่ง"
-                                      if (daysLeft === 0) return "ส่งวันนี้"
-                                      if (daysLeft === 1) return "ส่งพรุ่งนี้"
-                                      return `เหลือเวลาอีก ${daysLeft} วัน`
-                                    })()}
+                                    {formatDueDate(assignment.due_date)}
                                   </DueDate>
                                 </AssignmentInfo>
                                 <div className="status-badges">
