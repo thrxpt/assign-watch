@@ -1,4 +1,4 @@
-# AssignWatch 📚 - Extension for LEB2
+# Assign Watch 📚 - Extension for LEB2
 
 A browser extension that enhances your LEB2 experience by providing a convenient way to view and manage all your assignments in one place.
 
@@ -24,7 +24,7 @@ A browser extension that enhances your LEB2 experience by providing a convenient
    - Go to `about:debugging#/runtime/this-firefox`
    - Click "Load Temporary Add-on"
    - Select the `manifest.json` file from the extracted folder or just the zip file
-5. Click on the browser extension icon to open the AssignWatch modal
+5. Click on the browser extension icon to open the Assign Watch modal
 
 ## Development 🔧
 
@@ -72,7 +72,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Support 💖
 
-If you find AssignWatch helpful, please consider:
+If you find Assign Watch helpful, please consider:
 
 - Starring the repository
 - Reporting bugs or suggesting features
