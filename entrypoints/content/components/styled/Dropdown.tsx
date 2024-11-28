@@ -23,6 +23,7 @@ export const DropdownContent = styled.div`
   left: 0;
   background: ${({ theme }) => theme.background};
   border: 1px solid ${({ theme }) => theme.border};
+  margin-top: 0.5rem;
   border-radius: 0.375rem;
   width: 200px;
   max-height: 300px;
