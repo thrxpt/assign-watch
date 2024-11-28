@@ -43,7 +43,6 @@ jobs:
           files: |
             .output/*-chrome.zip
             .output/*-firefox.zip
-            .output/*-edge.zip
           generate_release_notes: true
           tag_name: ${{ github.ref_name }}
         env:
