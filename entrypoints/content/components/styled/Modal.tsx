@@ -52,7 +52,7 @@ export const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 50;
+  z-index: 7483640;
   animation: ${fadeIn} 0.2s ease-out;
 
   &.closing {
@@ -75,7 +75,7 @@ export const ModalContent = styled.div<{ $isGrid: boolean }>`
   padding: 1.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
   border-radius: 1rem;
-  z-index: 51;
+  z-index: 7483641;
   color: ${({ theme }) => theme.text};
   overflow-y: auto;
   transition:
