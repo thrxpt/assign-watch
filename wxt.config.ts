@@ -13,6 +13,7 @@ export default defineConfig({
     disabled: true,
   },
   manifest: {
+    name: "Assign Watch - Extension for LEB2",
     permissions: ["storage", "notifications"],
   },
   hooks: {
