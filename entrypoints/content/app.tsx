@@ -70,6 +70,21 @@ const App: FC = () => {
   }, [])
 
   useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const dropdownContainer = document.querySelector(".dropdown-container")
+      if (
+        dropdownContainer &&
+        !dropdownContainer.contains(event.target as Node)
+      ) {
+        setIsDropdownOpen(false)
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden"
     } else {
