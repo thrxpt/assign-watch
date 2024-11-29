@@ -1,9 +1,17 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version_type:
+        description: "Version type to bump"
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+        default: "patch"
 
 permissions:
   contents: write
@@ -33,6 +41,43 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Configure Git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Bump version
+        id: bump
+        run: |
+          # Get the current version from package.json
+          current_version=$(node -p "require('./package.json').version")
+
+          # Split version into components
+          IFS='.' read -r major minor patch <<< "$current_version"
+
+          # Bump version based on input
+          case "${{ github.event.inputs.version_type }}" in
+            "major")
+              new_version="$((major + 1)).0.0"
+              ;;
+            "minor")
+              new_version="${major}.$((minor + 1)).0"
+              ;;
+            "patch")
+              new_version="${major}.${minor}.$((patch + 1))"
+              ;;
+          esac
+
+          # Update package.json
+          node -e "
+            const pkg = require('./package.json');
+            pkg.version = '$new_version';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "Version bumped from $current_version to $new_version"
+
       - name: Create ZIP files
         run: pnpm zip:all
 
@@ -56,14 +101,21 @@ jobs:
       #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
       #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
 
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push
+          git push --tags
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             .output/*-chrome.zip
             .output/*-firefox.zip
           generate_release_notes: true
-          tag_name: ${{ github.ref_name }}
+          tag_name: v${{ steps.bump.outputs.new_version }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
