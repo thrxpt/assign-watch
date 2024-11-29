@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react"
+import { useCallback, useEffect, useMemo, useState, type FC } from "react"
 import type { AssignmentResponse } from "@/types"
 import isPropValid from "@emotion/is-prop-valid"
 import { useQueries } from "@tanstack/react-query"
@@ -50,23 +50,31 @@ const App: FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [hiddenClasses, setHiddenClasses] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [currentTime, setCurrentTime] = useState(dayjs())
 
-  const allClassInfo = getAllClassInfo()
+  const allClassInfo = useMemo(() => getAllClassInfo(), [])
 
   useEffect(() => {
     const loadPreferences = async () => {
-      const savedView = await storage.getItem<boolean>(
-        "local:assignmentsGridView"
-      )
-      const savedDarkMode = await storage.getItem<boolean>("local:darkMode")
-      const savedHiddenClasses = await storage.getItem<string[]>(
-        "local:hiddenClasses"
-      )
+      const [savedView, savedDarkMode, savedHiddenClasses] = await Promise.all([
+        storage.getItem<boolean>("local:assignmentsGridView"),
+        storage.getItem<boolean>("local:darkMode"),
+        storage.getItem<string[]>("local:hiddenClasses"),
+      ])
+
       setIsGridView(savedView ?? false)
       setIsDarkMode(savedDarkMode ?? false)
       setHiddenClasses(savedHiddenClasses ?? [])
     }
     loadPreferences()
+  }, [])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(dayjs())
+    }, 1000)
+
+    return () => clearInterval(timer)
   }, [])
 
   useEffect(() => {
@@ -96,48 +104,59 @@ const App: FC = () => {
     }
   }, [isOpen])
 
-  const handleViewChange = async (checked: boolean) => {
+  const handleViewChange = useCallback(async (checked: boolean) => {
     setIsGridView(checked)
     await storage.setItem<boolean>("local:assignmentsGridView", checked)
-  }
+  }, [])
 
-  const toggleDarkMode = async () => {
-    setIsDarkMode(!isDarkMode)
-    await storage.setItem<boolean>("local:darkMode", !isDarkMode)
-  }
+  const toggleDarkMode = useCallback(async () => {
+    setIsDarkMode((prev) => {
+      const newValue = !prev
+      storage.setItem<boolean>("local:darkMode", newValue)
+      return newValue
+    })
+  }, [])
 
-  const handleClassVisibilityChange = async (
-    classId: string,
-    isChecked: boolean
-  ) => {
-    const newHiddenClasses = isChecked
-      ? hiddenClasses.filter((id) => id !== classId)
-      : [...hiddenClasses, classId]
-    setHiddenClasses(newHiddenClasses)
-    await storage.setItem<string[]>("local:hiddenClasses", newHiddenClasses)
-  }
+  const handleClassVisibilityChange = useCallback(
+    async (classId: string, isChecked: boolean) => {
+      setHiddenClasses((prev) => {
+        const newHiddenClasses = isChecked
+          ? prev.filter((id) => id !== classId)
+          : [...prev, classId]
+        storage.setItem<string[]>("local:hiddenClasses", newHiddenClasses)
+        return newHiddenClasses
+      })
+    },
+    []
+  )
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setIsClosing(true)
     setTimeout(() => {
       setIsOpen(false)
       setIsClosing(false)
     }, 200)
-  }
+  }, [])
 
   const assignments = useQueries({
     queries: allClassInfo.map((classInfo) => ({
       queryKey: ["classInfo", classInfo.id],
       queryFn: () => getAssignmentsEachClass(classInfo.id),
+      staleTime: 30000, // Cache results for 30 seconds
+      cacheTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     })),
   })
 
-  const classWithAssignments = allClassInfo.map((classInfo, index) => ({
-    ...classInfo,
-    assignments: assignments[index]?.data as AssignmentResponse,
-  }))
+  const classWithAssignments = useMemo(
+    () =>
+      allClassInfo.map((classInfo, index) => ({
+        ...classInfo,
+        assignments: assignments[index]?.data as AssignmentResponse,
+      })),
+    [allClassInfo, assignments]
+  )
 
-  const handleOpenModal = async () => {
+  const handleOpenModal = useCallback(async () => {
     const currentUrl = window.location.href
     if (
       currentUrl !== "https://app.leb2.org/class" &&
@@ -147,51 +166,58 @@ const App: FC = () => {
       return
     }
     setIsOpen(true)
-  }
+  }, [])
 
-  const formatDueDate = (dueDate: string | null) => {
-    if (!dueDate) return ""
+  const formatDueDate = useCallback(
+    (dueDate: string | null) => {
+      if (!dueDate) return ""
 
-    const now = dayjs()
-    const due = dayjs(dueDate)
-    const diffHours = due.diff(now, "hour")
-    const diffDays = due.diff(now, "day")
-    const diffMinutes = due.diff(now, "minute")
+      const due = dayjs(dueDate)
+      const diffDays = due.diff(currentTime, "day")
+      const diffHours = due.diff(currentTime, "hour")
+      const diffMinutes = due.diff(currentTime, "minute")
 
-    const formatWithColor = (text: string, color: string) => (
-      <span style={{ color }}>{text}</span>
-    )
+      const formatWithColor = (text: string, color: string) => (
+        <span style={{ color }}>{text}</span>
+      )
 
-    if (diffHours < 0) {
-      return formatWithColor("เลยกำหนดส่ง", "#ef4444")
-    }
+      if (diffDays < 0) {
+        return formatWithColor("เลยกำหนดส่ง", "#ef4444")
+      }
 
-    if (diffHours < 1) {
-      return formatWithColor(`~${diffMinutes} นาที`, "#f97316")
-    }
+      if (diffHours < 1) {
+        return formatWithColor(`~${diffMinutes} นาที`, "#f97316")
+      }
 
-    if (diffHours < 24) {
-      const remainingHours = diffHours
-      const remainingMinutes = diffMinutes % 60
+      if (diffHours < 24) {
+        const remainingHours = diffHours
+        const remainingMinutes = diffMinutes % 60
+        const text =
+          remainingMinutes > 0
+            ? `~${remainingHours} ชั่วโมง ${remainingMinutes} นาที`
+            : `~${remainingHours} ชั่วโมง`
+        return formatWithColor(text, "#eab308")
+      }
+
+      const remainingDays = diffDays
+      const remainingHours = diffHours % 24
       const text =
-        remainingMinutes > 0
-          ? `~${remainingHours} ชั่วโมง ${remainingMinutes} นาที`
-          : `~${remainingHours} ชั่วโมง`
-      return formatWithColor(text, "#eab308")
-    }
+        remainingHours > 0
+          ? `~${remainingDays} วัน ${remainingHours} ชั่วโมง`
+          : `~${remainingDays} วัน`
+      return formatWithColor(text, "#22c55e")
+    },
+    [currentTime]
+  )
 
-    const remainingDays = diffDays
-    const remainingHours = diffHours % 24
-    const text =
-      remainingHours > 0
-        ? `~${remainingDays} วัน ${remainingHours} ชั่วโมง`
-        : `~${remainingDays} วัน`
-    return formatWithColor(text, "#22c55e")
-  }
+  const theme = useMemo(
+    () => (isDarkMode ? darkTheme : lightTheme),
+    [isDarkMode]
+  )
 
   return (
     <StyleSheetManager shouldForwardProp={isPropValid}>
-      <ThemeProvider theme={isDarkMode ? darkTheme : lightTheme}>
+      <ThemeProvider theme={theme}>
         <div className="nav-item">
           <button
             type="button"
