@@ -31,6 +31,10 @@ export const ClassCard = styled.div`
       font-weight: 600;
       color: ${({ theme }) => theme.text};
       line-height: 1.2;
+
+      a:hover {
+        text-decoration: underline;
+      }
     }
 
     p {

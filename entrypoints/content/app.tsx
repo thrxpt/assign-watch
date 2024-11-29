@@ -292,7 +292,15 @@ const App: FC = () => {
                     return (
                       <ClassCard key={classInfo.id}>
                         <div className="class-card-header">
-                          <h2>{classInfo.title}</h2>
+                          <h2>
+                            <a
+                              href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {classInfo.title}
+                            </a>
+                          </h2>
                           <p>{classInfo.description}</p>
                         </div>
                         <AssignmentContainer>
