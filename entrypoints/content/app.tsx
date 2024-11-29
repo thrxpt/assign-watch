@@ -158,29 +158,35 @@ const App: FC = () => {
     const diffDays = due.diff(now, "day")
     const diffMinutes = due.diff(now, "minute")
 
+    const formatWithColor = (text: string, color: string) => (
+      <span style={{ color }}>{text}</span>
+    )
+
     if (diffHours < 0) {
-      return "เลยกำหนดส่ง"
+      return formatWithColor("เลยกำหนดส่ง", "#ef4444")
     }
 
     if (diffHours < 1) {
-      return `เหลือเวลาอีก ${diffMinutes} นาที`
+      return formatWithColor(`~${diffMinutes} นาที`, "#f97316")
     }
 
     if (diffHours < 24) {
       const remainingHours = diffHours
       const remainingMinutes = diffMinutes % 60
-      if (remainingMinutes > 0) {
-        return `เหลือเวลาอีก ${remainingHours} ชั่วโมง ${remainingMinutes} นาที`
-      }
-      return `เหลือเวลาอีก ${remainingHours} ชั่วโมง`
+      const text =
+        remainingMinutes > 0
+          ? `~${remainingHours} ชั่วโมง ${remainingMinutes} นาที`
+          : `~${remainingHours} ชั่วโมง`
+      return formatWithColor(text, "#eab308")
     }
 
     const remainingDays = diffDays
     const remainingHours = diffHours % 24
-    if (remainingHours > 0) {
-      return `เหลือเวลาอีก ${remainingDays} วัน ${remainingHours} ชั่วโมง`
-    }
-    return `เหลือเวลาอีก ${remainingDays} วัน`
+    const text =
+      remainingHours > 0
+        ? `~${remainingDays} วัน ${remainingHours} ชั่วโมง`
+        : `~${remainingDays} วัน`
+    return formatWithColor(text, "#22c55e")
   }
 
   return (
@@ -342,7 +348,7 @@ const App: FC = () => {
                                     {dayjs(assignment.due_date).format(
                                       "D MMM YYYY HH:mm"
                                     )}
-                                    {" - "}
+                                    {" | "}
                                     {formatDueDate(assignment.due_date)}
                                   </DueDate>
                                 </AssignmentInfo>
