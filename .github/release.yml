@@ -6,6 +6,7 @@ changelog:
       - wontfix
       - invalid
       - question
+      - release
   categories:
     - title: 💥 Breaking Changes
       labels:
