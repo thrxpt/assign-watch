@@ -2,12 +2,12 @@ import styled from "styled-components"
 
 const getStatusColor = (type: string) => {
   const colors = {
-    submitted: "#4caf50",
-    notSubmitted: "#f44336",
-    assignment: "#fd7e14",
-    quiz: "#17a2b8",
-    individual: "#6c757d",
-    group: "#6c757d",
+    submitted: "#22c55e",
+    notSubmitted: "#ef4444",
+    assignment: "#f59e0b",
+    quiz: "#06b6d4",
+    individual: "#8b5cf6",
+    group: "#ec4899",
   }
 
   switch (type) {
@@ -32,7 +32,6 @@ export const StatusBadge = styled.span<{ $type: string }>`
   padding: 0.25rem 0.75rem;
   border-radius: 1rem;
   font-size: 0.875rem;
-  font-weight: 500;
   color: white;
   letter-spacing: 0.025em;
   text-transform: uppercase;
