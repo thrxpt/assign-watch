@@ -23,7 +23,6 @@ changelog:
         - bugfix
         - fix
         - patch
-        - semver-patch
     - title: 🔧 Maintenance
       labels:
         - chore
