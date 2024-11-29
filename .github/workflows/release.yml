@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   release:
@@ -45,6 +46,10 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: Create release branch
+        run: |
+          git checkout -b release/${{ github.event.inputs.version_type }}-bump
 
       - name: Bump version
         id: bump
@@ -101,13 +106,22 @@ jobs:
       #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
       #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
 
-      - name: Commit version bump
+      - name: Commit changes
         run: |
           git add package.json
           git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
-          git tag "v${{ steps.bump.outputs.new_version }}"
-          git push
-          git push --tags
+          git push origin release/${{ github.event.inputs.version_type }}-bump
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          title: "chore(release): v${{ steps.bump.outputs.new_version }}"
+          body: |
+            Automated release PR for version v${{ steps.bump.outputs.new_version }}
+          branch: release/${{ github.event.inputs.version_type }}-bump
+          base: main
+          labels: release
+          draft: false
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
