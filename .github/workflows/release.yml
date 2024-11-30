@@ -42,47 +42,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Configure Git
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-
-      - name: Create release branch
-        run: |
-          git checkout -b release/${{ github.event.inputs.version_type }}-bump
-
-      - name: Bump version
-        id: bump
-        run: |
-          # Get the current version from package.json
-          current_version=$(node -p "require('./package.json').version")
-
-          # Split version into components
-          IFS='.' read -r major minor patch <<< "$current_version"
-
-          # Bump version based on input
-          case "${{ github.event.inputs.version_type }}" in
-            "major")
-              new_version="$((major + 1)).0.0"
-              ;;
-            "minor")
-              new_version="${major}.$((minor + 1)).0"
-              ;;
-            "patch")
-              new_version="${major}.${minor}.$((patch + 1))"
-              ;;
-          esac
-
-          # Update package.json
-          node -e "
-            const pkg = require('./package.json');
-            pkg.version = '$new_version';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "Version bumped from $current_version to $new_version"
-
       - name: Create ZIP files
         run: pnpm zip:all
 
@@ -106,22 +65,38 @@ jobs:
       #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
       #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
 
-      - name: Commit changes
+      - name: Configure Git
         run: |
-          git add package.json
-          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
-          git push origin release/${{ github.event.inputs.version_type }}-bump
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          title: "chore(release): v${{ steps.bump.outputs.new_version }}"
-          body: |
-            Automated release PR for version v${{ steps.bump.outputs.new_version }}
-          branch: release/${{ github.event.inputs.version_type }}-bump
-          base: main
-          labels: release
-          draft: false
+      - name: Bump version
+        id: bump
+        run: |
+          # Get the current version from package.json
+          current_version=$(node -p "require('./package.json').version")
+          echo "Current version: $current_version"
+
+          # Split version into components
+          IFS='.' read -r major minor patch <<< "$current_version"
+
+          # Bump version based on input
+          case "${{ github.event.inputs.version_type }}" in
+            "major") new_version="$((major + 1)).0.0" ;;
+            "minor") new_version="${major}.$((minor + 1)).0" ;;
+            "patch") new_version="${major}.${minor}.$((patch + 1))" ;;
+          esac
+
+          # Update package.json
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+            pkg.version = '$new_version';
+            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+
+          echo "new_version=$new_version" >> $GITHUB_OUTPUT
+          echo "Version bumped from $current_version to $new_version"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -131,5 +106,35 @@ jobs:
             .output/*-firefox.zip
           generate_release_notes: true
           tag_name: v${{ steps.bump.outputs.new_version }}
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create release branch
+        run: |
+          git checkout -b release/${{ github.event.inputs.version_type }}-bump
+
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
+          git push origin release/${{ github.event.inputs.version_type }}-bump
+
+      - name: Create Pull Request
+        id: create-pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "chore(release): v${{ steps.bump.outputs.new_version }}"
+          body: |
+            🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}
+          branch: release/${{ github.event.inputs.version_type }}-bump
+          base: main
+          labels: release
+          draft: false
+
+      - name: Auto-merge Pull Request
+        run: |
+          gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --merge --auto --delete-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
