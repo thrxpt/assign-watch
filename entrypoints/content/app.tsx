@@ -250,7 +250,7 @@ const App: FC = () => {
                     <DropdownButton
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
-                      Show/Hide Classes
+                      Show / Hide Classes
                     </DropdownButton>
                     {isDropdownOpen && (
                       <DropdownContent>
