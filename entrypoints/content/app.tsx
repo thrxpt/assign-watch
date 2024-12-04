@@ -176,12 +176,13 @@ const App: FC = () => {
       const diffDays = due.diff(currentTime, "day")
       const diffHours = due.diff(currentTime, "hour")
       const diffMinutes = due.diff(currentTime, "minute")
+      const diffSeconds = due.diff(currentTime, "second")
 
       const formatWithColor = (text: string, color: string) => (
         <span style={{ color }}>{text}</span>
       )
 
-      if (diffDays < 0) {
+      if (diffSeconds < 0) {
         return formatWithColor("เลยกำหนดส่ง", "#ef4444")
       }
 
