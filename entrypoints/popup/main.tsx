@@ -1,9 +1,9 @@
 import React from "react"
 import ReactDOM from "react-dom/client"
 
-import App from "./App.tsx"
+import "@/assets/tailwind.css"
 
-import "./style.css"
+import App from "@/entrypoints/popup/app"
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
