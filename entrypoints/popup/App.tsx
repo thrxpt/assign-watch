@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react"
 import { storage } from "wxt/storage"
 
-import "./App.css"
-
 function App() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(false)
   const [reminderTime, setReminderTime] = useState("24")
