@@ -1,84 +1,132 @@
 import { useEffect, useState } from "react"
+import { BellRing, CalendarClock } from "lucide-react"
 import { storage } from "wxt/storage"
+import { z } from "zod"
+
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
+
+const settingSchema = z.object({
+  notificationsEnabled: z.boolean().default(false),
+  reminderTime: z.enum(["6", "12", "24", "48", "72", "168"]).default("72"),
+})
+
+type Setting = z.infer<typeof settingSchema>
 
 function App() {
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
-  const [reminderTime, setReminderTime] = useState("24")
+  const [settings, setSettings] = useState<Setting>({
+    notificationsEnabled: false,
+    reminderTime: "72",
+  })
 
   useEffect(() => {
     const loadSettings = async () => {
-      const enabled = await storage.getItem<boolean>(
-        "local:notifications:enabled"
+      const notificationsEnabled = await storage.getItem<boolean>(
+        "sync:notifications:enabled"
       )
-      const time = await storage.getItem<string>(
-        "local:notifications:reminderTime"
+      const reminderTime = await storage.getItem<string>(
+        "sync:notifications:reminderTime"
       )
-      setNotificationsEnabled(enabled ?? false)
-      setReminderTime(time ?? "24")
+
+      const parsedSettings = await settingSchema.parseAsync({
+        notificationsEnabled: notificationsEnabled ?? false,
+        reminderTime: reminderTime ?? "72",
+      })
+      setSettings(parsedSettings)
     }
+
     loadSettings()
   }, [])
 
+  const updateSetting = async (key: string, value: string | boolean) => {
+    setSettings((prev) => ({ ...prev, [key]: value }))
+    const storageKey =
+      key === "notificationsEnabled"
+        ? "sync:notifications:enabled"
+        : "sync:notifications:reminderTime"
+    await storage.setItem(storageKey, value)
+  }
+
   const handleNotificationToggle = async () => {
-    const newState = !notificationsEnabled
-    setNotificationsEnabled(newState)
-    await storage.setItem("local:notifications:enabled", newState)
+    const newState = !settings.notificationsEnabled
 
     if (newState) {
       const permission = await browser.permissions.request({
         permissions: ["notifications"],
       })
       if (!permission) {
-        setNotificationsEnabled(false)
-        await storage.setItem("local:notifications:enabled", false)
+        return updateSetting("notificationsEnabled", false)
       }
     }
-  }
 
-  const handleReminderTimeChange = async (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const newTime = e.target.value
-    setReminderTime(newTime)
-    await storage.setItem("local:notifications:reminderTime", newTime)
+    updateSetting("notificationsEnabled", newState)
   }
 
   return (
-    <div className="settings-container">
-      <h1>LEB2 Enhance Settings</h1>
+    <div className="mx-auto w-full min-w-[400px] max-w-xl space-y-6 p-6 font-['Anuphan_Variable']">
+      <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+        Settings
+        <span className="font-normal text-gray-600"> / การตั้งค่า</span>
+      </h1>
 
-      <div className="setting-group">
-        <h2>Notifications (Coming soon)</h2>
-        <div className="setting-item">
-          <label className="switch">
-            <input
-              type="checkbox"
-              checked={notificationsEnabled}
-              onChange={handleNotificationToggle}
-            />
-            <span className="slider"></span>
-          </label>
-          <span>Enable assignment reminders</span>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="notifications" className="flex items-start space-x-2">
+            <BellRing className="size-4 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <div className="flex flex-col space-y-1">
+              <span>Notifications</span>
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+                Get notified before due date
+              </span>
+            </div>
+          </Label>
+          <Switch
+            id="notifications"
+            checked={settings.notificationsEnabled}
+            onCheckedChange={handleNotificationToggle}
+          />
         </div>
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="reminderTime" className="flex items-start space-x-2">
+            <CalendarClock className="size-4 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <div className="flex flex-col space-y-1">
+              <span>Remind me</span>
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+                Before due date
+              </span>
+            </div>
+          </Label>
 
-        <div className="setting-item">
-          <label htmlFor="reminderTime">Remind me before due date:</label>
-          <select
-            id="reminderTime"
-            value={reminderTime}
-            onChange={handleReminderTimeChange}
-            disabled={!notificationsEnabled}
+          <Select
+            disabled={!settings.notificationsEnabled}
+            onValueChange={(value) => updateSetting("reminderTime", value)}
+            value={settings.reminderTime}
           >
-            <option value="24">24 hours</option>
-            <option value="48">48 hours</option>
-            <option value="72">72 hours</option>
-          </select>
+            <SelectTrigger
+              id="reminderTime"
+              className="w-auto min-w-48 max-w-full"
+            >
+              <SelectValue placeholder="Select a reminder time" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="6">6 hours before</SelectItem>
+              <SelectItem value="12">12 hours before</SelectItem>
+              <SelectItem value="24">1 day before</SelectItem>
+              <SelectItem value="48">2 days before</SelectItem>
+              <SelectItem value="72">3 days before</SelectItem>
+              <SelectItem value="120">5 days before</SelectItem>
+              <SelectItem value="168">1 week before</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      <p className="info-text">
-        Notifications will remind you about upcoming assignment deadlines
-      </p>
     </div>
   )
 }
