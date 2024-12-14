@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from "react"
-import type { AssignmentResponse } from "@/types"
 import isPropValid from "@emotion/is-prop-valid"
 import { useQueries } from "@tanstack/react-query"
 import dayjs from "dayjs"
@@ -37,6 +36,7 @@ import {
   NoAssignments,
 } from "@/entrypoints/content/components/styled/Typography"
 import { darkTheme, lightTheme } from "@/entrypoints/content/components/themes"
+import type { AssignmentResponse } from "@/types"
 
 import "dayjs/locale/th"
 
@@ -155,6 +155,25 @@ const App: FC = () => {
       })),
     [allClassInfo, assignments]
   )
+
+  useEffect(() => {
+    const saveClassWithAssignments = async () => {
+      await storage.setItem(
+        "local:classWithAssignments",
+        classWithAssignments.map((classInfo) => ({
+          ...classInfo,
+          assignments: {
+            ...classInfo.assignments,
+            activities: classInfo.assignments?.activities.filter(
+              (activity) =>
+                activity.due_date && new Date(activity.due_date) > new Date()
+            ),
+          },
+        }))
+      )
+    }
+    saveClassWithAssignments()
+  }, [classWithAssignments])
 
   const handleOpenModal = useCallback(async () => {
     const currentUrl = window.location.href

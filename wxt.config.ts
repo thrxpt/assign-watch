@@ -14,7 +14,7 @@ export default defineConfig({
   },
   manifest: {
     name: "Assign Watch - Extension for LEB2",
-    permissions: ["storage", "notifications"],
+    permissions: ["storage", "notifications", "alarms"],
   },
   hooks: {
     "build:manifestGenerated": (wxt, manifest) => {
