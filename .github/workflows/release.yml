@@ -12,6 +12,11 @@ on:
           - minor
           - major
         default: "patch"
+      dry_run:
+        description: "Dry run"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -28,6 +33,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Configure Git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -41,34 +51,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
-      - name: Create ZIP files
-        run: pnpm zip:all
-
-      - name: Submit to Chrome Web Store
-        run: |
-          pnpm wxt submit \
-            --chrome-zip .output/*-chrome.zip
-        env:
-          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-
-      # - name: Submit to Firefox Add-ons
-      #   run: |
-      #     pnpm wxt submit \
-      #       --firefox-zip .output/*-firefox.zip \
-      #       --firefox-sources-zip .output/*-sources.zip
-      #   env:
-      #     FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-      #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
-      #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
-
-      - name: Configure Git
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Bump version
         id: bump
@@ -98,6 +80,41 @@ jobs:
           echo "new_version=$new_version" >> $GITHUB_OUTPUT
           echo "Version bumped from $current_version to $new_version"
 
+      - name: Create release branch
+        run: |
+          git checkout -b release/${{ github.event.inputs.version_type }}-bump
+
+      - name: Commit version bump
+        run: |
+          git add package.json
+          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
+          git push origin release/${{ github.event.inputs.version_type }}-bump
+
+      - name: Create ZIP files
+        run: pnpm zip:all
+
+      - name: Submit to Chrome Web Store
+        if: ${{ !inputs.dry_run }}
+        run: |
+          pnpm wxt submit \
+            --chrome-zip .output/*-chrome.zip
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
+      # - name: Submit to Firefox Add-ons
+      #   if: ${{ !inputs.dry_run }}
+      #   run: |
+      #     pnpm wxt submit \
+      #       --firefox-zip .output/*-firefox.zip \
+      #       --firefox-sources-zip .output/*-sources.zip
+      #   env:
+      #     FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+      #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+      #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -111,30 +128,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create release branch
-        run: |
-          git checkout -b release/${{ github.event.inputs.version_type }}-bump
-
-      - name: Commit version bump
-        run: |
-          git add package.json
-          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
-          git push origin release/${{ github.event.inputs.version_type }}-bump
-
       - name: Create Pull Request
-        id: create-pr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          title: "chore(release): v${{ steps.bump.outputs.new_version }}"
-          body: |
-            🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}
-          branch: release/${{ github.event.inputs.version_type }}-bump
-          base: main
-          labels: release
-          draft: false
+        run: |
+          gh pr create --title "chore(release): v${{ steps.bump.outputs.new_version }}" --body "🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}" --base main --head release/${{ github.event.inputs.version_type }}-bump --label release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Auto-merge Pull Request
         run: |
-          gh pr merge ${{ steps.create-pr.outputs.pull-request-number }} --merge --auto --delete-branch
+          gh pr merge release/${{ github.event.inputs.version_type }}-bump --merge --auto --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
