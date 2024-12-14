@@ -156,6 +156,25 @@ const App: FC = () => {
     [allClassInfo, assignments]
   )
 
+  useEffect(() => {
+    const saveClassWithAssignments = async () => {
+      await storage.setItem(
+        "local:classWithAssignments",
+        classWithAssignments.map((classInfo) => ({
+          ...classInfo,
+          assignments: {
+            ...classInfo.assignments,
+            activities: classInfo.assignments?.activities.filter(
+              (activity) =>
+                activity.due_date && new Date(activity.due_date) > new Date()
+            ),
+          },
+        }))
+      )
+    }
+    saveClassWithAssignments()
+  }, [classWithAssignments])
+
   const handleOpenModal = useCallback(async () => {
     const currentUrl = window.location.href
     if (

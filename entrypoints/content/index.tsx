@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import ReactDOM from "react-dom/client"
 
-import App from "./app.tsx"
+import App from "@/entrypoints/content/app"
 
 const queryClient = new QueryClient()
 
@@ -10,6 +10,7 @@ export default defineContentScript({
   cssInjectionMode: "ui",
 
   async main(ctx) {
+    if (ctx.isInvalid) return
     const ui = createIntegratedUi(ctx, {
       position: "inline",
       append: "last",
