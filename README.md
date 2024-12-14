@@ -12,10 +12,11 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 - 🔍 View all assignments across all classes in a single modal
 - 📱 Toggle between grid and list views
 - 🌓 Dark/Light theme support
-- 🔔 Assignment notifications (Coming soon)
+- 🔔 Assignment notifications
 - 🎯 Filter assignments by class
 - 📊 Status indicators for submissions
 - 📅 Due date tracking with countdown
+- 🔒 Privacy-focused (all data stored locally)
 
 ## 🚀 Installation
 
