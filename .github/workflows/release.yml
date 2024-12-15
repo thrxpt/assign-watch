@@ -136,6 +136,6 @@ jobs:
 
       - name: Auto-merge Pull Request
         run: |
-          gh pr merge release/${{ github.event.inputs.version_type }}-bump --merge --auto --delete-branch
+          gh pr merge release/${{ github.event.inputs.version_type }}-bump --squash --auto --delete-branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
