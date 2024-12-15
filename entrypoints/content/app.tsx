@@ -175,16 +175,25 @@ const App: FC = () => {
     saveClassWithAssignments()
   }, [classWithAssignments])
 
-  const handleOpenModal = useCallback(async () => {
+  const handleOpenModal = useCallback(() => {
     const currentUrl = window.location.href
     if (
       currentUrl !== "https://app.leb2.org/class" &&
       currentUrl.match(/^https:\/\/app\.leb2\.org\/class\/.+/)
     ) {
-      window.location.href = "https://app.leb2.org/class"
-      return
+      window.location.href = "https://app.leb2.org/class?openModal=true"
+    } else {
+      setIsOpen(true)
     }
-    setIsOpen(true)
+  }, [])
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    if (urlParams.get("openModal") === "true") {
+      setIsOpen(true)
+      const newUrl = window.location.origin + window.location.pathname
+      window.history.replaceState({}, "", newUrl)
+    }
   }, [])
 
   const formatDueDate = useCallback(
