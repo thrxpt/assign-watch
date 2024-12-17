@@ -11,6 +11,14 @@ export default defineContentScript({
 
   async main(ctx) {
     if (ctx.isInvalid) return
+
+    document.addEventListener("keydown", (e) => {
+      if (e.altKey && e.key.toLowerCase() === "a") {
+        e.preventDefault()
+        document.dispatchEvent(new CustomEvent("openAssignmentModal"))
+      }
+    })
+
     const ui = createIntegratedUi(ctx, {
       position: "inline",
       append: "last",

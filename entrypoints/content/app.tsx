@@ -88,7 +88,6 @@ const App: FC = () => {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
@@ -243,6 +242,25 @@ const App: FC = () => {
     () => (isDarkMode ? darkTheme : lightTheme),
     [isDarkMode]
   )
+
+  useEffect(() => {
+    const handleKeyboardShortcut = () => {
+      if (isOpen) {
+        handleClose()
+      } else {
+        handleOpenModal()
+      }
+    }
+
+    document.addEventListener("openAssignmentModal", handleKeyboardShortcut)
+
+    return () => {
+      document.removeEventListener(
+        "openAssignmentModal",
+        handleKeyboardShortcut
+      )
+    }
+  }, [handleOpenModal, handleClose, isOpen])
 
   return (
     <StyleSheetManager shouldForwardProp={isPropValid}>
