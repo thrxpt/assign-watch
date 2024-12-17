@@ -10,6 +10,7 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 ## Features ✨
 
 - 🔍 View all assignments across all classes in a single modal
+- ⌨️ Quick access with keyboard shortcut (Alt/Option + A)
 - 📱 Toggle between grid and list views
 - 🌓 Dark/Light theme support
 - 🔔 Assignment notifications
