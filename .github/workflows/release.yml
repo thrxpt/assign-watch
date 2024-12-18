@@ -1,5 +1,9 @@
 name: Release
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,10 +21,6 @@ on:
         required: false
         type: boolean
         default: false
-
-permissions:
-  contents: write
-  pull-requests: write
 
 jobs:
   release:
@@ -93,6 +93,18 @@ jobs:
       - name: Create ZIP files
         run: pnpm zip:all
 
+      - name: Create Pull Request
+        run: |
+          gh pr create --title "chore(release): v${{ steps.bump.outputs.new_version }}" --body "🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}" --base main --head release/${{ github.event.inputs.version_type }}-bump --label release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto-merge Pull Request
+        run: |
+          gh pr merge release/${{ github.event.inputs.version_type }}-bump --squash --auto --delete-branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Submit to Chrome Web Store
         if: ${{ !inputs.dry_run }}
         run: |
@@ -127,15 +139,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create Pull Request
-        run: |
-          gh pr create --title "chore(release): v${{ steps.bump.outputs.new_version }}" --body "🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}" --base main --head release/${{ github.event.inputs.version_type }}-bump --label release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Auto-merge Pull Request
-        run: |
-          gh pr merge release/${{ github.event.inputs.version_type }}-bump --squash --auto --delete-branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
