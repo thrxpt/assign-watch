@@ -3,7 +3,7 @@ import isPropValid from "@emotion/is-prop-valid"
 import { useQueries } from "@tanstack/react-query"
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
-import { LayoutGrid, LayoutList } from "lucide-react"
+import { EyeOff, LayoutGrid, LayoutList } from "lucide-react"
 import { StyleSheetManager, ThemeProvider } from "styled-components"
 import { storage } from "wxt/storage"
 
@@ -25,6 +25,9 @@ import {
   DropdownButton,
   DropdownContent,
   DropdownItem,
+  DropdownLabel,
+  TabButton,
+  TabContainer,
 } from "@/entrypoints/content/components/styled/Dropdown"
 import {
   ModalContent,
@@ -49,22 +52,33 @@ const App: FC = () => {
   const [isClosing, setIsClosing] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [hiddenClasses, setHiddenClasses] = useState<string[]>([])
+  const [hiddenAssignments, setHiddenAssignments] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [currentTime, setCurrentTime] = useState(dayjs())
+  const [activeTab, setActiveTab] = useState<"classes" | "assignments">(
+    "classes"
+  )
 
   const allClassInfo = useMemo(() => getAllClassInfo(), [])
 
   useEffect(() => {
     const loadPreferences = async () => {
-      const [savedView, savedDarkMode, savedHiddenClasses] = await Promise.all([
+      const [
+        savedView,
+        savedDarkMode,
+        savedHiddenClasses,
+        savedHiddenAssignments,
+      ] = await Promise.all([
         storage.getItem<boolean>("local:assignmentsGridView"),
         storage.getItem<boolean>("local:darkMode"),
         storage.getItem<string[]>("local:hiddenClasses"),
+        storage.getItem<string[]>("local:hiddenAssignments"),
       ])
 
       setIsGridView(savedView ?? false)
       setIsDarkMode(savedDarkMode ?? false)
       setHiddenClasses(savedHiddenClasses ?? [])
+      setHiddenAssignments(savedHiddenAssignments ?? [])
     }
     loadPreferences()
   }, [])
@@ -79,15 +93,23 @@ const App: FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const dropdownContainer = document.querySelector(".dropdown-container")
-      if (
-        dropdownContainer &&
-        !dropdownContainer.contains(event.target as Node)
-      ) {
+      const dropdownContainers = document.querySelectorAll(
+        ".dropdown-container"
+      )
+      let clickedInside = false
+
+      dropdownContainers.forEach((container) => {
+        if (container && container.contains(event.target as Node)) {
+          clickedInside = true
+        }
+      })
+
+      if (!clickedInside) {
         setIsDropdownOpen(false)
       }
     }
 
+    document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
@@ -129,11 +151,28 @@ const App: FC = () => {
     []
   )
 
+  const handleAssignmentVisibilityChange = useCallback(
+    async (assignmentId: string, isChecked: boolean) => {
+      setHiddenAssignments((prev) => {
+        const newHiddenAssignments = isChecked
+          ? prev.filter((id) => id !== assignmentId)
+          : [...prev, assignmentId]
+        storage.setItem<string[]>(
+          "local:hiddenAssignments",
+          newHiddenAssignments
+        )
+        return newHiddenAssignments
+      })
+    },
+    []
+  )
+
   const handleClose = useCallback(() => {
     setIsClosing(true)
     setTimeout(() => {
       setIsOpen(false)
       setIsClosing(false)
+      setIsDropdownOpen(false)
     }, 200)
   }, [])
 
@@ -297,28 +336,98 @@ const App: FC = () => {
                     <DropdownButton
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     >
-                      Show / Hide Classes
+                      Show / Hide
                     </DropdownButton>
                     {isDropdownOpen && (
                       <DropdownContent>
-                        {allClassInfo.map((classInfo) => (
-                          <DropdownItem key={classInfo.id}>
-                            <input
-                              type="checkbox"
-                              checked={!hiddenClasses.includes(classInfo.id)}
-                              onChange={(e) =>
-                                handleClassVisibilityChange(
-                                  classInfo.id,
-                                  e.target.checked
+                        <TabContainer>
+                          <TabButton
+                            active={activeTab === "classes"}
+                            onClick={() => setActiveTab("classes")}
+                          >
+                            Classes
+                          </TabButton>
+                          <TabButton
+                            active={activeTab === "assignments"}
+                            onClick={() => setActiveTab("assignments")}
+                          >
+                            Assignments
+                          </TabButton>
+                        </TabContainer>
+
+                        {activeTab === "classes" ? (
+                          allClassInfo.map((classInfo) => (
+                            <DropdownItem key={classInfo.id}>
+                              <input
+                                type="checkbox"
+                                checked={!hiddenClasses.includes(classInfo.id)}
+                                onChange={(e) =>
+                                  handleClassVisibilityChange(
+                                    classInfo.id,
+                                    e.target.checked
+                                  )
+                                }
+                                style={{ marginRight: "8px" }}
+                              />
+                              {classInfo.title}
+                            </DropdownItem>
+                          ))
+                        ) : (
+                          <>
+                            {classWithAssignments.map((classInfo) => {
+                              const hiddenClassAssignments =
+                                classInfo.assignments?.activities.filter(
+                                  (assignment) =>
+                                    hiddenAssignments.includes(
+                                      assignment.id.toString()
+                                    )
                                 )
-                              }
-                              style={{
-                                marginRight: "8px",
-                              }}
-                            />
-                            {classInfo.title}
-                          </DropdownItem>
-                        ))}
+
+                              if (!hiddenClassAssignments?.length) return null
+
+                              return (
+                                <div key={classInfo.id}>
+                                  <DropdownLabel>
+                                    {classInfo.title}
+                                  </DropdownLabel>
+                                  {hiddenClassAssignments.map((assignment) => (
+                                    <DropdownItem key={assignment.id}>
+                                      <input
+                                        type="checkbox"
+                                        checked={false}
+                                        onChange={() =>
+                                          handleAssignmentVisibilityChange(
+                                            assignment.id.toString(),
+                                            true
+                                          )
+                                        }
+                                        style={{ marginRight: "8px" }}
+                                      />
+                                      {assignment.title}
+                                    </DropdownItem>
+                                  ))}
+                                </div>
+                              )
+                            })}
+                            {classWithAssignments.every(
+                              (classInfo) =>
+                                !classInfo.assignments?.activities.some(
+                                  (assignment) =>
+                                    hiddenAssignments.includes(
+                                      assignment.id.toString()
+                                    )
+                                )
+                            ) && (
+                              <p
+                                style={{
+                                  padding: "0.5rem 0.75rem",
+                                }}
+                              >
+                                No hidden assignments
+                              </p>
+                            )}
+                          </>
+                        )}
                       </DropdownContent>
                     )}
                   </div>
@@ -364,67 +473,137 @@ const App: FC = () => {
                     )
                     const filteredAssignments = assignmentsToSubmit.filter(
                       (assignment) =>
-                        !lateAssignments.includes(assignment) ||
-                        !submittedAssignments.includes(assignment)
+                        (!lateAssignments.includes(assignment) ||
+                          !submittedAssignments.includes(assignment)) &&
+                        !hiddenAssignments.includes(assignment.id.toString())
                     )
+
+                    const hiddenAssignmentsCount = assignmentsToSubmit.filter(
+                      (assignment) =>
+                        hiddenAssignments.includes(assignment.id.toString())
+                    ).length
 
                     return (
                       <ClassCard key={classInfo.id}>
-                        <div className="class-card-header">
-                          <h2>
-                            <a
-                              href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <div className="class-card-header">
+                            <h2>
+                              <a
+                                href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {classInfo.title}
+                              </a>
+                            </h2>
+                            <p>{classInfo.description}</p>
+                          </div>
+                          {hiddenAssignmentsCount > 0 && (
+                            <p
+                              style={{
+                                fontSize: "14px",
+                                color: theme.textMuted,
+                              }}
                             >
-                              {classInfo.title}
-                            </a>
-                          </h2>
-                          <p>{classInfo.description}</p>
+                              ซ่อน {hiddenAssignmentsCount} งาน
+                            </p>
+                          )}
                         </div>
                         <AssignmentContainer>
                           {filteredAssignments.length > 0 ? (
                             filteredAssignments.map((assignment) => (
-                              <AssignmentItem key={assignment.id}>
-                                <AssignmentInfo>
-                                  <a
-                                    href={`https://app.leb2.org/class/${
-                                      classInfo.id
-                                    }/${
-                                      assignment.type === "ASM"
-                                        ? "activity"
-                                        : "quiz"
-                                    }/${assignment.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="assignment-link"
-                                  >
-                                    <span>{assignment.title}</span>
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      fill="none"
-                                      width="14"
-                                      height="14"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                      strokeWidth="2"
+                              <AssignmentItem
+                                key={assignment.id}
+                                onMouseOver={() => {
+                                  const hideButton = document.querySelector(
+                                    `#hide-button-${assignment.id}`
+                                  ) as HTMLButtonElement
+                                  hideButton.style.opacity = "1"
+                                }}
+                                onMouseOut={() => {
+                                  const hideButton = document.querySelector(
+                                    `#hide-button-${assignment.id}`
+                                  ) as HTMLButtonElement
+                                  hideButton.style.opacity = "0"
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "start",
+                                  }}
+                                >
+                                  <AssignmentInfo>
+                                    <a
+                                      href={`https://app.leb2.org/class/${
+                                        classInfo.id
+                                      }/${
+                                        assignment.type === "ASM"
+                                          ? "activity"
+                                          : "quiz"
+                                      }/${assignment.id}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="assignment-link"
                                     >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
-                                      />
-                                    </svg>
-                                  </a>
-                                  <DueDate>
-                                    กำหนดส่ง:{" "}
-                                    {dayjs(assignment.due_date).format(
-                                      "D MMM YYYY HH:mm"
-                                    )}
-                                    {" | "}
-                                    {formatDueDate(assignment.due_date)}
-                                  </DueDate>
-                                </AssignmentInfo>
+                                      <span>{assignment.title}</span>
+                                      <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        width="14"
+                                        height="14"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
+                                        />
+                                      </svg>
+                                    </a>
+                                    <DueDate>
+                                      กำหนดส่ง:{" "}
+                                      {dayjs(assignment.due_date).format(
+                                        "D MMM YYYY HH:mm"
+                                      )}
+                                      {" | "}
+                                      {formatDueDate(assignment.due_date)}
+                                    </DueDate>
+                                  </AssignmentInfo>
+                                  <button
+                                    type="button"
+                                    id={`hide-button-${assignment.id}`}
+                                    className="btn"
+                                    style={{
+                                      opacity: 0,
+                                      height: "32px",
+                                      width: "32px",
+                                      padding: "4px",
+                                      display: "inline-flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      borderRadius: "8px",
+                                      transition: "opacity 0.1s ease-in",
+                                    }}
+                                    onClick={() =>
+                                      handleAssignmentVisibilityChange(
+                                        assignment.id.toString(),
+                                        false
+                                      )
+                                    }
+                                  >
+                                    <EyeOff size={16} />
+                                  </button>
+                                </div>
                                 <div className="status-badges">
                                   <StatusBadge
                                     $type={
