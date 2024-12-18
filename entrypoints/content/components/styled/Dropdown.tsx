@@ -25,10 +25,13 @@ export const DropdownContent = styled.div`
   border: 1px solid ${({ theme }) => theme.border};
   margin-top: 0.5rem;
   border-radius: 0.375rem;
-  width: 200px;
-  max-height: 300px;
+  width: 250px;
+  max-height: 400px;
   overflow-y: auto;
   z-index: 1000;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.05),
+    0 4px 6px -4px rgba(0, 0, 0, 0.05);
 `
 
 export const DropdownItem = styled.label`
@@ -44,5 +47,45 @@ export const DropdownItem = styled.label`
 
   input {
     margin-right: 0.5rem;
+  }
+`
+
+export const DropdownLabel = styled.div`
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.875rem;
+  background-color: ${({ theme }) => theme.cardBg};
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+`
+
+export const TabContainer = styled.div`
+  display: flex;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  margin-bottom: 0.5rem;
+`
+
+export const TabButton = styled.button<{ active: boolean }>`
+  flex: 1;
+  padding: 0.5rem;
+  background: ${({ active, theme }) => (active ? theme.cardBg : "transparent")};
+  color: ${({ active, theme }) => (active ? theme.text : theme.textMuted)};
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.text};
+  }
+
+  &:first-child {
+    border-top-left-radius: 0.375rem;
+  }
+
+  &:last-child {
+    border-top-right-radius: 0.375rem;
   }
 `
