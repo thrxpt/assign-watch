@@ -2,7 +2,7 @@
   "name": "assign-watch",
   "description": "View all your LEB2 assignments in one place",
   "private": true,
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "scripts": {
     "dev": "wxt",
