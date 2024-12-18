@@ -408,7 +408,15 @@ const App: FC = () => {
                                 </div>
                               )
                             })}
-                            {!hiddenAssignments.length && (
+                            {classWithAssignments.every(
+                              (classInfo) =>
+                                !classInfo.assignments?.activities.some(
+                                  (assignment) =>
+                                    hiddenAssignments.includes(
+                                      assignment.id.toString()
+                                    )
+                                )
+                            ) && (
                               <p
                                 style={{
                                   padding: "0.5rem 0.75rem",
