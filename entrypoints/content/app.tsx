@@ -477,19 +477,42 @@ const App: FC = () => {
                         !hiddenAssignments.includes(assignment.id.toString())
                     )
 
+                    const hiddenAssignmentsCount = assignmentsToSubmit.filter(
+                      (assignment) =>
+                        hiddenAssignments.includes(assignment.id.toString())
+                    ).length
+
                     return (
                       <ClassCard key={classInfo.id}>
-                        <div className="class-card-header">
-                          <h2>
-                            <a
-                              href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "baseline",
+                          }}
+                        >
+                          <div className="class-card-header">
+                            <h2>
+                              <a
+                                href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {classInfo.title}
+                              </a>
+                            </h2>
+                            <p>{classInfo.description}</p>
+                          </div>
+                          {hiddenAssignmentsCount > 0 && (
+                            <p
+                              style={{
+                                fontSize: "14px",
+                                color: theme.textMuted,
+                              }}
                             >
-                              {classInfo.title}
-                            </a>
-                          </h2>
-                          <p>{classInfo.description}</p>
+                              ซ่อน {hiddenAssignmentsCount} งาน
+                            </p>
+                          )}
                         </div>
                         <AssignmentContainer>
                           {filteredAssignments.length > 0 ? (
