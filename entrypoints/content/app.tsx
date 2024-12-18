@@ -172,6 +172,7 @@ const App: FC = () => {
     setTimeout(() => {
       setIsOpen(false)
       setIsClosing(false)
+      setIsDropdownOpen(false)
     }, 200)
   }, [])
 
