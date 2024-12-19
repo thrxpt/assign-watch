@@ -593,6 +593,8 @@ const App: FC = () => {
                                       justifyContent: "center",
                                       borderRadius: "8px",
                                       transition: "opacity 0.1s ease-in",
+                                      backgroundColor: theme.cardBg,
+                                      border: `1px solid ${theme.border}`,
                                     }}
                                     onClick={() =>
                                       handleAssignmentVisibilityChange(
