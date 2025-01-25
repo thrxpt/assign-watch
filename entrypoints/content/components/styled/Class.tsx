@@ -43,6 +43,10 @@ export const ClassCard = styled.div`
       line-height: 1.5;
       font-size: 1rem;
       margin: 0;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
     }
   }
 `
