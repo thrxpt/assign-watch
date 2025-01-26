@@ -31,6 +31,7 @@ export const ClassCard = styled.div`
       font-weight: 600;
       color: ${({ theme }) => theme.text};
       line-height: 1.2;
+      white-space: nowrap;
 
       a:hover {
         text-decoration: underline;
@@ -42,6 +43,10 @@ export const ClassCard = styled.div`
       line-height: 1.5;
       font-size: 1rem;
       margin: 0;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 1;
     }
   }
 `
