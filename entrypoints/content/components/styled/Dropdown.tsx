@@ -1,5 +1,10 @@
 import styled from "styled-components"
 
+export const ButtonContainer = styled.div`
+  display: flex;
+  gap: 10px;
+`
+
 export const DropdownButton = styled.button`
   display: flex;
   align-items: center;
@@ -37,6 +42,7 @@ export const DropdownContent = styled.div`
 export const DropdownItem = styled.label`
   margin: 0;
   display: block;
+  align-items: inline;
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   border-bottom: 1px solid ${({ theme }) => theme.border};
@@ -54,7 +60,7 @@ export const DropdownLabel = styled.div`
   padding: 0.5rem 0.75rem;
   font-weight: 500;
   color: ${({ theme }) => theme.textMuted};
-  font-size: 0.875rem;
+  font-size: 1rem;
   background-color: ${({ theme }) => theme.cardBg};
   border-bottom: 1px solid ${({ theme }) => theme.border};
 `

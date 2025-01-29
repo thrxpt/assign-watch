@@ -22,6 +22,7 @@ import {
   ClassContainer,
 } from "@/entrypoints/content/components/styled/Class"
 import {
+  ButtonContainer,
   DropdownButton,
   DropdownContent,
   DropdownItem,
@@ -39,9 +40,11 @@ import {
   NoAssignments,
 } from "@/entrypoints/content/components/styled/Typography"
 import { darkTheme, lightTheme } from "@/entrypoints/content/components/themes"
-import type { AssignmentResponse } from "@/types"
+import type { AssignmentResponse, TActivity, TAssignmentFilter } from "@/types"
 
 import "dayjs/locale/th"
+
+import AssignmentFilter from "./components/AssignmentFilter"
 
 dayjs.extend(relativeTime)
 dayjs.locale("th")
@@ -54,10 +57,21 @@ const App: FC = () => {
   const [hiddenClasses, setHiddenClasses] = useState<string[]>([])
   const [hiddenAssignments, setHiddenAssignments] = useState<string[]>([])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isAssignmentFilterOpen, setIsAssignmentFilterOpen] =
+    useState<boolean>(false)
   const [currentTime, setCurrentTime] = useState(dayjs())
   const [activeTab, setActiveTab] = useState<"classes" | "assignments">(
     "classes"
   )
+
+  const [filterAssignment, setFilterAssignment] = useState<TAssignmentFilter>({
+    isSubmit: false,
+    isNotSubmit: false,
+    isIND: false,
+    isGRP: false,
+    isAssignment: false,
+    isQuiz: false,
+  })
 
   const allClassInfo = useMemo(() => getAllClassInfo(), [])
 
@@ -106,6 +120,7 @@ const App: FC = () => {
 
       if (!clickedInside) {
         setIsDropdownOpen(false)
+        setIsAssignmentFilterOpen(false)
       }
     }
 
@@ -333,103 +348,167 @@ const App: FC = () => {
                     className="dropdown-container"
                     style={{ position: "relative" }}
                   >
-                    <DropdownButton
-                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    >
-                      Show / Hide
-                    </DropdownButton>
-                    {isDropdownOpen && (
-                      <DropdownContent>
-                        <TabContainer>
-                          <TabButton
-                            active={activeTab === "classes"}
-                            onClick={() => setActiveTab("classes")}
-                          >
-                            Classes
-                          </TabButton>
-                          <TabButton
-                            active={activeTab === "assignments"}
-                            onClick={() => setActiveTab("assignments")}
-                          >
-                            Assignments
-                          </TabButton>
-                        </TabContainer>
+                    <ButtonContainer>
+                      <DropdownButton
+                        onClick={() => {
+                          setIsDropdownOpen(!isDropdownOpen)
+                          setIsAssignmentFilterOpen(false)
+                        }}
+                      >
+                        Show / Hide
+                      </DropdownButton>
+                      {isDropdownOpen && (
+                        <DropdownContent>
+                          <TabContainer>
+                            <TabButton
+                              active={activeTab === "classes"}
+                              onClick={() => setActiveTab("classes")}
+                            >
+                              Classes
+                            </TabButton>
+                            <TabButton
+                              active={activeTab === "assignments"}
+                              onClick={() => setActiveTab("assignments")}
+                            >
+                              Assignments
+                            </TabButton>
+                          </TabContainer>
 
-                        {activeTab === "classes" ? (
-                          allClassInfo.map((classInfo) => (
-                            <DropdownItem key={classInfo.id}>
-                              <input
-                                type="checkbox"
-                                checked={!hiddenClasses.includes(classInfo.id)}
-                                onChange={(e) =>
-                                  handleClassVisibilityChange(
-                                    classInfo.id,
-                                    e.target.checked
+                          {activeTab === "classes" ? (
+                            allClassInfo.map((classInfo) => (
+                              <DropdownItem key={classInfo.id}>
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    !hiddenClasses.includes(classInfo.id)
+                                  }
+                                  onChange={(e) =>
+                                    handleClassVisibilityChange(
+                                      classInfo.id,
+                                      e.target.checked
+                                    )
+                                  }
+                                  style={{ marginRight: "8px" }}
+                                />
+                                {classInfo.title}
+                              </DropdownItem>
+                            ))
+                          ) : (
+                            <>
+                              {classWithAssignments.map((classInfo) => {
+                                const hiddenClassAssignments =
+                                  classInfo.assignments?.activities.filter(
+                                    (assignment) =>
+                                      hiddenAssignments.includes(
+                                        assignment.id.toString()
+                                      )
                                   )
-                                }
-                                style={{ marginRight: "8px" }}
-                              />
-                              {classInfo.title}
-                            </DropdownItem>
-                          ))
-                        ) : (
-                          <>
-                            {classWithAssignments.map((classInfo) => {
-                              const hiddenClassAssignments =
-                                classInfo.assignments?.activities.filter(
-                                  (assignment) =>
-                                    hiddenAssignments.includes(
-                                      assignment.id.toString()
-                                    )
-                                )
 
-                              if (!hiddenClassAssignments?.length) return null
+                                if (!hiddenClassAssignments?.length) return null
 
-                              return (
-                                <div key={classInfo.id}>
-                                  <DropdownLabel>
-                                    {classInfo.title}
-                                  </DropdownLabel>
-                                  {hiddenClassAssignments.map((assignment) => (
-                                    <DropdownItem key={assignment.id}>
-                                      <input
-                                        type="checkbox"
-                                        checked={false}
-                                        onChange={() =>
-                                          handleAssignmentVisibilityChange(
-                                            assignment.id.toString(),
-                                            true
-                                          )
-                                        }
-                                        style={{ marginRight: "8px" }}
-                                      />
-                                      {assignment.title}
-                                    </DropdownItem>
-                                  ))}
-                                </div>
-                              )
-                            })}
-                            {classWithAssignments.every(
-                              (classInfo) =>
-                                !classInfo.assignments?.activities.some(
-                                  (assignment) =>
-                                    hiddenAssignments.includes(
-                                      assignment.id.toString()
-                                    )
+                                return (
+                                  <div key={classInfo.id}>
+                                    <DropdownLabel>
+                                      {classInfo.title}
+                                    </DropdownLabel>
+                                    {hiddenClassAssignments.map(
+                                      (assignment) => (
+                                        <DropdownItem key={assignment.id}>
+                                          <input
+                                            type="checkbox"
+                                            checked={false}
+                                            onChange={() =>
+                                              handleAssignmentVisibilityChange(
+                                                assignment.id.toString(),
+                                                true
+                                              )
+                                            }
+                                            style={{ marginRight: "8px" }}
+                                          />
+                                          {assignment.title}
+                                        </DropdownItem>
+                                      )
+                                    )}
+                                  </div>
                                 )
-                            ) && (
-                              <p
-                                style={{
-                                  padding: "0.5rem 0.75rem",
-                                }}
-                              >
-                                No hidden assignments
-                              </p>
-                            )}
-                          </>
-                        )}
-                      </DropdownContent>
-                    )}
+                              })}
+                              {classWithAssignments.every(
+                                (classInfo) =>
+                                  !classInfo.assignments?.activities.some(
+                                    (assignment) =>
+                                      hiddenAssignments.includes(
+                                        assignment.id.toString()
+                                      )
+                                  )
+                              ) && (
+                                <p
+                                  style={{
+                                    padding: "0.5rem 0.75rem",
+                                  }}
+                                >
+                                  No hidden assignments
+                                </p>
+                              )}
+                            </>
+                          )}
+                        </DropdownContent>
+                      )}
+
+                      <DropdownButton
+                        onClick={() => {
+                          setIsAssignmentFilterOpen(!isAssignmentFilterOpen)
+                          setIsDropdownOpen(false)
+                        }}
+                      >
+                        Filter
+                      </DropdownButton>
+
+                      {isAssignmentFilterOpen && (
+                        <DropdownContent>
+                          <DropdownLabel style={{ fontSize: "1rem" }}>
+                            Submit / Not Submit
+                          </DropdownLabel>
+                          <AssignmentFilter
+                            itemKey={"isSubmit"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Submit"}
+                          />
+                          <AssignmentFilter
+                            itemKey={"isNotSubmit"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Not Submit"}
+                          />
+                          <DropdownLabel>Individual / Group</DropdownLabel>
+                          <AssignmentFilter
+                            itemKey={"isIND"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Individual"}
+                          />
+                          <AssignmentFilter
+                            itemKey={"isGRP"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Group"}
+                          />
+                          <DropdownLabel>Assignment / Quiz</DropdownLabel>
+                          <AssignmentFilter
+                            itemKey={"isAssignment"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Assignment"}
+                          />
+                          <AssignmentFilter
+                            itemKey={"isQuiz"}
+                            obj={filterAssignment}
+                            setObj={setFilterAssignment}
+                            inputLabel={"Quiz"}
+                          />
+                        </DropdownContent>
+                      )}
+                    </ButtonContainer>
                   </div>
                   <h1>Assignments 🥰</h1>
                   <div className="settings-bar">
@@ -471,12 +550,51 @@ const App: FC = () => {
                     const lateAssignments = assignmentsToSubmit.filter(
                       (assignment) => assignment.due_date_exceed
                     )
-                    const filteredAssignments = assignmentsToSubmit.filter(
+                    const assignments = assignmentsToSubmit.filter(
                       (assignment) =>
                         (!lateAssignments.includes(assignment) ||
                           !submittedAssignments.includes(assignment)) &&
                         !hiddenAssignments.includes(assignment.id.toString())
                     )
+
+                    let filteredTasks = assignments
+
+                    const filters = [
+                      {
+                        condition: filterAssignment.isAssignment,
+                        predicate: (task: TActivity) => task.type === "ASM",
+                      },
+                      {
+                        condition: filterAssignment.isQuiz,
+                        predicate: (task: TActivity) => task.type === "QUZ",
+                      },
+                      {
+                        condition: filterAssignment.isGRP,
+                        predicate: (task: TActivity) =>
+                          task.group_type === "STU",
+                      },
+                      {
+                        condition: filterAssignment.isIND,
+                        predicate: (task: TActivity) =>
+                          task.group_type === "IND",
+                      },
+                      {
+                        condition: filterAssignment.isNotSubmit,
+                        predicate: (task: TActivity) =>
+                          !task.quiz_submission_is_submitted,
+                      },
+                      {
+                        condition: filterAssignment.isSubmit,
+                        predicate: (task: TActivity) =>
+                          task.quiz_submission_is_submitted,
+                      },
+                    ]
+
+                    filters.forEach(({ condition, predicate }) => {
+                      if (condition) {
+                        filteredTasks = filteredTasks.filter(predicate)
+                      }
+                    })
 
                     const hiddenAssignmentsCount = assignmentsToSubmit.filter(
                       (assignment) =>
@@ -516,8 +634,8 @@ const App: FC = () => {
                           )}
                         </div>
                         <AssignmentContainer>
-                          {filteredAssignments.length > 0 ? (
-                            filteredAssignments.map((assignment) => (
+                          {filteredTasks.length > 0 ? (
+                            filteredTasks.map((assignment) => (
                               <AssignmentItem
                                 key={assignment.id}
                                 onMouseOver={() => {
