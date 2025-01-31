@@ -89,17 +89,35 @@ const App: FC = () => {
         savedDarkMode,
         savedHiddenClasses,
         savedHiddenAssignments,
+        savedFilterSettings,
       ] = await Promise.all([
         storage.getItem<boolean>("local:assignmentsGridView"),
         storage.getItem<boolean>("local:darkMode"),
         storage.getItem<string[]>("local:hiddenClasses"),
         storage.getItem<string[]>("local:hiddenAssignments"),
+        storage.getItem<TAssignmentFilter>("local:filterSettings"),
       ])
 
       setIsGridView(savedView ?? false)
       setIsDarkMode(savedDarkMode ?? false)
       setHiddenClasses(savedHiddenClasses ?? [])
       setHiddenAssignments(savedHiddenAssignments ?? [])
+      setFilterAssignment(
+        savedFilterSettings ?? {
+          submit: {
+            isSubmit: false,
+            isNotSubmit: false,
+          },
+          type: {
+            isIND: false,
+            isGRP: false,
+          },
+          assessmentType: {
+            isAssignment: false,
+            isQuiz: false,
+          },
+        }
+      )
     }
     loadPreferences()
   }, [])
@@ -234,6 +252,14 @@ const App: FC = () => {
     }
     saveClassWithAssignments()
   }, [classWithAssignments])
+
+  useEffect(() => {
+    const saveFilterSettings = async () => {
+      await storage.setItem("local:filterSettings", filterAssignment)
+    }
+
+    saveFilterSettings()
+  }, [filterAssignment])
 
   const handleOpenModal = useCallback(() => {
     const currentUrl = window.location.href
