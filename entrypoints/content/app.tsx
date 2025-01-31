@@ -22,11 +22,12 @@ import {
   ClassContainer,
 } from "@/entrypoints/content/components/styled/Class"
 import {
-  ButtonContainer,
   DropdownButton,
   DropdownContent,
   DropdownItem,
   DropdownLabel,
+  InlineContainer,
+  LinkText,
   TabButton,
   TabContainer,
 } from "@/entrypoints/content/components/styled/Dropdown"
@@ -65,12 +66,18 @@ const App: FC = () => {
   )
 
   const [filterAssignment, setFilterAssignment] = useState<TAssignmentFilter>({
-    isSubmit: false,
-    isNotSubmit: false,
-    isIND: false,
-    isGRP: false,
-    isAssignment: false,
-    isQuiz: false,
+    submit: {
+      isSubmit: false,
+      isNotSubmit: false,
+    },
+    type: {
+      isIND: false,
+      isGRP: false,
+    },
+    assessmentType: {
+      isAssignment: false,
+      isQuiz: false,
+    },
   })
 
   const allClassInfo = useMemo(() => getAllClassInfo(), [])
@@ -348,7 +355,7 @@ const App: FC = () => {
                     className="dropdown-container"
                     style={{ position: "relative" }}
                   >
-                    <ButtonContainer>
+                    <InlineContainer>
                       <DropdownButton
                         onClick={() => {
                           setIsDropdownOpen(!isDropdownOpen)
@@ -465,50 +472,112 @@ const App: FC = () => {
 
                       {isAssignmentFilterOpen && (
                         <DropdownContent>
-                          <DropdownLabel style={{ fontSize: "1rem" }}>
-                            Submit / Not Submit
+                          <DropdownLabel>
+                            <InlineContainer
+                              style={{ justifyContent: "space-between" }}
+                            >
+                              <p>Submit / Not Submit</p>
+                              <LinkText
+                                className="underline"
+                                onClick={() => {
+                                  setFilterAssignment({
+                                    ...filterAssignment,
+                                    submit: {
+                                      isNotSubmit: false,
+                                      isSubmit: false,
+                                    },
+                                  })
+                                }}
+                              >
+                                Clear
+                              </LinkText>
+                            </InlineContainer>
                           </DropdownLabel>
                           <AssignmentFilter
                             itemKey={"isSubmit"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Submit"}
+                            section="submit"
                           />
                           <AssignmentFilter
                             itemKey={"isNotSubmit"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Not Submit"}
+                            section="submit"
                           />
-                          <DropdownLabel>Individual / Group</DropdownLabel>
+                          <DropdownLabel>
+                            <InlineContainer
+                              style={{ justifyContent: "space-between" }}
+                            >
+                              <p>Individual / Group</p>
+                              <LinkText
+                                onClick={() => {
+                                  setFilterAssignment({
+                                    ...filterAssignment,
+                                    type: {
+                                      isGRP: false,
+                                      isIND: false,
+                                    },
+                                  })
+                                }}
+                              >
+                                Clear
+                              </LinkText>
+                            </InlineContainer>
+                          </DropdownLabel>
                           <AssignmentFilter
                             itemKey={"isIND"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Individual"}
+                            section="type"
                           />
                           <AssignmentFilter
                             itemKey={"isGRP"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Group"}
+                            section="type"
                           />
-                          <DropdownLabel>Assignment / Quiz</DropdownLabel>
+                          <DropdownLabel>
+                            <InlineContainer
+                              style={{ justifyContent: "space-between" }}
+                            >
+                              <p>Assignment / Quiz</p>
+                              <LinkText
+                                onClick={() => {
+                                  setFilterAssignment({
+                                    ...filterAssignment,
+                                    assessmentType: {
+                                      isQuiz: false,
+                                      isAssignment: false,
+                                    },
+                                  })
+                                }}
+                              >
+                                Clear
+                              </LinkText>
+                            </InlineContainer>
+                          </DropdownLabel>
                           <AssignmentFilter
                             itemKey={"isAssignment"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Assignment"}
+                            section="assessmentType"
                           />
                           <AssignmentFilter
                             itemKey={"isQuiz"}
                             obj={filterAssignment}
                             setObj={setFilterAssignment}
                             inputLabel={"Quiz"}
+                            section="assessmentType"
                           />
                         </DropdownContent>
                       )}
-                    </ButtonContainer>
+                    </InlineContainer>
                   </div>
                   <h1>Assignments 🥰</h1>
                   <div className="settings-bar">
@@ -561,30 +630,30 @@ const App: FC = () => {
 
                     const filters = [
                       {
-                        condition: filterAssignment.isAssignment,
+                        condition: filterAssignment.assessmentType.isAssignment,
                         predicate: (task: TActivity) => task.type === "ASM",
                       },
                       {
-                        condition: filterAssignment.isQuiz,
+                        condition: filterAssignment.assessmentType.isQuiz,
                         predicate: (task: TActivity) => task.type === "QUZ",
                       },
                       {
-                        condition: filterAssignment.isGRP,
+                        condition: filterAssignment.type.isGRP,
                         predicate: (task: TActivity) =>
                           task.group_type === "STU",
                       },
                       {
-                        condition: filterAssignment.isIND,
+                        condition: filterAssignment.type.isIND,
                         predicate: (task: TActivity) =>
                           task.group_type === "IND",
                       },
                       {
-                        condition: filterAssignment.isNotSubmit,
+                        condition: filterAssignment.submit.isNotSubmit,
                         predicate: (task: TActivity) =>
                           !task.quiz_submission_is_submitted,
                       },
                       {
-                        condition: filterAssignment.isSubmit,
+                        condition: filterAssignment.submit.isSubmit,
                         predicate: (task: TActivity) =>
                           task.quiz_submission_is_submitted,
                       },

@@ -1,8 +1,17 @@
 import styled from "styled-components"
 
-export const ButtonContainer = styled.div`
+export const InlineContainer = styled.div`
   display: flex;
   gap: 10px;
+`
+
+export const LinkText = styled.p`
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    cursor: pointer;
+  }
 `
 
 export const DropdownButton = styled.button`

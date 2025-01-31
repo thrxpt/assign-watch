@@ -8,21 +8,37 @@ type Props = {
   obj: TAssignmentFilter
   setObj: React.Dispatch<React.SetStateAction<TAssignmentFilter>>
   inputLabel: string
-  itemKey: keyof TAssignmentFilter
+  itemKey:
+    | keyof TAssignmentFilter["type"]
+    | keyof TAssignmentFilter["submit"]
+    | keyof TAssignmentFilter["assessmentType"]
+  section: keyof TAssignmentFilter
 }
 
 const AssignmentFilter: React.FC<Props> = (props) => {
   return (
-    <DropdownItem htmlFor={props.itemKey}>
+    <DropdownItem>
       <input
-        id={props.itemKey}
-        type="checkbox"
-        defaultChecked={props.obj[props.itemKey]}
-        onChange={() => {
-          props.setObj({
+        type="radio"
+        name={props.section}
+        checked={
+          (props.obj[props.section] as { [key: string]: boolean })[
+            props.itemKey
+          ]
+        }
+        onChange={(event) => {
+          const updatedSection = Object.keys(props.obj[props.section]).reduce(
+            (acc, key) => ({
+              ...acc,
+              [key]: key === props.itemKey ? event.target.checked : false,
+            }),
+            {}
+          )
+          const updateObj = {
             ...props.obj,
-            [props.itemKey]: !props.obj[props.itemKey],
-          })
+            [props.section]: updatedSection,
+          }
+          props.setObj(updateObj)
         }}
       />
       {props.inputLabel}

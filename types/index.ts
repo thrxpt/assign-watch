@@ -40,10 +40,16 @@ export type TActivity = {
 }
 
 export type TAssignmentFilter = {
-  isSubmit: boolean
-  isNotSubmit: boolean
-  isIND: boolean
-  isGRP: boolean
-  isAssignment: boolean
-  isQuiz: boolean
+  submit: {
+    isSubmit: boolean
+    isNotSubmit: boolean
+  }
+  type: {
+    isIND: boolean
+    isGRP: boolean
+  }
+  assessmentType: {
+    isAssignment: boolean
+    isQuiz: boolean
+  }
 }
