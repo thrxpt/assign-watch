@@ -21,6 +21,14 @@ export default defineConfig({
       if (wxt.config.mode === "development") {
         manifest.name += " (DEV)"
       }
+
+      if (wxt.config.browser === "firefox") {
+        manifest.browser_specific_settings = {
+          gecko: {
+            id: "assignwatch@leb2",
+          },
+        }
+      }
     },
   },
 })
