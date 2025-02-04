@@ -9,7 +9,7 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 
 ## Features ✨
 
-- 🔍 **Unified View**: Access all assignments across classes in a single, intuitive modal
+- 🔍 **Unified View**: Access all assignments across classes in a single modal
 - ⚡ **Quick Access**: Instantly open with keyboard shortcut (Alt/Option + A)
 - 📱 **Flexible Layout**: Toggle between grid and list views for optimal viewing
 - 🌓 **Theme Support**: Seamless dark/light mode integration
