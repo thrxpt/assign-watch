@@ -43,7 +43,8 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 1. Go to `about:debugging#/runtime/this-firefox`
 2. Click "Load Temporary Add-on..." and select the ZIP file
 
-> **Warning ⚠️**: Installing this way will only work until the browser is restarted. For a permanent installation, use the [Firefox Developer Edition](https://www.mozilla.org/en-US/firefox/developer) instead.
+> [!WARNING]
+> Installing this way will only work until the browser is restarted. For a permanent installation, use the [Firefox Developer Edition](https://www.mozilla.org/en-US/firefox/developer) instead.
 
 #### Firefox Developer Edition
 
