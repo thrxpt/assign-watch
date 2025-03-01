@@ -7,6 +7,10 @@
 
 A browser extension that enhances your LEB2 experience by providing a convenient way to view and manage all your assignments in one place.
 
+> [!NOTE] What is LEB2?
+> LEB2 ย่อมาจาก Learning Environment version B2 เป็นแพลตฟอร์มด้านการศึกษาสำหรับการเรียนการสอนออนไลน์ ถูกสร้างและพัฒนาขึ้นโดยหน่วยงานพัฒนาและบูรณาการเทคโนโลยีเพื่อการศึกษา (ETS) ของมหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี (มจธ.) หรือ KMUTT
+> [Learn More](https://www.leb2.org/what-is-leb2)
+
 ## Features ✨
 
 - 🔍 **Unified View**: Access all assignments across classes in a single modal
