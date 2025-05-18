@@ -84,6 +84,13 @@ function App() {
   const handleCompactModeToggle = async () => {
     const newState = !settings.compactMode
     updateSetting("compactMode", newState)
+
+    const tabs = await browser.tabs.query({
+      url: ["https://app.leb2.org/", "https://app.leb2.org/class"],
+    })
+    for (const tab of tabs) {
+      await browser.tabs.reload(tab.id!)
+    }
   }
 
   return (
