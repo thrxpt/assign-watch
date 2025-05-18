@@ -52,6 +52,7 @@ dayjs.locale("th")
 
 const App: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isCompactMode, setIsCompactMode] = useState(false)
   const [isGridView, setIsGridView] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -90,14 +91,16 @@ const App: FC = () => {
         savedHiddenClasses,
         savedHiddenAssignments,
         savedFilterSettings,
+        savedCompactMode,
       ] = await Promise.all([
         storage.getItem<boolean>("local:assignmentsGridView"),
         storage.getItem<boolean>("local:darkMode"),
         storage.getItem<string[]>("local:hiddenClasses"),
         storage.getItem<string[]>("local:hiddenAssignments"),
         storage.getItem<TAssignmentFilter>("local:filterSettings"),
+        storage.getItem<boolean>("sync:compactMode"),
       ])
-
+      setIsCompactMode(savedCompactMode ?? false)
       setIsGridView(savedView ?? false)
       setIsDarkMode(savedDarkMode ?? false)
       setHiddenClasses(savedHiddenClasses ?? [])
@@ -684,6 +687,8 @@ const App: FC = () => {
                           task.quiz_submission_is_submitted,
                       },
                     ]
+
+                    if (filteredTasks.length === 0 && isCompactMode) return null
 
                     filters.forEach(({ condition, predicate }) => {
                       if (condition) {
