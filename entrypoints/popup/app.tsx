@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react"
-import { BellRing, CalendarClock, Coffee, Link } from "lucide-react"
+import {
+  BellRing,
+  CalendarClock,
+  Coffee,
+  Link,
+  ListCollapse,
+} from "lucide-react"
 import { storage } from "wxt/storage"
 import { z } from "zod"
 
@@ -16,6 +22,7 @@ import { Switch } from "@/components/ui/switch"
 const settingSchema = z.object({
   notificationsEnabled: z.boolean().default(true),
   reminderTime: z.enum(["24", "48", "72", "120", "168"]).default("72"),
+  compactMode: z.boolean().default(false),
 })
 
 type Setting = z.infer<typeof settingSchema>
@@ -24,6 +31,7 @@ function App() {
   const [settings, setSettings] = useState<Setting>({
     notificationsEnabled: true,
     reminderTime: "72",
+    compactMode: false,
   })
 
   useEffect(() => {
@@ -34,10 +42,12 @@ function App() {
       const reminderTime = await storage.getItem<string>(
         "sync:notifications:reminderTime"
       )
+      const compactMode = await storage.getItem<boolean>("sync:compactMode")
 
       const parsedSettings = await settingSchema.parseAsync({
         notificationsEnabled: notificationsEnabled ?? true,
         reminderTime: reminderTime ?? "72",
+        compactMode: compactMode ?? false,
       })
       setSettings(parsedSettings)
     }
@@ -50,7 +60,9 @@ function App() {
     const storageKey =
       key === "notificationsEnabled"
         ? "sync:notifications:enabled"
-        : "sync:notifications:reminderTime"
+        : key === "reminderTime"
+          ? "sync:notifications:reminderTime"
+          : "sync:compactMode"
     await storage.setItem(storageKey, value)
   }
 
@@ -69,6 +81,11 @@ function App() {
     updateSetting("notificationsEnabled", newState)
   }
 
+  const handleCompactModeToggle = async () => {
+    const newState = !settings.compactMode
+    updateSetting("compactMode", newState)
+  }
+
   return (
     <div className="mx-auto w-full min-w-[400px] max-w-xl space-y-6 p-6 font-['Anuphan_Variable']">
       <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
@@ -79,7 +96,7 @@ function App() {
       <div className="space-y-4">
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="notifications" className="flex items-start space-x-2">
-            <BellRing className="size-4 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <BellRing className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
             <div className="flex flex-col space-y-1">
               <span>Notifications</span>
               <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
@@ -95,7 +112,7 @@ function App() {
         </div>
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="reminderTime" className="flex items-start space-x-2">
-            <CalendarClock className="size-4 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <CalendarClock className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
             <div className="flex flex-col space-y-1">
               <span>Remind me</span>
               <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
@@ -123,6 +140,22 @@ function App() {
               <SelectItem value="168">1 week before</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="flex items-center justify-between space-x-2">
+          <Label htmlFor="compactMode" className="flex items-start space-x-2">
+            <ListCollapse className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <div className="flex flex-col space-y-1">
+              <span>Compact mode</span>
+              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+                Show only classes that have assignments
+              </span>
+            </div>
+          </Label>
+          <Switch
+            id="compactMode"
+            checked={settings.compactMode}
+            onCheckedChange={handleCompactModeToggle}
+          />
         </div>
       </div>
 
