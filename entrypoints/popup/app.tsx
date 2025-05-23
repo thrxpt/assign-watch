@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { storage } from "#imports"
 import {
   BellRing,
   CalendarClock,
@@ -6,7 +7,6 @@ import {
   Link,
   ListCollapse,
 } from "lucide-react"
-import { storage } from "wxt/storage"
 import { z } from "zod"
 
 import { Label } from "@/components/ui/label"

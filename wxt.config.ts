@@ -7,9 +7,8 @@ export default defineConfig({
       enabled: 9,
     },
   },
-  extensionApi: "chrome",
   modules: ["@wxt-dev/module-react", "@wxt-dev/auto-icons"],
-  runner: {
+  webExt: {
     disabled: true,
   },
   manifest: {
