@@ -4,7 +4,6 @@ import { includeIgnoreFile } from "@eslint/compat"
 import pluginJs from "@eslint/js"
 import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended"
 import pluginReact from "eslint-plugin-react"
-import tailwind from "eslint-plugin-tailwindcss"
 import globals from "globals"
 import tseslint from "typescript-eslint"
 
@@ -32,20 +31,12 @@ export default [
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
   pluginReact.configs.flat.recommended,
-  ...tailwind.configs["flat/recommended"],
   eslintPluginPrettierRecommended,
   {
     rules: {
       "react/react-in-jsx-scope": "off",
       "@typescript-eslint/no-explicit-any": "off",
-      "tailwindcss/no-custom-classname": "off",
       "react/prop-types": "off",
-    },
-    settings: {
-      tailwindcss: {
-        callees: ["cn"],
-        config: "tailwind.config.js",
-      },
     },
   },
 ]

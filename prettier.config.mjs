@@ -5,7 +5,11 @@ const config = {
   tabWidth: 2,
   semi: false,
   singleQuote: false,
-  plugins: ["@ianvs/prettier-plugin-sort-imports"],
+  plugins: [
+    "@ianvs/prettier-plugin-sort-imports",
+    "prettier-plugin-tailwindcss",
+  ],
+  tailwindAttributes: ["cn"],
   importOrder: [
     "^(react/(.*)$)|^(react$)",
     "<THIRD_PARTY_MODULES>",

@@ -94,7 +94,7 @@ function App() {
   }
 
   return (
-    <div className="mx-auto w-full min-w-[400px] max-w-xl space-y-6 p-6 font-['Anuphan_Variable']">
+    <div className="mx-auto w-full max-w-xl min-w-[400px] space-y-6 p-6 font-['Anuphan_Variable']">
       <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
         Settings
         <span className="font-normal text-gray-600"> / การตั้งค่า</span>
@@ -103,10 +103,10 @@ function App() {
       <div className="space-y-4">
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="notifications" className="flex items-start space-x-2">
-            <BellRing className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <BellRing className="size-4 shrink-0 text-gray-500 sm:size-5 dark:text-gray-400" />
             <div className="flex flex-col space-y-1">
               <span>Notifications</span>
-              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+              <span className="text-xs font-normal text-gray-500 sm:text-sm dark:text-gray-400">
                 Get notified before due date
               </span>
             </div>
@@ -119,10 +119,10 @@ function App() {
         </div>
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="reminderTime" className="flex items-start space-x-2">
-            <CalendarClock className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <CalendarClock className="size-4 shrink-0 text-gray-500 sm:size-5 dark:text-gray-400" />
             <div className="flex flex-col space-y-1">
               <span>Remind me</span>
-              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+              <span className="text-xs font-normal text-gray-500 sm:text-sm dark:text-gray-400">
                 Before due date
               </span>
             </div>
@@ -135,7 +135,7 @@ function App() {
           >
             <SelectTrigger
               id="reminderTime"
-              className="w-auto min-w-48 max-w-full"
+              className="w-auto max-w-full min-w-48"
             >
               <SelectValue placeholder="Select a reminder time" />
             </SelectTrigger>
@@ -150,10 +150,10 @@ function App() {
         </div>
         <div className="flex items-center justify-between space-x-2">
           <Label htmlFor="compactMode" className="flex items-start space-x-2">
-            <ListCollapse className="size-4 shrink-0 text-gray-500 dark:text-gray-400 sm:size-5" />
+            <ListCollapse className="size-4 shrink-0 text-gray-500 sm:size-5 dark:text-gray-400" />
             <div className="flex flex-col space-y-1">
               <span>Compact mode</span>
-              <span className="text-xs font-normal text-gray-500 dark:text-gray-400 sm:text-sm">
+              <span className="text-xs font-normal text-gray-500 sm:text-sm dark:text-gray-400">
                 Show only classes that have assignments
               </span>
             </div>
@@ -166,13 +166,13 @@ function App() {
         </div>
       </div>
 
-      <footer className="flex flex-col gap-2 text-xs text-gray-500 dark:text-gray-400 sm:text-sm">
+      <footer className="flex flex-col gap-2 text-xs text-gray-500 sm:text-sm dark:text-gray-400">
         <div className="flex items-center justify-between gap-1 sm:gap-2">
           <a
             href="https://app.leb2.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50 sm:px-3 sm:py-1.5"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3 sm:py-1.5 dark:hover:bg-gray-800 dark:hover:text-gray-50"
           >
             <Link className="size-3.5 sm:size-4" />
             <span>LEB2</span>
@@ -181,7 +181,7 @@ function App() {
             href="https://github.com/3raphat/assign-watch"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50 sm:px-3 sm:py-1.5"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3 sm:py-1.5 dark:hover:bg-gray-800 dark:hover:text-gray-50"
           >
             <svg
               viewBox="0 0 256 250"
@@ -200,7 +200,7 @@ function App() {
             href="https://ko-fi.com/3raphat"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50 sm:px-3 sm:py-1.5"
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3 sm:py-1.5 dark:hover:bg-gray-800 dark:hover:text-gray-50"
           >
             <Coffee className="size-3.5 sm:size-4" />
             <span>Ko-fi</span>
