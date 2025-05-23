@@ -1,5 +1,5 @@
+import { storage } from "#imports"
 import dayjs from "dayjs"
-import { storage } from "wxt/storage"
 
 import type { AssignmentResponse } from "@/types"
 

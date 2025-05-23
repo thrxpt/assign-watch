@@ -1,15 +1,18 @@
+import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "wxt"
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  vite: () => ({
+    plugins: [tailwindcss()],
+  }),
   imports: {
     eslintrc: {
       enabled: 9,
     },
   },
-  extensionApi: "chrome",
   modules: ["@wxt-dev/module-react", "@wxt-dev/auto-icons"],
-  runner: {
+  webExt: {
     disabled: true,
   },
   manifest: {

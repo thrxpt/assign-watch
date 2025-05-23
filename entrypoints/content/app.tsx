@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FC } from "react"
 import isPropValid from "@emotion/is-prop-valid"
 import { useQueries } from "@tanstack/react-query"
+import { storage } from "#imports"
 import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
 import { EyeOff, LayoutGrid, LayoutList } from "lucide-react"
 import { StyleSheetManager, ThemeProvider } from "styled-components"
-import { storage } from "wxt/storage"
 
 import {
   AssignmentContainer,
