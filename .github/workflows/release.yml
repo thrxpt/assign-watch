@@ -2,140 +2,40 @@ name: Release
 
 permissions:
   contents: write
-  pull-requests: write
 
 on:
-  workflow_dispatch:
-    inputs:
-      version_type:
-        description: "Version type to bump"
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-        default: "patch"
-      dry_run:
-        description: "Dry run"
-        required: false
-        type: boolean
-        default: false
+  push:
+    tags:
+      - "v*"
 
 jobs:
   release:
-    name: Build and Release
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Configure Git
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: lts/*
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Bump version
-        id: bump
+      - name: Build extension
         run: |
-          # Get the current version from package.json
-          current_version=$(node -p "require('./package.json').version")
-          echo "Current version: $current_version"
+          pnpm zip
+          pnpm zip:firefox
 
-          # Split version into components
-          IFS='.' read -r major minor patch <<< "$current_version"
-
-          # Bump version based on input
-          case "${{ github.event.inputs.version_type }}" in
-            "major") new_version="$((major + 1)).0.0" ;;
-            "minor") new_version="${major}.$((minor + 1)).0" ;;
-            "patch") new_version="${major}.${minor}.$((patch + 1))" ;;
-          esac
-
-          # Update package.json
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
-            pkg.version = '$new_version';
-            fs.writeFileSync('./package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
-
-          echo "new_version=$new_version" >> $GITHUB_OUTPUT
-          echo "Version bumped from $current_version to $new_version"
-
-      - name: Create release branch
-        run: |
-          git checkout -b release/${{ github.event.inputs.version_type }}-bump
-
-      - name: Commit version bump
-        run: |
-          git add package.json
-          git commit -m "chore(release): v${{ steps.bump.outputs.new_version }}"
-          git push origin release/${{ github.event.inputs.version_type }}-bump
-
-      - name: Create ZIP files
-        run: pnpm zip:all
-
-      - name: Create Pull Request
-        run: |
-          gh pr create --title "chore(release): v${{ steps.bump.outputs.new_version }}" --body "🚀 Automated release PR for version v${{ steps.bump.outputs.new_version }}" --base main --head release/${{ github.event.inputs.version_type }}-bump --label release
+      - run: npx changelogithub --assets ".output/*-chrome.zip,.output/*-firefox.zip"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Auto-merge Pull Request
-        run: |
-          gh pr merge release/${{ github.event.inputs.version_type }}-bump --squash --auto --delete-branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Submit to Chrome Web Store
-        if: ${{ !inputs.dry_run }}
-        run: |
-          pnpm wxt submit \
-            --chrome-zip .output/*-chrome.zip
-        env:
-          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
-          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
-          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
-          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-
-      # - name: Submit to Firefox Add-ons
-      #   if: ${{ !inputs.dry_run }}
-      #   run: |
-      #     pnpm wxt submit \
-      #       --firefox-zip .output/*-firefox.zip \
-      #       --firefox-sources-zip .output/*-sources.zip
-      #   env:
-      #     FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
-      #     FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
-      #     FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            .output/*-chrome.zip
-            .output/*-firefox.zip
-          generate_release_notes: true
-          tag_name: v${{ steps.bump.outputs.new_version }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
