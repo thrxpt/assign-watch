@@ -178,7 +178,7 @@ function App() {
             <span>LEB2</span>
           </a>
           <a
-            href="https://github.com/3raphat/assign-watch"
+            href="https://github.com/thrxpt/assign-watch"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3 sm:py-1.5 dark:hover:bg-gray-800 dark:hover:text-gray-50"
@@ -197,7 +197,7 @@ function App() {
             <span>GitHub</span>
           </a>
           <a
-            href="https://ko-fi.com/3raphat"
+            href="https://ko-fi.com/thrxpt"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-gray-100 hover:text-gray-900 sm:px-3 sm:py-1.5 dark:hover:bg-gray-800 dark:hover:text-gray-50"

@@ -1,9 +1,9 @@
 # Assign Watch - Extension for LEB2
 
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/dedhfmakhbgeopgdipofgooiibkanfad)](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
-[![GitHub Release](https://img.shields.io/github/v/release/3raphat/assign-watch)](https://github.com/3raphat/assign-watch/releases/latest)
-[![License](https://img.shields.io/github/license/3raphat/assign-watch)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/3raphat/assign-watch)](https://github.com/3raphat/assign-watch/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/releases/latest)
+[![License](https://img.shields.io/github/license/thrxpt/assign-watch)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/stargazers)
 
 A browser extension that enhances your LEB2 experience by providing a convenient way to view and manage all your assignments in one place.
 
@@ -33,7 +33,7 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 
 ### Manual Installation
 
-1. Download the latest release from our [Releases](https://github.com/3raphat/assign-watch/releases) page
+1. Download the latest release from our [Releases](https://github.com/thrxpt/assign-watch/releases) page
 2. Extract the downloaded ZIP file (for chrome)
 
 #### Chrome
@@ -64,7 +64,7 @@ _This reportedly works with [Firefox Extended Support Release](https://www.mozil
 1. Clone the repository
 
    ```bash
-   git clone https://github.com/3raphat/assign-watch.git
+   git clone https://github.com/thrxpt/assign-watch.git
    cd assign-watch
    ```
 

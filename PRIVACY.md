@@ -41,6 +41,6 @@ Extension นี้ขอสิทธิ์การเข้าถึงดั�
 
 หากมีข้อสงสัยเกี่ยวกับนโยบายความเป็นส่วนตัว สามารถติดต่อได้ที่:
 
-- GitHub Issues: [https://github.com/3raphat/assign-watch/issues](https://github.com/3raphat/assign-watch/issues)
+- GitHub Issues: [https://github.com/thrxpt/assign-watch/issues](https://github.com/thrxpt/assign-watch/issues)
 
 อัปเดตล่าสุด: 15/12/2024
