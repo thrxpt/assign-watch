@@ -36,6 +36,16 @@ jobs:
           pnpm zip
           pnpm zip:firefox
 
+      - name: Submit to Chrome Web Store
+        run: |
+          pnpm wxt submit \
+            --chrome-zip .output/*-chrome.zip
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+
       - run: npx changelogithub --assets ".output/*-chrome.zip,.output/*-firefox.zip"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
