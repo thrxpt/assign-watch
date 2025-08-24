@@ -22,7 +22,7 @@ import { Switch } from "@/components/ui/switch"
 const settingSchema = z.object({
   notificationsEnabled: z.boolean().default(true),
   reminderTime: z.enum(["24", "48", "72", "120", "168"]).default("72"),
-  compactMode: z.boolean().default(false),
+  compactMode: z.boolean().default(true),
 })
 
 type Setting = z.infer<typeof settingSchema>
@@ -31,7 +31,7 @@ function App() {
   const [settings, setSettings] = useState<Setting>({
     notificationsEnabled: true,
     reminderTime: "72",
-    compactMode: false,
+    compactMode: true,
   })
 
   useEffect(() => {
@@ -47,7 +47,7 @@ function App() {
       const parsedSettings = await settingSchema.parseAsync({
         notificationsEnabled: notificationsEnabled ?? true,
         reminderTime: reminderTime ?? "72",
-        compactMode: compactMode ?? false,
+        compactMode: compactMode ?? true,
       })
       setSettings(parsedSettings)
     }
