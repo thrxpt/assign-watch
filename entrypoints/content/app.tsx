@@ -52,7 +52,7 @@ dayjs.locale("th")
 
 const App: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [isCompactMode, setIsCompactMode] = useState(false)
+  const [isCompactMode, setIsCompactMode] = useState(true)
   const [isGridView, setIsGridView] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -100,7 +100,7 @@ const App: FC = () => {
         storage.getItem<TAssignmentFilter>("local:filterSettings"),
         storage.getItem<boolean>("sync:compactMode"),
       ])
-      setIsCompactMode(savedCompactMode ?? false)
+      setIsCompactMode(savedCompactMode ?? true)
       setIsGridView(savedView ?? false)
       setIsDarkMode(savedDarkMode ?? false)
       setHiddenClasses(savedHiddenClasses ?? [])
