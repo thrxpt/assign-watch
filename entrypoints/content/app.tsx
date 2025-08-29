@@ -630,234 +630,321 @@ const App: FC = () => {
                   </div>
                 </ModalHeader>
                 <ClassContainer $isGrid={isGridView}>
-                  {classWithAssignments.map((classInfo) => {
-                    const isHidden = hiddenClasses.includes(classInfo.id)
-                    if (isHidden) return null
+                  {(() => {
+                    const visibleClasses = classWithAssignments.filter(
+                      (classInfo) => {
+                        const isHidden = hiddenClasses.includes(classInfo.id)
+                        if (isHidden) return false
 
-                    const { activities } = classInfo.assignments || {
-                      activities: [],
-                    }
+                        const { activities } = classInfo.assignments || {
+                          activities: [],
+                        }
 
-                    const assignmentsToSubmit = activities.filter(
-                      (assignment) => assignment.due_date !== null
-                    )
-                    const submittedAssignments = activities.filter(
-                      (assignment) =>
-                        assignment.quiz_submission_is_submitted === 1
-                    )
-                    const lateAssignments = assignmentsToSubmit.filter(
-                      (assignment) => assignment.due_date_exceed
-                    )
-                    const assignments = assignmentsToSubmit.filter(
-                      (assignment) =>
-                        (!lateAssignments.includes(assignment) ||
-                          !submittedAssignments.includes(assignment)) &&
-                        !hiddenAssignments.includes(assignment.id.toString())
-                    )
+                        const assignmentsToSubmit = activities.filter(
+                          (assignment) => assignment.due_date !== null
+                        )
+                        const submittedAssignments = activities.filter(
+                          (assignment) =>
+                            assignment.quiz_submission_is_submitted === 1
+                        )
+                        const lateAssignments = assignmentsToSubmit.filter(
+                          (assignment) => assignment.due_date_exceed
+                        )
+                        const assignments = assignmentsToSubmit.filter(
+                          (assignment) =>
+                            (!lateAssignments.includes(assignment) ||
+                              !submittedAssignments.includes(assignment)) &&
+                            !hiddenAssignments.includes(
+                              assignment.id.toString()
+                            )
+                        )
 
-                    let filteredTasks = assignments
+                        let filteredTasks = assignments
 
-                    const filters = [
-                      {
-                        condition: filterAssignment.assessmentType.isAssignment,
-                        predicate: (task: TActivity) => task.type === "ASM",
-                      },
-                      {
-                        condition: filterAssignment.assessmentType.isQuiz,
-                        predicate: (task: TActivity) => task.type === "QUZ",
-                      },
-                      {
-                        condition: filterAssignment.type.isGRP,
-                        predicate: (task: TActivity) =>
-                          task.group_type === "STU",
-                      },
-                      {
-                        condition: filterAssignment.type.isIND,
-                        predicate: (task: TActivity) =>
-                          task.group_type === "IND",
-                      },
-                      {
-                        condition: filterAssignment.submit.isNotSubmit,
-                        predicate: (task: TActivity) =>
-                          !task.quiz_submission_is_submitted,
-                      },
-                      {
-                        condition: filterAssignment.submit.isSubmit,
-                        predicate: (task: TActivity) =>
-                          task.quiz_submission_is_submitted,
-                      },
-                    ]
+                        const filters = [
+                          {
+                            condition:
+                              filterAssignment.assessmentType.isAssignment,
+                            predicate: (task: TActivity) => task.type === "ASM",
+                          },
+                          {
+                            condition: filterAssignment.assessmentType.isQuiz,
+                            predicate: (task: TActivity) => task.type === "QUZ",
+                          },
+                          {
+                            condition: filterAssignment.type.isGRP,
+                            predicate: (task: TActivity) =>
+                              task.group_type === "STU",
+                          },
+                          {
+                            condition: filterAssignment.type.isIND,
+                            predicate: (task: TActivity) =>
+                              task.group_type === "IND",
+                          },
+                          {
+                            condition: filterAssignment.submit.isNotSubmit,
+                            predicate: (task: TActivity) =>
+                              !task.quiz_submission_is_submitted,
+                          },
+                          {
+                            condition: filterAssignment.submit.isSubmit,
+                            predicate: (task: TActivity) =>
+                              task.quiz_submission_is_submitted,
+                          },
+                        ]
 
-                    if (filteredTasks.length === 0 && isCompactMode) return null
+                        filters.forEach(({ condition, predicate }) => {
+                          if (condition) {
+                            filteredTasks = filteredTasks.filter(predicate)
+                          }
+                        })
 
-                    filters.forEach(({ condition, predicate }) => {
-                      if (condition) {
-                        filteredTasks = filteredTasks.filter(predicate)
+                        return filteredTasks.length > 0 || !isCompactMode
                       }
-                    })
+                    )
 
-                    const hiddenAssignmentsCount = assignmentsToSubmit.filter(
-                      (assignment) =>
-                        hiddenAssignments.includes(assignment.id.toString())
-                    ).length
-
-                    return (
-                      <ClassCard key={classInfo.id}>
+                    if (visibleClasses.length === 0) {
+                      return (
                         <div
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "baseline",
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            color: theme.textMuted,
+                            fontStyle: "italic",
                           }}
                         >
-                          <div className="class-card-header">
-                            <h2>
-                              <a
-                                href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {classInfo.title}
-                              </a>
-                            </h2>
-                            <p>{classInfo.description}</p>
-                          </div>
-                          {hiddenAssignmentsCount > 0 && (
-                            <p
-                              style={{
-                                fontSize: "14px",
-                                color: theme.textMuted,
-                              }}
-                            >
-                              ซ่อน {hiddenAssignmentsCount} งาน
-                            </p>
-                          )}
+                          ทุกวิชายังไม่มีงานที่ต้องส่ง
                         </div>
-                        <AssignmentContainer>
-                          {filteredTasks.length > 0 ? (
-                            filteredTasks.map((assignment) => (
-                              <AssignmentItem
-                                key={assignment.id}
-                                onMouseOver={() => {
-                                  const hideButton = document.querySelector(
-                                    `#hide-button-${assignment.id}`
-                                  ) as HTMLButtonElement
-                                  hideButton.style.opacity = "1"
-                                }}
-                                onMouseOut={() => {
-                                  const hideButton = document.querySelector(
-                                    `#hide-button-${assignment.id}`
-                                  ) as HTMLButtonElement
-                                  hideButton.style.opacity = "0"
+                      )
+                    }
+
+                    return visibleClasses.map((classInfo) => {
+                      const { activities } = classInfo.assignments || {
+                        activities: [],
+                      }
+
+                      const assignmentsToSubmit = activities.filter(
+                        (assignment) => assignment.due_date !== null
+                      )
+                      const submittedAssignments = activities.filter(
+                        (assignment) =>
+                          assignment.quiz_submission_is_submitted === 1
+                      )
+                      const lateAssignments = assignmentsToSubmit.filter(
+                        (assignment) => assignment.due_date_exceed
+                      )
+                      const assignments = assignmentsToSubmit.filter(
+                        (assignment) =>
+                          (!lateAssignments.includes(assignment) ||
+                            !submittedAssignments.includes(assignment)) &&
+                          !hiddenAssignments.includes(assignment.id.toString())
+                      )
+
+                      let filteredTasks = assignments
+
+                      const filters = [
+                        {
+                          condition:
+                            filterAssignment.assessmentType.isAssignment,
+                          predicate: (task: TActivity) => task.type === "ASM",
+                        },
+                        {
+                          condition: filterAssignment.assessmentType.isQuiz,
+                          predicate: (task: TActivity) => task.type === "QUZ",
+                        },
+                        {
+                          condition: filterAssignment.type.isGRP,
+                          predicate: (task: TActivity) =>
+                            task.group_type === "STU",
+                        },
+                        {
+                          condition: filterAssignment.type.isIND,
+                          predicate: (task: TActivity) =>
+                            task.group_type === "IND",
+                        },
+                        {
+                          condition: filterAssignment.submit.isNotSubmit,
+                          predicate: (task: TActivity) =>
+                            !task.quiz_submission_is_submitted,
+                        },
+                        {
+                          condition: filterAssignment.submit.isSubmit,
+                          predicate: (task: TActivity) =>
+                            task.quiz_submission_is_submitted,
+                        },
+                      ]
+
+                      filters.forEach(({ condition, predicate }) => {
+                        if (condition) {
+                          filteredTasks = filteredTasks.filter(predicate)
+                        }
+                      })
+
+                      const hiddenAssignmentsCount = assignmentsToSubmit.filter(
+                        (assignment) =>
+                          hiddenAssignments.includes(assignment.id.toString())
+                      ).length
+
+                      return (
+                        <ClassCard key={classInfo.id}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "baseline",
+                            }}
+                          >
+                            <div className="class-card-header">
+                              <h2>
+                                <a
+                                  href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {classInfo.title}
+                                </a>
+                              </h2>
+                              <p>{classInfo.description}</p>
+                            </div>
+                            {hiddenAssignmentsCount > 0 && (
+                              <p
+                                style={{
+                                  fontSize: "14px",
+                                  color: theme.textMuted,
                                 }}
                               >
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "start",
+                                ซ่อน {hiddenAssignmentsCount} งาน
+                              </p>
+                            )}
+                          </div>
+                          <AssignmentContainer>
+                            {filteredTasks.length > 0 ? (
+                              filteredTasks.map((assignment) => (
+                                <AssignmentItem
+                                  key={assignment.id}
+                                  onMouseOver={() => {
+                                    const hideButton = document.querySelector(
+                                      `#hide-button-${assignment.id}`
+                                    ) as HTMLButtonElement
+                                    hideButton.style.opacity = "1"
+                                  }}
+                                  onMouseOut={() => {
+                                    const hideButton = document.querySelector(
+                                      `#hide-button-${assignment.id}`
+                                    ) as HTMLButtonElement
+                                    hideButton.style.opacity = "0"
                                   }}
                                 >
-                                  <AssignmentInfo>
-                                    <a
-                                      href={`https://app.leb2.org/class/${
-                                        classInfo.id
-                                      }/${
-                                        assignment.type === "ASM"
-                                          ? "activity"
-                                          : "quiz"
-                                      }/${assignment.id}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="assignment-link"
-                                    >
-                                      <span>{assignment.title}</span>
-                                      <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
-                                        />
-                                      </svg>
-                                    </a>
-                                    <DueDate>
-                                      กำหนดส่ง:{" "}
-                                      {dayjs(assignment.due_date).format(
-                                        "D MMM YYYY HH:mm"
-                                      )}
-                                      {" | "}
-                                      {formatDueDate(assignment.due_date)}
-                                    </DueDate>
-                                  </AssignmentInfo>
-                                  <button
-                                    type="button"
-                                    id={`hide-button-${assignment.id}`}
-                                    className="btn"
+                                  <div
                                     style={{
-                                      opacity: 0,
-                                      height: "32px",
-                                      width: "32px",
-                                      padding: "4px",
-                                      display: "inline-flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      borderRadius: "8px",
-                                      transition: "opacity 0.1s ease-in",
-                                      backgroundColor: theme.cardBg,
-                                      border: `1px solid ${theme.border}`,
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "start",
                                     }}
-                                    onClick={() =>
-                                      handleAssignmentVisibilityChange(
-                                        assignment.id.toString(),
-                                        false
-                                      )
-                                    }
                                   >
-                                    <EyeOff size={16} />
-                                  </button>
-                                </div>
-                                <div className="status-badges">
-                                  <StatusBadge
-                                    $type={
-                                      assignment.quiz_submission_is_submitted ===
+                                    <AssignmentInfo>
+                                      <a
+                                        href={`https://app.leb2.org/class/${
+                                          classInfo.id
+                                        }/${
+                                          assignment.type === "ASM"
+                                            ? "activity"
+                                            : "quiz"
+                                        }/${assignment.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="assignment-link"
+                                      >
+                                        <span>{assignment.title}</span>
+                                        <svg
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          fill="none"
+                                          width="14"
+                                          height="14"
+                                          viewBox="0 0 24 24"
+                                          stroke="currentColor"
+                                          strokeWidth="2"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25"
+                                          />
+                                        </svg>
+                                      </a>
+                                      <DueDate>
+                                        กำหนดส่ง:{" "}
+                                        {dayjs(assignment.due_date).format(
+                                          "D MMM YYYY HH:mm"
+                                        )}
+                                        {" | "}
+                                        {formatDueDate(assignment.due_date)}
+                                      </DueDate>
+                                    </AssignmentInfo>
+                                    <button
+                                      type="button"
+                                      id={`hide-button-${assignment.id}`}
+                                      className="btn"
+                                      style={{
+                                        opacity: 0,
+                                        height: "32px",
+                                        width: "32px",
+                                        padding: "4px",
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        borderRadius: "8px",
+                                        transition: "opacity 0.1s ease-in",
+                                        backgroundColor: theme.cardBg,
+                                        border: `1px solid ${theme.border}`,
+                                      }}
+                                      onClick={() =>
+                                        handleAssignmentVisibilityChange(
+                                          assignment.id.toString(),
+                                          false
+                                        )
+                                      }
+                                    >
+                                      <EyeOff size={16} />
+                                    </button>
+                                  </div>
+                                  <div className="status-badges">
+                                    <StatusBadge
+                                      $type={
+                                        assignment.quiz_submission_is_submitted ===
+                                        1
+                                          ? "submitted"
+                                          : "notSubmitted"
+                                      }
+                                    >
+                                      {assignment.quiz_submission_is_submitted ===
                                       1
-                                        ? "submitted"
-                                        : "notSubmitted"
-                                    }
-                                  >
-                                    {assignment.quiz_submission_is_submitted ===
-                                    1
-                                      ? "ส่งแล้ว"
-                                      : "ยังไม่ส่ง"}
-                                  </StatusBadge>
-                                  <StatusBadge $type={assignment.type}>
-                                    {assignment.type === "ASM"
-                                      ? "Assignment"
-                                      : "Quiz"}
-                                  </StatusBadge>
-                                  <StatusBadge $type={assignment.group_type}>
-                                    {assignment.group_type === "IND"
-                                      ? "งานเดี่ยว"
-                                      : "งานกลุ่ม"}
-                                  </StatusBadge>
-                                </div>
-                              </AssignmentItem>
-                            ))
-                          ) : (
-                            <NoAssignments>ไม่มีงานที่รอส่ง</NoAssignments>
-                          )}
-                        </AssignmentContainer>
-                      </ClassCard>
-                    )
-                  })}
+                                        ? "ส่งแล้ว"
+                                        : "ยังไม่ส่ง"}
+                                    </StatusBadge>
+                                    <StatusBadge $type={assignment.type}>
+                                      {assignment.type === "ASM"
+                                        ? "Assignment"
+                                        : "Quiz"}
+                                    </StatusBadge>
+                                    <StatusBadge $type={assignment.group_type}>
+                                      {assignment.group_type === "IND"
+                                        ? "งานเดี่ยว"
+                                        : "งานกลุ่ม"}
+                                    </StatusBadge>
+                                  </div>
+                                </AssignmentItem>
+                              ))
+                            ) : (
+                              <NoAssignments>ไม่มีงานที่รอส่ง</NoAssignments>
+                            )}
+                          </AssignmentContainer>
+                        </ClassCard>
+                      )
+                    })
+                  })()}
                 </ClassContainer>
               </ModalContent>
             </>
