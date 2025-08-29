@@ -13,7 +13,10 @@ export default defineContentScript({
     if (ctx.isInvalid) return
 
     document.addEventListener("keydown", (e) => {
-      if (e.altKey && e.key.toLowerCase() === "a") {
+      if (
+        (e.altKey && e.key.toLowerCase() === "a") ||
+        (e.altKey && e.code === "KeyA")
+      ) {
         e.preventDefault()
         document.dispatchEvent(new CustomEvent("openAssignmentModal"))
       }
