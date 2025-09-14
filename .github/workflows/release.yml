@@ -31,21 +31,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build extension
+      - name: Zip extensions
         run: |
           pnpm zip
           pnpm zip:firefox
 
-      - name: Submit to Chrome Web Store
+      - name: Submit to stores
         run: |
           pnpm wxt submit \
-            --chrome-zip .output/*-chrome.zip
+            --chrome-zip .output/*-chrome.zip \
+            --firefox-zip .output/*-firefox.zip --firefox-sources-zip .output/*-sources.zip
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
+          FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
+          FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
 
-      - run: npx changelogithub --assets ".output/*-chrome.zip,.output/*-firefox.zip"
+      - name: Create github release
+        run: npx changelogithub --assets ".output/*-chrome.zip,.output/*-firefox.zip"
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
