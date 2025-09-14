@@ -1,6 +1,7 @@
 # Assign Watch - Extension for LEB2
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/dedhfmakhbgeopgdipofgooiibkanfad)](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
+[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/dedhfmakhbgeopgdipofgooiibkanfad?logo=googlechrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
+[![Mozilla Add-on Version](https://img.shields.io/amo/v/assign-watch?logo=firefoxbrowser&logoColor=white&color=FF7139)](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
 [![GitHub Release](https://img.shields.io/github/v/release/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/releases/latest)
 [![License](https://img.shields.io/github/license/thrxpt/assign-watch)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/stargazers)
@@ -30,6 +31,12 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 1. Visit the [Chrome Web Store](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
 2. Click "Add to Chrome"
 3. Click "Add extension" in the popup
+
+### Firefox Addon Store
+
+1. Visit the [Firefox Addon Store](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
+2. Click "Add to Firefox"
+3. Click "Add" in the popup
 
 ### Manual Installation
 
