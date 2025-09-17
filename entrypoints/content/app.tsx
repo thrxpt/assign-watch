@@ -6,6 +6,7 @@ import dayjs from "dayjs"
 import relativeTime from "dayjs/plugin/relativeTime"
 import { EyeOff, LayoutGrid, LayoutList } from "lucide-react"
 import { StyleSheetManager, ThemeProvider } from "styled-components"
+import { useScrollLock } from "usehooks-ts"
 
 import {
   AssignmentContainer,
@@ -156,15 +157,16 @@ const App: FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
 
+  const { lock, unlock } = useScrollLock()
+
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden"
+      lock()
     } else {
-      document.body.style.overflow = "unset"
+      unlock()
     }
-
     return () => {
-      document.body.style.overflow = "unset"
+      unlock()
     }
   }, [isOpen])
 
