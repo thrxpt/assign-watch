@@ -32,9 +32,9 @@ A browser extension that enhances your LEB2 experience by providing a convenient
 2. Click "Add to Chrome"
 3. Click "Add extension" in the popup
 
-### Firefox Addon Store
+### Firefox Add-ons
 
-1. Visit the [Firefox Addon Store](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
+1. Visit the [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
 2. Click "Add to Firefox"
 3. Click "Add" in the popup
 
