@@ -10,8 +10,5 @@ export const NoAssignments = styled.div`
   font-size: 1.125rem;
   margin: 0 auto;
   font-style: italic;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  text-align: center;
 `
