@@ -10,10 +10,16 @@ import {
   startOfWeek,
 } from "date-fns";
 import { th } from "date-fns/locale";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 
-import { cn, getSubmissionStatus } from "@/lib/utils";
+import { cn, getSubmissionStatus, hideAssignment } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 interface CalendarViewProps {
   allClassInfo: ClassInfo[];
@@ -141,26 +147,38 @@ export function CalendarView({
               {assignments.map((assignment) => {
                 const classInfo = getClassInfo(assignment.class_id);
                 return (
-                  <a
-                    key={assignment.id}
-                    className={cn(
-                      "block rounded-sm border p-2 text-xs transition-colors",
-                      getAssignmentStatusColor(assignment),
-                    )}
-                    title={assignment.title + " - " + classInfo?.title}
-                    href={`https://app.leb2.org/class/${assignment.class_id}/${
-                      assignment.type === "ASM" ? "activity" : "quiz"
-                    }/${assignment.id}`}
-                  >
-                    <div className="truncate font-medium">
-                      {assignment.title}
-                    </div>
-                    <div>
-                      {format(new Date(assignment.due_date), "p", {
-                        locale: th,
-                      })}
-                    </div>
-                  </a>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
+                      <a
+                        key={assignment.id}
+                        className={cn(
+                          "block rounded-sm border p-2 text-xs transition-colors",
+                          getAssignmentStatusColor(assignment),
+                        )}
+                        title={assignment.title + " - " + classInfo?.title}
+                        href={`https://app.leb2.org/class/${assignment.class_id}/${
+                          assignment.type === "ASM" ? "activity" : "quiz"
+                        }/${assignment.id}`}
+                      >
+                        <div className="truncate font-medium">
+                          {assignment.title}
+                        </div>
+                        <div>
+                          {format(new Date(assignment.due_date), "p", {
+                            locale: th,
+                          })}
+                        </div>
+                      </a>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem
+                        onSelect={() => hideAssignment(assignment.id)}
+                      >
+                        <EyeOff />
+                        Hide Assignment
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 );
               })}
             </div>
