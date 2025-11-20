@@ -99,7 +99,7 @@ export function CalendarView({
   };
 
   return (
-    <div className="flex h-full flex-col space-y-2">
+    <div className="flex h-full flex-col space-y-4">
       <div className="flex items-center justify-center">
         <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
           <ChevronLeft />
@@ -123,9 +123,9 @@ export function CalendarView({
         {assignmentsByDay.map(({ day, assignments }) => (
           <div
             key={day.toISOString()}
-            className={cn("px-1 py-2 not-last:border-r")}
+            className={cn("px-1 py-3 not-last:border-r")}
           >
-            <div className="mb-2 text-center">
+            <div className="mb-3 text-center">
               <div
                 className={cn(
                   "text-muted-foreground text-xs font-medium uppercase",

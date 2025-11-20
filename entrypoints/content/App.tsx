@@ -224,7 +224,7 @@ function App() {
     <div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent showCloseButton={false} className="sm:max-w-3xl">
-          <Tabs defaultValue="list">
+          <Tabs defaultValue="list" className="gap-4">
             <DialogHeader className="flex-row items-center justify-between">
               <DialogTitle className="text-xl">Assignments</DialogTitle>
               <div className="flex items-center gap-2">
