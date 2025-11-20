@@ -242,7 +242,7 @@ function App() {
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
                 />
-                <TabsList>
+                <TabsList className="h-8">
                   <TabsTrigger value="list">
                     <LayoutList />
                     <span className="sr-only">List View</span>
