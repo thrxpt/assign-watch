@@ -27,7 +27,7 @@ export function formatDateRelative(date: Date) {
 }
 
 export function formatDate(date: Date) {
-  return format(date, "eeee, d MMM yyyy ⋅ HH:mm", { locale: th });
+  return format(date, "eeee, d MMM yyyy ⋅ p", { locale: th });
 }
 
 export function getUserId() {
