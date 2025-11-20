@@ -1,0 +1,110 @@
+import { Activity } from "@/types";
+import {
+  CircleCheckBig,
+  CircleX,
+  ClipboardList,
+  EyeOff,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
+
+import {
+  cn,
+  formatDate,
+  formatDateRelative,
+  hideAssignment,
+} from "@/lib/utils";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { StatusBadge } from "@/components/status-badge";
+
+interface AssignmentProps {
+  assignment: Activity;
+}
+
+function getColor(assignment: Activity) {
+  if (assignment.activity_submission_id && !assignment.due_date_exceed) {
+    return cn("after:bg-green-500/70");
+  } else if (!assignment.activity_submission_id && assignment.due_date_exceed) {
+    return cn("after:bg-red-500/70");
+  } else {
+    return cn("after:bg-primary/70");
+  }
+}
+
+export function Assignment({ assignment }: AssignmentProps) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        <div
+          className={cn(
+            "after:bg-primary/70 relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
+            getColor(assignment),
+          )}
+        >
+          <a
+            className="text-[15px] font-medium underline-offset-4 hover:underline"
+            href={`https://app.leb2.org/class/${assignment.class_id}/${
+              assignment.type === "ASM" ? "activity" : "quiz"
+            }/${assignment.id}`}
+          >
+            {assignment.title}
+          </a>
+          <div className="mt-2 flex items-center gap-2">
+            <div className="text-muted-foreground text-sm">
+              {formatDate(new Date(assignment.due_date))}
+            </div>
+            <StatusBadge
+              className={cn(
+                formatDateRelative(new Date(assignment.due_date)).status ===
+                  "late"
+                  ? "text-red-600"
+                  : formatDateRelative(new Date(assignment.due_date)).status ===
+                      "today"
+                    ? "text-yellow-600"
+                    : "text-green-600",
+              )}
+            >
+              {formatDateRelative(new Date(assignment.due_date)).text}
+            </StatusBadge>
+          </div>
+          <div className="mt-3 flex items-center gap-2">
+            <StatusBadge
+              color={assignment.activity_submission_id ? "green" : "red"}
+            >
+              {assignment.activity_submission_id ? (
+                <CircleCheckBig />
+              ) : (
+                <CircleX />
+              )}
+              {assignment.activity_submission_id
+                ? "Submitted"
+                : "Not Submitted"}
+            </StatusBadge>
+            <StatusBadge color={assignment.type === "ASM" ? "teal" : "orange"}>
+              {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
+              {assignment.type === "ASM" ? "Assignment" : "Quiz"}
+            </StatusBadge>
+            <StatusBadge
+              color={assignment.group_type === "IND" ? "cyan" : "rose"}
+            >
+              {assignment.group_type === "IND" ? <User /> : <Users />}
+              {assignment.group_type === "IND" ? "Individual" : "Group"}
+            </StatusBadge>
+          </div>
+        </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onSelect={() => hideAssignment(assignment.id)}>
+          <EyeOff />
+          Hide Assignment
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+  );
+}
