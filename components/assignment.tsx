@@ -13,6 +13,7 @@ import {
   cn,
   formatDate,
   formatDateRelative,
+  getSubmissionStatus,
   hideAssignment,
 } from "@/lib/utils";
 import {
@@ -27,24 +28,24 @@ interface AssignmentProps {
   assignment: Activity;
 }
 
-function getColor(assignment: Activity) {
-  if (assignment.activity_submission_id && !assignment.due_date_exceed) {
-    return cn("after:bg-green-500/70");
-  } else if (!assignment.activity_submission_id && assignment.due_date_exceed) {
-    return cn("after:bg-red-500/70");
-  } else {
-    return cn("after:bg-primary/70");
-  }
-}
-
 export function Assignment({ assignment }: AssignmentProps) {
+  const getAssignmentStatusColor = (assignment: Activity) => {
+    if (getSubmissionStatus(assignment) === "submitted") {
+      return cn("after:bg-green-500/70");
+    } else if (getSubmissionStatus(assignment) === "not_submitted") {
+      return cn("after:bg-red-500/70");
+    } else if (getSubmissionStatus(assignment) === "in_progress") {
+      return cn("after:bg-primary/70");
+    }
+  };
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
           className={cn(
             "after:bg-primary/70 relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
-            getColor(assignment),
+            getAssignmentStatusColor(assignment),
           )}
         >
           <a
