@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity } from "@/types";
 import { useQueries } from "@tanstack/react-query";
+import { Calendar, LayoutList } from "lucide-react";
 
 import {
   filtersStorage,
@@ -17,11 +18,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AssignmentFilters,
   FilterState,
 } from "@/components/assignment-filters";
 import { AssignmentSort } from "@/components/assignment-sort";
+import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
 import { ClassSkeleton } from "@/components/class-skeleton";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
@@ -221,96 +224,120 @@ function App() {
     <div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent showCloseButton={false} className="sm:max-w-3xl">
-          <DialogHeader className="flex-row items-center justify-between">
-            <DialogTitle className="text-xl">Assignments</DialogTitle>
-            <div className="flex items-center gap-2">
-              <HiddenItemsManager
-                hiddenClasses={hiddenClasses}
-                hiddenAssignments={hiddenAssignments}
-                allClassInfo={allClassInfo}
-                allAssignments={assignments.data}
-              />
-              <AssignmentSort
-                sortState={sortState}
-                onSortChange={handleSortChange}
-              />
-              <AssignmentFilters
-                filters={filters}
-                onFiltersChange={handleFiltersChange}
-              />
-            </div>
-          </DialogHeader>
-          <ScrollArea className="rounded-lg">
-            <div className="max-h-[75dvh] space-y-5 pr-4">
-              {(() => {
-                const visibleClasses = assignments.data
-                  .map((query, index) => {
-                    if (assignments.pending) {
-                      return { type: "skeleton" as const, index };
+          <Tabs defaultValue="list">
+            <DialogHeader className="flex-row items-center justify-between">
+              <DialogTitle className="text-xl">Assignments</DialogTitle>
+              <div className="flex items-center gap-2">
+                <HiddenItemsManager
+                  hiddenClasses={hiddenClasses}
+                  hiddenAssignments={hiddenAssignments}
+                  allClassInfo={allClassInfo}
+                  allAssignments={assignments.data}
+                />
+                <AssignmentSort
+                  sortState={sortState}
+                  onSortChange={handleSortChange}
+                />
+                <AssignmentFilters
+                  filters={filters}
+                  onFiltersChange={handleFiltersChange}
+                />
+                <TabsList>
+                  <TabsTrigger value="list">
+                    <LayoutList />
+                    <span className="sr-only">List View</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="calendar">
+                    <Calendar />
+                    <span className="sr-only">Calendar View</span>
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            </DialogHeader>
+            <TabsContent value="list">
+              <ScrollArea className="rounded-lg">
+                <div className="max-h-[75dvh] space-y-5 pr-4">
+                  {(() => {
+                    const visibleClasses = assignments.data
+                      .map((query, index) => {
+                        if (assignments.pending) {
+                          return { type: "skeleton" as const, index };
+                        }
+
+                        const classInfo = allClassInfo[index];
+
+                        if (hiddenClasses.includes(classInfo.id)) {
+                          return null;
+                        }
+
+                        if (!query || query.length === 0) {
+                          return null;
+                        }
+                        const submittedAssignments = query.filter(
+                          (assignment) => assignment.activity_submission_id,
+                        );
+                        const exceededAssignments = query.filter(
+                          (assignment) => assignment.due_date_exceed,
+                        );
+                        const filteredAssignments = query
+                          .filter(
+                            (assignment) =>
+                              !exceededAssignments.includes(assignment) ||
+                              !submittedAssignments.includes(assignment),
+                          )
+                          .filter(
+                            (assignment) =>
+                              !hiddenAssignments.includes(assignment.id),
+                          )
+                          .filter(applyFilters);
+
+                        const sortedAssignments =
+                          sortAssignments(filteredAssignments);
+
+                        if (sortedAssignments.length === 0) {
+                          return null;
+                        }
+
+                        return {
+                          type: "class" as const,
+                          classInfo,
+                          assignments: sortedAssignments,
+                        };
+                      })
+                      .filter((item) => item !== null);
+
+                    if (!assignments.pending && visibleClasses.length === 0) {
+                      return <NoAssignments />;
                     }
 
-                    const classInfo = allClassInfo[index];
+                    return visibleClasses.map((item) => {
+                      if (item.type === "skeleton") {
+                        return <ClassSkeleton key={item.index} />;
+                      }
 
-                    if (hiddenClasses.includes(classInfo.id)) {
-                      return null;
-                    }
-
-                    if (!query || query.length === 0) {
-                      return null;
-                    }
-                    const submittedAssignments = query.filter(
-                      (assignment) => assignment.activity_submission_id,
-                    );
-                    const exceededAssignments = query.filter(
-                      (assignment) => assignment.due_date_exceed,
-                    );
-                    const filteredAssignments = query
-                      .filter(
-                        (assignment) =>
-                          !exceededAssignments.includes(assignment) ||
-                          !submittedAssignments.includes(assignment),
-                      )
-                      .filter(
-                        (assignment) =>
-                          !hiddenAssignments.includes(assignment.id),
-                      )
-                      .filter(applyFilters);
-
-                    const sortedAssignments =
-                      sortAssignments(filteredAssignments);
-
-                    if (sortedAssignments.length === 0) {
-                      return null;
-                    }
-
-                    return {
-                      type: "class" as const,
-                      classInfo,
-                      assignments: sortedAssignments,
-                    };
-                  })
-                  .filter((item) => item !== null);
-
-                if (!assignments.pending && visibleClasses.length === 0) {
-                  return <NoAssignments />;
-                }
-
-                return visibleClasses.map((item) => {
-                  if (item.type === "skeleton") {
-                    return <ClassSkeleton key={item.index} />;
-                  }
-
-                  return (
-                    <Class
-                      key={item.classInfo.id}
-                      classInfo={item.classInfo}
-                      assignments={item.assignments}
-                    />
-                  );
-                });
-              })()}
-            </div>
-          </ScrollArea>
+                      return (
+                        <Class
+                          key={item.classInfo.id}
+                          classInfo={item.classInfo}
+                          assignments={item.assignments}
+                        />
+                      );
+                    });
+                  })()}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+            <TabsContent value="calendar">
+              <div className="h-[75dvh]">
+                <CalendarView
+                  allClassInfo={allClassInfo}
+                  allAssignments={assignments.data}
+                  hiddenAssignments={hiddenAssignments}
+                  applyFilters={applyFilters}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>

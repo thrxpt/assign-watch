@@ -1,4 +1,4 @@
-import { RootResponse } from "@/types";
+import { Activity, RootResponse } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -67,6 +67,22 @@ export async function getAssignments(classId: number) {
   );
   const data = (await res.json()) as RootResponse;
   return data.activities.filter((activity) => activity.due_date !== null);
+}
+
+export function getSubmissionStatus(assignment: Activity) {
+  if (assignment.activity_submission_id) {
+    if (assignment.activity_submission_is_late) {
+      return "submitted_late";
+    } else {
+      return "submitted";
+    }
+  } else {
+    if (assignment.due_date_exceed) {
+      return "not_submitted";
+    } else {
+      return "in_progress";
+    }
+  }
 }
 
 export const hiddenClassesStorage = storage.defineItem<number[]>(
