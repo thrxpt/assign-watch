@@ -15,10 +15,8 @@ export function NoAssignments() {
         <EmptyMedia variant="icon">
           <PartyPopper />
         </EmptyMedia>
-        <EmptyTitle>No Assignments Yet</EmptyTitle>
-        <EmptyDescription>
-          Congratulations! You haven't assignments yet. Enjoy your free time.
-        </EmptyDescription>
+        <EmptyTitle>ไม่มีการบ้าน</EmptyTitle>
+        <EmptyDescription>ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );

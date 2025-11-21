@@ -60,7 +60,7 @@ export function HiddenItemsManager({
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <EyeOff />
-          Hidden
+          ที่ซ่อนไว้
           {totalHidden > 0 && (
             <span className="bg-primary text-primary-foreground inline-flex size-5 items-center justify-center rounded-full text-xs tabular-nums">
               {totalHidden}
@@ -70,10 +70,10 @@ export function HiddenItemsManager({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between">
-          <DropdownMenuLabel>Hidden Items</DropdownMenuLabel>
+          <DropdownMenuLabel>รายการที่ซ่อนไว้</DropdownMenuLabel>
           <Button variant="outline" size="xs" onClick={clearAllHiddenItems}>
             <BrushCleaning />
-            Clear All
+            ล้างทั้งหมด
           </Button>
         </div>
         <DropdownMenuSeparator />
@@ -81,7 +81,7 @@ export function HiddenItemsManager({
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Classes
+              วิชา
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
               <DropdownMenuItem
@@ -106,7 +106,7 @@ export function HiddenItemsManager({
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              Assignments
+              การบ้าน
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (
               <DropdownMenuItem

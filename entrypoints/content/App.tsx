@@ -220,13 +220,24 @@ function App() {
     return true;
   };
 
+  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+
   return (
     <div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent showCloseButton={false} className="sm:max-w-3xl">
-          <Tabs defaultValue="list" className="gap-4">
+          <Tabs
+            defaultValue="list"
+            className="gap-4"
+            value={activeTab}
+            onValueChange={(value) =>
+              setActiveTab(value as "list" | "calendar")
+            }
+          >
             <DialogHeader className="flex-row items-center justify-between">
-              <DialogTitle className="text-xl">Assignments</DialogTitle>
+              <DialogTitle className="text-xl">
+                {activeTab === "list" ? "สิ่งที่ต้องทำ" : "ปฏิทิน"}
+              </DialogTitle>
               <div className="flex items-center gap-2">
                 <HiddenItemsManager
                   hiddenClasses={hiddenClasses}
@@ -245,11 +256,11 @@ function App() {
                 <TabsList className="h-8">
                   <TabsTrigger value="list">
                     <LayoutList />
-                    <span className="sr-only">List View</span>
+                    <span className="sr-only">มุมมองรายการ</span>
                   </TabsTrigger>
                   <TabsTrigger value="calendar">
                     <Calendar />
-                    <span className="sr-only">Calendar View</span>
+                    <span className="sr-only">มุมมองปฏิทิน</span>
                   </TabsTrigger>
                 </TabsList>
               </div>

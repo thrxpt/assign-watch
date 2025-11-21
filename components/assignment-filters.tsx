@@ -81,7 +81,7 @@ export function AssignmentFilters({
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <Filter />
-          Filters
+          ตัวกรอง
           {activeFilterCount > 0 && (
             <span className="bg-primary text-primary-foreground inline-flex size-5 items-center justify-center rounded-full text-xs tabular-nums">
               {activeFilterCount}
@@ -91,7 +91,7 @@ export function AssignmentFilters({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Submission Status</DropdownMenuLabel>
+          <DropdownMenuLabel>สถานะการส่ง</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.submitted}
             onCheckedChange={(checked) =>
@@ -102,7 +102,7 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            Submitted
+            ส่งแล้ว
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.notSubmitted}
@@ -114,14 +114,14 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            Not Submitted
+            ยังไม่ส่ง
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Assignment Type</DropdownMenuLabel>
+          <DropdownMenuLabel>ประเภทงาน</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.assignment}
             onCheckedChange={(checked) =>
@@ -132,7 +132,7 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            Assignment
+            การบ้าน
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.quiz}
@@ -143,14 +143,14 @@ export function AssignmentFilters({
               isOnlyChecked("assignmentType", "quiz") && "pointer-events-none",
             )}
           >
-            Quiz
+            แบบทดสอบ
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Group Type</DropdownMenuLabel>
+          <DropdownMenuLabel>ประเภทกลุ่ม</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
             onCheckedChange={(checked) =>
@@ -160,7 +160,7 @@ export function AssignmentFilters({
               isOnlyChecked("groupType", "individual") && "pointer-events-none",
             )}
           >
-            Individual
+            งานเดี่ยว
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
@@ -171,7 +171,7 @@ export function AssignmentFilters({
               isOnlyChecked("groupType", "group") && "pointer-events-none",
             )}
           >
-            Group
+            งานกลุ่ม
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

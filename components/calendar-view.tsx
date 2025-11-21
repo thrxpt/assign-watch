@@ -103,20 +103,21 @@ export function CalendarView({
       <div className="flex items-center justify-center">
         <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
           <ChevronLeft />
-          <span className="sr-only">Previous Week</span>
+          <span className="sr-only">สัปดาห์ก่อนหน้า</span>
         </Button>
         <div className="text-center">
           <Button
             variant="ghost"
             onClick={() => weekOffset !== 0 && goToCurrentWeek()}
-            title={weekOffset !== 0 ? "Go to current week" : undefined}
+            title={weekOffset !== 0 ? "ไปยังสัปดาห์ปัจจุบัน" : undefined}
           >
-            {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+            {format(weekStart, "MMM d", { locale: th })} -{" "}
+            {format(weekEnd, "MMM d, yyyy", { locale: th })}
           </Button>
         </div>
         <Button variant="ghost" size="icon" onClick={goToNextWeek}>
           <ChevronRight />
-          <span className="sr-only">Next Week</span>
+          <span className="sr-only">สัปดาห์ถัดไป</span>
         </Button>
       </div>
       <div className="grid flex-1 grid-cols-7 rounded-lg border">
@@ -132,7 +133,7 @@ export function CalendarView({
                   isToday(day) && "text-blue-500",
                 )}
               >
-                {format(day, "EEE")}
+                {format(day, "EEE", { locale: th })}
               </div>
               <div
                 className={cn(
@@ -140,7 +141,7 @@ export function CalendarView({
                   isToday(day) && "bg-blue-500 text-white",
                 )}
               >
-                {format(day, "d")}
+                {format(day, "d", { locale: th })}
               </div>
             </div>
             <div className="space-y-1">
@@ -175,7 +176,7 @@ export function CalendarView({
                         onSelect={() => hideAssignment(assignment.id)}
                       >
                         <EyeOff />
-                        Hide Assignment
+                        ซ่อนงานนี้
                       </ContextMenuItem>
                     </ContextMenuContent>
                   </ContextMenu>

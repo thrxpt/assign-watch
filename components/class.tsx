@@ -48,7 +48,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => hideClass(classInfo.id)}>
           <EyeOff />
-          Hide Class
+          ซ่อนวิชานี้
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

@@ -34,8 +34,8 @@ export function AssignmentSort({
   const [open, setOpen] = useState(false);
 
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: "dueDate", label: "Due Date" },
-    { value: "postedDate", label: "Posted Date" },
+    { value: "dueDate", label: "วันที่กำหนดส่ง" },
+    { value: "postedDate", label: "วันที่สั่ง" },
   ];
 
   const handleSortChange = (value: SortOption) => {
@@ -54,7 +54,7 @@ export function AssignmentSort({
 
   const getSortLabel = () => {
     const option = sortOptions.find((opt) => opt.value === sortState.sortBy);
-    return option?.label || "Sort";
+    return option?.label || "เรียงลำดับ";
   };
 
   return (
@@ -67,7 +67,7 @@ export function AssignmentSort({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Sort By</DropdownMenuLabel>
+          <DropdownMenuLabel>เรียงตาม</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={sortState.sortBy}
             onValueChange={(value) => handleSortChange(value as SortOption)}
@@ -83,16 +83,16 @@ export function AssignmentSort({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>Direction</DropdownMenuLabel>
+          <DropdownMenuLabel>ลำดับ</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={sortState.direction}
             onValueChange={(value) =>
               handleDirectionChange(value as SortDirection)
             }
           >
-            <DropdownMenuRadioItem value="asc">Ascending</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="asc">น้อยไปมาก</DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="desc">
-              Descending
+              มากไปน้อย
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
