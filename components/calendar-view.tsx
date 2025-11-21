@@ -65,19 +65,19 @@ export function CalendarView({
   const getAssignmentStatusColor = (assignment: Activity) => {
     if (getSubmissionStatus(assignment) === "submitted") {
       return cn(
-        "border-green-200 bg-green-100 hover:bg-green-200 [&>div:first-child]:text-green-900 [&>div:last-child]:text-green-900/80",
+        "border-green-200 bg-green-100 hover:bg-green-200 [&>div:first-child]:text-green-700 [&>div:last-child]:text-green-700/80",
       );
     } else if (getSubmissionStatus(assignment) === "submitted_late") {
       return cn(
-        "border-orange-200 bg-orange-100 hover:bg-orange-200 [&>div:first-child]:text-orange-900 [&>div:last-child]:text-orange-900/80",
+        "border-orange-200 bg-orange-100 hover:bg-orange-200 [&>div:first-child]:text-orange-700 [&>div:last-child]:text-orange-700/80",
       );
     } else if (getSubmissionStatus(assignment) === "not_submitted") {
       return cn(
-        "border-red-200 bg-red-100 hover:bg-red-200 [&>div:first-child]:text-red-900 [&>div:last-child]:text-red-900/80",
+        "border-red-200 bg-red-100 hover:bg-red-200 [&>div:first-child]:text-red-700 [&>div:last-child]:text-red-700/80",
       );
     } else if (getSubmissionStatus(assignment) === "in_progress") {
       return cn(
-        "border-blue-200 bg-blue-100 hover:bg-blue-200 [&>div:first-child]:text-blue-900 [&>div:last-child]:text-blue-900/80",
+        "border-blue-200 bg-blue-100 hover:bg-blue-200 [&>div:first-child]:text-blue-700 [&>div:last-child]:text-blue-700/80",
       );
     }
   };
