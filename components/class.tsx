@@ -20,7 +20,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div className="flex gap-3">
-          <div className="bg-muted w-48 rounded-lg p-4">
+          <div className="w-48 rounded-lg bg-muted p-4">
             <div className={cn(assignments.length > 1 && "sticky top-4")}>
               <a
                 className="text-lg font-medium underline-offset-4 hover:underline"
@@ -30,7 +30,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
               </a>
               <div
                 className={cn(
-                  "text-muted-foreground text-xs",
+                  "text-xs text-muted-foreground",
                   assignments.length === 1 && "line-clamp-3",
                 )}
               >

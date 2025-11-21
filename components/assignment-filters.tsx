@@ -83,7 +83,7 @@ export function AssignmentFilters({
           <Filter />
           ตัวกรอง
           {activeFilterCount > 0 && (
-            <span className="bg-primary text-primary-foreground inline-flex size-5 items-center justify-center rounded-full text-xs tabular-nums">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
               {activeFilterCount}
             </span>
           )}

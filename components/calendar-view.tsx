@@ -129,7 +129,7 @@ export function CalendarView({
             <div className="mb-3 text-center">
               <div
                 className={cn(
-                  "text-muted-foreground text-xs font-medium uppercase",
+                  "text-xs font-medium text-muted-foreground uppercase",
                   isToday(day) && "text-blue-500",
                 )}
               >

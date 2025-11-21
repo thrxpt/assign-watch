@@ -116,6 +116,6 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50 font-anuphan text-foreground antialiased;
+    @apply border-border font-anuphan text-foreground antialiased outline-ring/50;
   }
 }

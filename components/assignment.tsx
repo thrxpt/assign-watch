@@ -44,7 +44,7 @@ export function Assignment({ assignment }: AssignmentProps) {
       <ContextMenuTrigger asChild>
         <div
           className={cn(
-            "after:bg-primary/70 relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
+            "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full after:bg-primary/70",
             getAssignmentStatusColor(assignment),
           )}
         >
@@ -57,7 +57,7 @@ export function Assignment({ assignment }: AssignmentProps) {
             {assignment.title}
           </a>
           <div className="mt-2 flex items-center gap-2">
-            <div className="text-muted-foreground text-sm">
+            <div className="text-sm text-muted-foreground">
               {formatDate(new Date(assignment.due_date))}
             </div>
             <StatusBadge

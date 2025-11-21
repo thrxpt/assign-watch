@@ -62,7 +62,7 @@ export function HiddenItemsManager({
           <EyeOff />
           ที่ซ่อนไว้
           {totalHidden > 0 && (
-            <span className="bg-primary text-primary-foreground inline-flex size-5 items-center justify-center rounded-full text-xs tabular-nums">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
               {totalHidden}
             </span>
           )}
@@ -80,7 +80,7 @@ export function HiddenItemsManager({
 
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
               วิชา
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
@@ -105,7 +105,7 @@ export function HiddenItemsManager({
 
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-muted-foreground text-xs">
+            <DropdownMenuLabel className="text-xs text-muted-foreground">
               การบ้าน
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (

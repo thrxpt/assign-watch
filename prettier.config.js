@@ -1,10 +1,11 @@
 /** @type {import('prettier').Config & import('prettier-plugin-tailwindcss').PluginOptions} */
 export default {
   plugins: [
-    "prettier-plugin-tailwindcss",
     "@ianvs/prettier-plugin-sort-imports",
+    "prettier-plugin-tailwindcss",
   ],
   tailwindFunctions: ["cn", "cva"],
+  tailwindStylesheet: "./assets/tailwind.css",
   importOrder: [
     "^(react/(.*)$)|^(react$)",
     "<THIRD_PARTY_MODULES>",
