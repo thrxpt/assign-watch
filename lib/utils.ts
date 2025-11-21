@@ -15,9 +15,7 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDateRelative(date: Date) {
   moment.locale("th");
   return {
-    text: moment(date).isBefore(moment())
-      ? "เลยเวลาแล้ว"
-      : moment(date).fromNow(),
+    text: moment(date).fromNow(),
     status: moment(date).isBefore(moment())
       ? "late"
       : moment(date).isSame(new Date(), "day")
