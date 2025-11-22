@@ -76,14 +76,20 @@ export function Assignment({ assignment }: AssignmentProps) {
           </div>
           <div className="mt-3 flex items-center gap-2">
             <StatusBadge
-              color={assignment.activity_submission_id ? "green" : "red"}
+              color={
+                getSubmissionStatus(assignment) === "submitted"
+                  ? "green"
+                  : "red"
+              }
             >
-              {assignment.activity_submission_id ? (
+              {getSubmissionStatus(assignment) === "submitted" ? (
                 <CircleCheckBig />
               ) : (
                 <CircleX />
               )}
-              {assignment.activity_submission_id ? "ส่งแล้ว" : "ยังไม่ส่ง"}
+              {getSubmissionStatus(assignment) === "submitted"
+                ? "ส่งแล้ว"
+                : "ยังไม่ส่ง"}
             </StatusBadge>
             <StatusBadge color={assignment.type === "ASM" ? "teal" : "orange"}>
               {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
