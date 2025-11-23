@@ -77,7 +77,11 @@ export function CalendarView({
       );
     } else if (getSubmissionStatus(assignment) === "in_progress") {
       return cn(
-        "border-blue-200 bg-blue-100 hover:bg-blue-200 [&>div:first-child]:text-blue-700 [&>div:last-child]:text-blue-700/80",
+        "border-neutral-200 bg-neutral-100 hover:bg-neutral-200 [&>div:first-child]:text-neutral-700 [&>div:last-child]:text-neutral-700/80",
+      );
+    } else if (getSubmissionStatus(assignment) === "quiz_not_submitted") {
+      return cn(
+        "border-amber-200 bg-amber-100 hover:bg-amber-200 [&>div:first-child]:text-amber-700 [&>div:last-child]:text-amber-700/80",
       );
     }
   };

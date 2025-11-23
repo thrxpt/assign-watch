@@ -72,7 +72,7 @@ export function getSubmissionStatus(assignment: Activity) {
     if (assignment.activity_submission_is_late) {
       return "submitted_late";
     } else if (assignment.quiz_submission_is_submitted === 0) {
-      return "not_submitted";
+      return "quiz_not_submitted";
     } else {
       return "submitted";
     }

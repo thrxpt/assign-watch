@@ -16,6 +16,8 @@ const badgeVariants = cva(
           "rounded-full border-transparent bg-orange-100 text-orange-700 [&_svg]:stroke-orange-700",
         cyan: "rounded-full border-transparent bg-cyan-100 text-cyan-700 [&_svg]:stroke-cyan-700",
         rose: "rounded-full border-transparent bg-rose-100 text-rose-700 [&_svg]:stroke-rose-700",
+        amber:
+          "rounded-full border-transparent bg-amber-100 text-amber-700 [&_svg]:stroke-amber-700",
       },
     },
     defaultVariants: {

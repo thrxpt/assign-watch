@@ -1,5 +1,6 @@
 import { Activity } from "@/types";
 import {
+  CircleAlert,
   CircleCheckBig,
   CircleX,
   ClipboardList,
@@ -35,7 +36,9 @@ export function Assignment({ assignment }: AssignmentProps) {
     } else if (getSubmissionStatus(assignment) === "not_submitted") {
       return cn("after:bg-red-500/70");
     } else if (getSubmissionStatus(assignment) === "in_progress") {
-      return cn("after:bg-primary/70");
+      return cn("after:bg-neutral-500/70");
+    } else if (getSubmissionStatus(assignment) === "quiz_not_submitted") {
+      return cn("after:bg-amber-500/70");
     }
   };
 
@@ -44,7 +47,7 @@ export function Assignment({ assignment }: AssignmentProps) {
       <ContextMenuTrigger asChild>
         <div
           className={cn(
-            "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full after:bg-primary/70",
+            "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
             getAssignmentStatusColor(assignment),
           )}
         >
@@ -79,17 +82,23 @@ export function Assignment({ assignment }: AssignmentProps) {
               color={
                 getSubmissionStatus(assignment) === "submitted"
                   ? "green"
-                  : "red"
+                  : getSubmissionStatus(assignment) === "quiz_not_submitted"
+                    ? "amber"
+                    : "red"
               }
             >
               {getSubmissionStatus(assignment) === "submitted" ? (
                 <CircleCheckBig />
+              ) : getSubmissionStatus(assignment) === "quiz_not_submitted" ? (
+                <CircleAlert />
               ) : (
                 <CircleX />
               )}
               {getSubmissionStatus(assignment) === "submitted"
                 ? "ส่งแล้ว"
-                : "ยังไม่ส่ง"}
+                : getSubmissionStatus(assignment) === "quiz_not_submitted"
+                  ? "ทำแล้วแต่ยังไม่ได้ส่ง"
+                  : "ยังไม่ได้ส่ง"}
             </StatusBadge>
             <StatusBadge color={assignment.type === "ASM" ? "teal" : "orange"}>
               {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
