@@ -1,4 +1,4 @@
-import { Activity, RootResponse } from "@/types";
+import { Activity, ClassInfo, RootResponse } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -58,10 +58,10 @@ export function getAllClassInfo() {
   return classesInfo;
 }
 
-export async function getAssignments(classId: number) {
-  const userId = getUserId();
+export async function getAssignments(classId: number, userId?: string) {
+  const finalUserId = userId ?? getUserId();
   const res = await fetch(
-    `https://app.leb2.org/api/get/assessment-activities/student?class_id=${classId}&student_id=${userId}&filter_groups[0][filters][0][key]=class_id&filter_groups[0][filters][0][value]=${classId}&sort[]=sequence&sort[]=id&select[]=activities:id,user_id,class_id,adv_starred,group_type,type,peer_assessment,is_allow_repeat,title,description,start_date,due_date,edit_group_mode,created_at&select[]=user:id,firstname_en,lastname_en,firstname_th,lastname_th&includes[]=user:sideload&includes[]=fileactivities:ids&includes[]=questions:ids`,
+    `https://app.leb2.org/api/get/assessment-activities/student?class_id=${classId}&student_id=${finalUserId}&filter_groups[0][filters][0][key]=class_id&filter_groups[0][filters][0][value]=${classId}&sort[]=sequence&sort[]=id&select[]=activities:id,user_id,class_id,adv_starred,group_type,type,peer_assessment,is_allow_repeat,title,description,start_date,due_date,edit_group_mode,created_at&select[]=user:id,firstname_en,lastname_en,firstname_th,lastname_th&includes[]=user:sideload&includes[]=fileactivities:ids&includes[]=questions:ids`,
   );
   const data = (await res.json()) as RootResponse;
   return data.activities.filter((activity) => activity.due_date !== null);
@@ -126,6 +126,24 @@ export const sortStorage = storage.defineItem<SortState>(
       sortBy: "dueDate",
       direction: "asc",
     },
+  },
+);
+
+export const userIdStorage = storage.defineItem<string | null>("local:userId", {
+  fallback: null,
+});
+
+export const classInfoStorage = storage.defineItem<ClassInfo[]>(
+  "local:classInfo",
+  {
+    fallback: [],
+  },
+);
+
+export const notifiedAssignmentsStorage = storage.defineItem<number[]>(
+  "local:notifiedAssignments",
+  {
+    fallback: [],
   },
 );
 

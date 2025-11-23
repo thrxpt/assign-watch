@@ -4,13 +4,16 @@ import { useQueries } from "@tanstack/react-query";
 import { Calendar, LayoutList } from "lucide-react";
 
 import {
+  classInfoStorage,
   filtersStorage,
   getAllClassInfo,
   getAssignments,
   getSubmissionStatus,
+  getUserId,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   sortStorage,
+  userIdStorage,
 } from "@/lib/utils";
 import {
   Dialog,
@@ -160,6 +163,17 @@ function App() {
   }, [isModalOpen]);
 
   const allClassInfo = useMemo(() => getAllClassInfo(), []);
+
+  useEffect(() => {
+    const saveInfo = async () => {
+      const userId = getUserId();
+      if (userId) {
+        await userIdStorage.setValue(userId);
+      }
+      await classInfoStorage.setValue(allClassInfo);
+    };
+    saveInfo();
+  }, [allClassInfo]);
 
   const assignments = useQueries({
     queries: allClassInfo.map((classInfo) => ({
