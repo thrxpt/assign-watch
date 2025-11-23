@@ -134,7 +134,7 @@ export function CalendarView({
               <div
                 className={cn(
                   "text-xs font-medium text-muted-foreground uppercase",
-                  isToday(day) && "text-blue-500",
+                  isToday(day) && "text-[#17b5be]",
                 )}
               >
                 {format(day, "EEE", { locale: th })}
@@ -142,7 +142,7 @@ export function CalendarView({
               <div
                 className={cn(
                   "inline-flex size-9 items-center justify-center rounded-full text-xl tabular-nums",
-                  isToday(day) && "bg-blue-500 text-white",
+                  isToday(day) && "bg-[#17b5be] text-white",
                 )}
               >
                 {format(day, "d", { locale: th })}
