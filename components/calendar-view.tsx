@@ -152,10 +152,9 @@ export function CalendarView({
               {assignments.map((assignment) => {
                 const classInfo = getClassInfo(assignment.class_id);
                 return (
-                  <ContextMenu>
+                  <ContextMenu key={assignment.id}>
                     <ContextMenuTrigger asChild>
                       <a
-                        key={assignment.id}
                         className={cn(
                           "block rounded-sm border p-2 text-xs transition-colors",
                           getAssignmentStatusColor(assignment),
