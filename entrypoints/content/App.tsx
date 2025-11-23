@@ -251,7 +251,10 @@ function App() {
   return (
     <div>
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent showCloseButton={false} className="sm:max-w-3xl">
+        <DialogContent
+          showCloseButton={false}
+          className="rounded-xl sm:max-w-3xl"
+        >
           <Tabs
             defaultValue="list"
             className="gap-4"
