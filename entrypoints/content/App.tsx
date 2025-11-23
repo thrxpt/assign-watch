@@ -7,6 +7,7 @@ import {
   filtersStorage,
   getAllClassInfo,
   getAssignments,
+  getSubmissionStatus,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   sortStorage,
@@ -204,10 +205,21 @@ function App() {
     return sorted;
   };
 
-  const applyFilters = (assignment: Activity): boolean => {
-    const isSubmitted = !!assignment.activity_submission_id;
-    if (isSubmitted && !filters.submissionStatus.submitted) return false;
-    if (!isSubmitted && !filters.submissionStatus.notSubmitted) return false;
+  const applyFilters = (assignment: Activity) => {
+    const status = getSubmissionStatus(assignment);
+
+    if (
+      (status === "submitted" || status === "submitted_late") &&
+      !filters.submissionStatus.submitted
+    )
+      return false;
+    if (
+      (status === "not_submitted" ||
+        status === "in_progress" ||
+        status === "quiz_not_submitted") &&
+      !filters.submissionStatus.notSubmitted
+    )
+      return false;
 
     const isAssignment = assignment.type === "ASM";
     if (isAssignment && !filters.assignmentType.assignment) return false;
@@ -285,7 +297,13 @@ function App() {
                           return null;
                         }
                         const submittedAssignments = query.filter(
-                          (assignment) => assignment.activity_submission_id,
+                          (assignment) => {
+                            const status = getSubmissionStatus(assignment);
+                            return (
+                              status === "submitted" ||
+                              status === "submitted_late"
+                            );
+                          },
                         );
                         const exceededAssignments = query.filter(
                           (assignment) => assignment.due_date_exceed,
