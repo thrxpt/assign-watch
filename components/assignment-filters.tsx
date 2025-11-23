@@ -28,6 +28,12 @@ export type FilterState = {
   };
 };
 
+const VALID_KEYS: Record<keyof FilterState, string[]> = {
+  submissionStatus: ["submitted", "notSubmitted"],
+  assignmentType: ["assignment", "quiz"],
+  groupType: ["individual", "group"],
+};
+
 interface AssignmentFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
@@ -45,7 +51,8 @@ export function AssignmentFilters({
     value: boolean,
   ) => {
     const categoryFilters = filters[category] as Record<string, boolean>;
-    const otherKeys = Object.keys(categoryFilters).filter((k) => k !== key);
+    const validKeys = VALID_KEYS[category];
+    const otherKeys = validKeys.filter((k) => k !== key);
 
     if (!value && otherKeys.every((k) => !categoryFilters[k])) {
       return;
@@ -68,11 +75,10 @@ export function AssignmentFilters({
 
   const isOnlyChecked = (category: keyof FilterState, key: string) => {
     const categoryFilters = filters[category] as Record<string, boolean>;
+    const validKeys = VALID_KEYS[category];
     return (
       categoryFilters[key] &&
-      Object.keys(categoryFilters)
-        .filter((k) => k !== key)
-        .every((k) => !categoryFilters[k])
+      validKeys.filter((k) => k !== key).every((k) => !categoryFilters[k])
     );
   };
 
@@ -114,7 +120,7 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            ยังไม่ส่ง
+            ยังไม่ได้ส่ง
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
