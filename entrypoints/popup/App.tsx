@@ -21,7 +21,7 @@ function App() {
           href="https://app.leb2.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted"
         >
           <Link className="size-3.5" />
           <span>LEB2</span>
@@ -30,7 +30,7 @@ function App() {
           href="https://github.com/thrxpt/assign-watch"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted"
         >
           <svg
             role="img"
@@ -47,7 +47,7 @@ function App() {
           href="https://github.com/sponsors/thrxpt"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted"
+          className="inline-flex flex-1 items-center justify-center gap-2 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted"
         >
           <Heart className="size-3.5" />
           <span>Sponsor</span>
