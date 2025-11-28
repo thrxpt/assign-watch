@@ -2,6 +2,7 @@ import {
   classInfoStorage,
   getAssignments,
   getSubmissionStatus,
+  notifiedAssignments1hStorage,
   notifiedAssignmentsStorage,
   userIdStorage,
 } from "@/lib/utils";
@@ -15,16 +16,20 @@ export default defineBackground(() => {
       const classInfo = await classInfoStorage.getValue();
       const notifiedAssignments =
         (await notifiedAssignmentsStorage.getValue()) ?? [];
+      const notifiedAssignments1h =
+        (await notifiedAssignments1hStorage.getValue()) ?? [];
 
       if (!userId || !classInfo) return;
 
       let shouldUpdate = false;
+      let shouldUpdate1h = false;
 
       for (const cls of classInfo) {
         try {
           const assignments = await getAssignments(cls.id, userId);
           const now = new Date();
           const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
 
           for (const assignment of assignments) {
             const isSubmitted =
@@ -43,12 +48,22 @@ export default defineBackground(() => {
               }
             }
 
-            if (
-              assignment.due_date &&
-              !isSubmitted && // Not submitted
-              !notifiedAssignments.includes(assignment.id) // Not yet notified
-            ) {
-              if (dueDate > now && dueDate <= tomorrow) {
+            if (notifiedAssignments1h.includes(assignment.id)) {
+              if (isSubmitted || isOverdue) {
+                const index = notifiedAssignments1h.indexOf(assignment.id);
+                if (index > -1) {
+                  notifiedAssignments1h.splice(index, 1);
+                  shouldUpdate1h = true;
+                }
+              }
+            }
+
+            if (assignment.due_date && !isSubmitted) {
+              if (
+                !notifiedAssignments.includes(assignment.id) &&
+                dueDate > now &&
+                dueDate <= tomorrow
+              ) {
                 browser.notifications.create(
                   `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}`,
                   {
@@ -67,6 +82,30 @@ export default defineBackground(() => {
                 notifiedAssignments.push(assignment.id);
                 shouldUpdate = true;
               }
+
+              if (
+                !notifiedAssignments1h.includes(assignment.id) &&
+                dueDate > now &&
+                dueDate <= oneHour
+              ) {
+                browser.notifications.create(
+                  `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}-1h`,
+                  {
+                    type: "basic",
+                    iconUrl: browser.runtime.getURL("/icons/128.png"),
+                    title: "Assignment Due Soon!",
+                    message: `"${assignment.title}" is due in less than 1 hour.`,
+                    buttons: [
+                      {
+                        title: "View Assignment",
+                      },
+                    ],
+                  },
+                );
+
+                notifiedAssignments1h.push(assignment.id);
+                shouldUpdate1h = true;
+              }
             }
           }
         } catch (error) {
@@ -79,6 +118,10 @@ export default defineBackground(() => {
 
       if (shouldUpdate) {
         await notifiedAssignmentsStorage.setValue(notifiedAssignments);
+      }
+
+      if (shouldUpdate1h) {
+        await notifiedAssignments1hStorage.setValue(notifiedAssignments1h);
       }
     }
   });

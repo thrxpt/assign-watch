@@ -147,6 +147,13 @@ export const notifiedAssignmentsStorage = storage.defineItem<number[]>(
   },
 );
 
+export const notifiedAssignments1hStorage = storage.defineItem<number[]>(
+  "local:notifiedAssignments1h",
+  {
+    fallback: [],
+  },
+);
+
 export async function getHiddenClasses() {
   return (await hiddenClassesStorage.getValue()) ?? [];
 }
