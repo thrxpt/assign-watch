@@ -1,136 +1,137 @@
-import { storage } from "#imports"
-import dayjs from "dayjs"
-
-import type { AssignmentResponse } from "@/types"
+import {
+  classInfoStorage,
+  getAssignments,
+  getSubmissionStatus,
+  notifiedAssignments1hStorage,
+  notifiedAssignmentsStorage,
+  userIdStorage,
+} from "@/lib/utils";
 
 export default defineBackground(() => {
-  async function checkUpcomingAssignments() {
-    try {
-      const [enabled, reminderTime] = await Promise.all([
-        storage.getItem<boolean>("sync:notifications:enabled"),
-        storage.getItem<string>("sync:notifications:reminderTime"),
-      ])
-
-      if (!enabled) return
-
-      const now = dayjs()
-      const reminderHours = parseInt(reminderTime || "72")
-      const reminderThreshold = now.add(reminderHours, "hour")
-
-      const classWithAssignments = await storage.getItem<
-        {
-          assignments: AssignmentResponse
-          id: string
-          title: string | null
-          description: string | null
-        }[]
-      >("local:classWithAssignments")
-
-      if (!classWithAssignments?.length) return
-
-      for (const classInfo of classWithAssignments) {
-        const assignments = classInfo.assignments?.activities || []
-        if (!assignments.length) continue
-
-        for (const assignment of assignments) {
-          if (!assignment.due_date) continue
-
-          const dueDate = dayjs(assignment.due_date)
-          const notificationKey = `notified:${assignment.id}`
-          const lastNotifyKey = `lastNotify:${assignment.id}`
-
-          if (
-            dueDate.isBefore(now) ||
-            assignment.quiz_submission_is_submitted === 1
-          ) {
-            await storage.removeItems([
-              `local:${notificationKey}`,
-              `local:${lastNotifyKey}`,
-            ])
-            continue
-          }
-
-          if (dueDate.isAfter(reminderThreshold)) {
-            continue
-          }
-
-          const lastNotifyTime = await storage.getItem<number>(
-            `local:${lastNotifyKey}`
-          )
-          const timeSinceLastNotify = lastNotifyTime
-            ? now.diff(lastNotifyTime, "hours")
-            : reminderHours
-
-          if (!lastNotifyTime || timeSinceLastNotify >= 24) {
-            const readableDueDate = dueDate.format("D MMM YYYY [at] HH:mm")
-            const dayUntilDue = dueDate.diff(now, "day")
-            const dayUntilDueString =
-              dayUntilDue === 0
-                ? "today"
-                : dayUntilDue === 1
-                  ? "tomorrow"
-                  : `in ${dayUntilDue} days`
-
-            const notificationId = `assignment-${assignment.class_id}-${assignment.id}`
-
-            const message = `${
-              assignment.type === "ASM" ? "Assignment" : "Quiz"
-            } "${assignment.title}" from ${
-              classInfo.title || "Class"
-            }\n\nDue ${dayUntilDueString} (${readableDueDate})`
-
-            browser.notifications.create(notificationId, {
-              type: "basic",
-              iconUrl: "icons/128.png",
-              title: `Due ${dayUntilDueString}: "${assignment.title}"`,
-              message,
-              buttons: [
-                {
-                  title: "View details",
-                },
-              ],
-              priority: 2,
-            })
-
-            await storage.setItem(`local:${lastNotifyKey}`, now.valueOf())
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error checking assignments:", error)
-    }
-  }
-
-  browser.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason === browser.runtime.OnInstalledReason.INSTALL) {
-      await storage.setItems([
-        {
-          key: "sync:notifications:enabled",
-          value: true,
-        },
-        {
-          key: "sync:notifications:reminderTime",
-          value: "72",
-        },
-      ])
-      browser.runtime.openOptionsPage()
-    }
-  })
-
-  browser.alarms.create("checkAssignments", { periodInMinutes: 1 })
+  browser.alarms.create("checkAssignments", { periodInMinutes: 1 });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === "checkAssignments") {
-      await checkUpcomingAssignments()
+      const userId = await userIdStorage.getValue();
+      const classInfo = await classInfoStorage.getValue();
+      const notifiedAssignments =
+        (await notifiedAssignmentsStorage.getValue()) ?? [];
+      const notifiedAssignments1h =
+        (await notifiedAssignments1hStorage.getValue()) ?? [];
+
+      if (!userId || !classInfo) return;
+
+      let shouldUpdate = false;
+      let shouldUpdate1h = false;
+
+      for (const cls of classInfo) {
+        try {
+          const assignments = await getAssignments(cls.id, userId);
+          const now = new Date();
+          const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
+
+          for (const assignment of assignments) {
+            const isSubmitted =
+              getSubmissionStatus(assignment) === "submitted" ||
+              getSubmissionStatus(assignment) === "submitted_late";
+            const dueDate = new Date(assignment.due_date);
+            const isOverdue = dueDate < now;
+
+            if (notifiedAssignments.includes(assignment.id)) {
+              if (isSubmitted || isOverdue) {
+                const index = notifiedAssignments.indexOf(assignment.id);
+                if (index > -1) {
+                  notifiedAssignments.splice(index, 1);
+                  shouldUpdate = true;
+                }
+              }
+            }
+
+            if (notifiedAssignments1h.includes(assignment.id)) {
+              if (isSubmitted || isOverdue) {
+                const index = notifiedAssignments1h.indexOf(assignment.id);
+                if (index > -1) {
+                  notifiedAssignments1h.splice(index, 1);
+                  shouldUpdate1h = true;
+                }
+              }
+            }
+
+            if (assignment.due_date && !isSubmitted) {
+              if (
+                !notifiedAssignments.includes(assignment.id) &&
+                dueDate > now &&
+                dueDate <= tomorrow
+              ) {
+                browser.notifications.create(
+                  `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}`,
+                  {
+                    type: "basic",
+                    iconUrl: browser.runtime.getURL("/icons/128.png"),
+                    title: "Assignment Due Soon!",
+                    message: `"${assignment.title}" is due in less than 24 hours.`,
+                    buttons: [
+                      {
+                        title: "View Assignment",
+                      },
+                    ],
+                  },
+                );
+
+                notifiedAssignments.push(assignment.id);
+                shouldUpdate = true;
+              }
+
+              if (
+                !notifiedAssignments1h.includes(assignment.id) &&
+                dueDate > now &&
+                dueDate <= oneHour
+              ) {
+                browser.notifications.create(
+                  `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}-1h`,
+                  {
+                    type: "basic",
+                    iconUrl: browser.runtime.getURL("/icons/128.png"),
+                    title: "Assignment Due Soon!",
+                    message: `"${assignment.title}" is due in less than 1 hour.`,
+                    buttons: [
+                      {
+                        title: "View Assignment",
+                      },
+                    ],
+                  },
+                );
+
+                notifiedAssignments1h.push(assignment.id);
+                shouldUpdate1h = true;
+              }
+            }
+          }
+        } catch (error) {
+          console.error(
+            `Failed to check assignments for class ${cls.id}:`,
+            error,
+          );
+        }
+      }
+
+      if (shouldUpdate) {
+        await notifiedAssignmentsStorage.setValue(notifiedAssignments);
+      }
+
+      if (shouldUpdate1h) {
+        await notifiedAssignments1hStorage.setValue(notifiedAssignments1h);
+      }
     }
-  })
+  });
 
   browser.notifications.onButtonClicked.addListener((notificationId) => {
-    if (notificationId.startsWith("assignment-")) {
-      const [, classId, assignmentId] = notificationId.split("-")
+    if (notificationId.startsWith("assignwatch-")) {
+      const [type, classId, assignmentId] = notificationId.split("-").slice(1);
       browser.tabs.create({
-        url: `https://app.leb2.org/class/${classId}/activity/${assignmentId}`,
-      })
+        url: `https://app.leb2.org/class/${classId}/${type === "ASM" ? "activity" : "quiz"}/${assignmentId}`,
+      });
     }
-  })
-})
+  });
+});

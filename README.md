@@ -1,72 +1,66 @@
-# Assign Watch - Extension for LEB2
+<div align="center">
+  <img src="./assets/icon.png" />
+  <h1>
+    Assign Watch
+  </h1>
+  <p>
+    View all your assignments in LEB2 in one place
+  </p>
+</div>
 
-[![Chrome Web Store](https://img.shields.io/chrome-web-store/v/dedhfmakhbgeopgdipofgooiibkanfad?logo=googlechrome&logoColor=white&color=4285F4)](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
-[![Mozilla Add-on Version](https://img.shields.io/amo/v/assign-watch?logo=firefoxbrowser&logoColor=white&color=FF7139)](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
-[![GitHub Release](https://img.shields.io/github/v/release/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/releases/latest)
-[![License](https://img.shields.io/github/license/thrxpt/assign-watch)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/thrxpt/assign-watch)](https://github.com/thrxpt/assign-watch/stargazers)
+## About the Project
 
-A browser extension that enhances your LEB2 experience by providing a convenient way to view and manage all your assignments in one place.
+Assign Watch is a browser extension for [LEB2](https://www.leb2.org/what-is-leb2) that helps you view all your assignments in one place.
 
-> [!NOTE]
-> LEB2 ย่อมาจาก Learning Environment version B2 เป็นแพลตฟอร์มด้านการศึกษาสำหรับการเรียนการสอนออนไลน์ ถูกสร้างและพัฒนาขึ้นโดยหน่วยงานพัฒนาและบูรณาการเทคโนโลยีเพื่อการศึกษา (ETS) ของมหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี (มจธ.) หรือ KMUTT
-> [Learn More](https://www.leb2.org/what-is-leb2)
+By default, LEB2 doesn't show all of your assignments in a single place, you need to open each class and navigate to the assignments page to view them.
 
-## Features ✨
+## Features
 
-- 🔍 **Unified View**: Access all assignments across classes in a single modal
-- ⚡ **Quick Access**: Instantly open with keyboard shortcut (Alt/Option + A)
-- 📱 **Flexible Layout**: Toggle between grid and list views for optimal viewing
-- 🌓 **Theme Support**: Seamless dark/light mode integration
-- 🔔 **Notifications**: Stay updated with assignment alerts
-- 🎯 **Advanced Filtering**: Easy filtering of assignments by class
-- 📊 **Status Tracking**: Clear submission status indicators
-- 📅 **Due Date Management**: Countdown timers for upcoming deadlines
-- 🔒 **Privacy First**: All data stored locally for maximum privacy
+- **Unified Dashboard**: View all your assignments in one place without navigating through multiple class pages.
+- **Calendar View**: Visualize your workload with an interactive weekly calendar.
+- **Notifications**: Get timely alerts for assignments that are due soon.
+- **Filtering**: Filter assignments by status (e.g. Submitted, Not Submitted, etc.).
+- **Customizable View**: Hide or show classes or assignments you don't want to see.
+- **Quick Access**: Instantly open with keyboard shortcut (<kbd>Alt</kbd>+<kbd>A</kbd> or <kbd>Option</kbd>+<kbd>A</kbd>).
 
-## Installation 🚀
+## Installation
 
-### Chrome Web Store
-
-1. Visit the [Chrome Web Store](https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad)
-2. Click "Add to Chrome"
-3. Click "Add extension" in the popup
-
-### Firefox Add-ons
-
-1. Visit the [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/assign-watch)
-2. Click "Add to Firefox"
-3. Click "Add" in the popup
+<a href="https://chromewebstore.google.com/detail/dedhfmakhbgeopgdipofgooiibkanfad">
+  <picture>
+    <source srcset="https://i.imgur.com/XBIE9pk.png" media="(prefers-color-scheme: dark)">
+    <img height="58" src="https://i.imgur.com/oGxig2F.png" alt="Chrome Web Store">
+  </picture>
+</a>
+<a href="https://addons.mozilla.org/firefox/addon/assign-watch">
+  <picture>
+    <source srcset="https://i.imgur.com/ZluoP7T.png" media="(prefers-color-scheme: dark)">
+    <img height="58" src="https://i.imgur.com/4PobQqE.png" alt="Firefox add-ons">
+  </picture>
+</a>
 
 ### Manual Installation
 
-1. Download the latest release from our [Releases](https://github.com/thrxpt/assign-watch/releases) page
-2. Extract the downloaded ZIP file (for chrome)
+1. Download the latest release from [GitHub releases](https://github.com/thrxpt/assign-watch/releases).
+2. Extract the downloaded archive.
 
 #### Chrome
 
-1. Navigate to `chrome://extensions`
-2. Enable "Developer mode" (top-right)
-3. Click "Load unpacked" and select the extracted folder
+1. Go to `chrome://extensions`.
+2. Enable **Developer mode** in the top right corner.
+3. Click **Load unpacked** and select the extracted folder.
 
 #### Firefox
 
-1. Go to `about:debugging#/runtime/this-firefox`
-2. Click "Load Temporary Add-on..." and select the ZIP file
+1. Go to `about:debugging#/runtime/this-firefox`.
+2. Click **Load Temporary Add-on**.
+3. Select the `manifest.json` file inside the extracted folder.
 
 > [!WARNING]
-> Installing this way will only work until the browser is restarted. For a permanent installation, use the [Firefox Developer Edition](https://www.mozilla.org/en-US/firefox/developer) instead.
+> Installing this way will only work until the browser is restarted.
 
-#### Firefox Developer Edition
+## Development
 
-1. Go to `about:config`
-2. Set `xpinstall.signatures.required` to `false`
-3. Go to `about:addons`
-4. Click the gear icon and select "Install Add-on From File..." and select the ZIP file
-
-_This reportedly works with [Firefox Extended Support Release](https://www.mozilla.org/en-US/firefox/enterprise) and [Nightly](https://www.mozilla.org/en-US/firefox/channel/desktop) as well._
-
-## Development 🛠️
+To start development, follow these steps:
 
 1. Clone the repository
 
@@ -81,61 +75,64 @@ _This reportedly works with [Firefox Extended Support Release](https://www.mozil
    pnpm install
    ```
 
-3. Start development server
+3. Run in development mode
 
    ```bash
-   pnpm dev # For Chrome
-   # or
-   pnpm dev:firefox # For Firefox
+   # For Chrome
+   pnpm dev
+
+   # For Firefox
+   pnpm dev:firefox
    ```
 
-4. Load the extension
-   - For Chrome:
-     1. Go to `chrome://extensions`
-     2. Enable "Developer mode"
-     3. Click "Load unpacked" and select the `.output/chrome-mv3` directory
-   - For Firefox:
-     1. Go to `about:debugging#/runtime/this-firefox`
-     2. Click "Load Temporary Add-on..."
-     3. Select the `manifest.json` file from `.output/firefox-mv2` directory
+4. Build for production
 
-## Contributing 🤝
+   ```bash
+   # For Chrome
+   pnpm build
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+   # For Firefox
+   pnpm build:firefox
+   ```
+
+## Disclaimer
+
+Assign Watch is not affiliated with LEB2 or any other educational institution. It is a third-party tool created by the community for the community.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request or open an issue.
 
 1. Fork the repository
-2. Create your feature branch
+2. Create a feature branch
 
-   ```bash
-   git checkout -b feat/amazing-feature
-   ```
+```bash
+git checkout -b feat/amazing-feature
+```
 
-3. Commit your changes using [Conventional Commits](https://www.conventionalcommits.org)
+3. Commit your changes using the [conventional commit](https://www.conventionalcommits.org) format
 
-   ```bash
-   git commit -m 'feat: add amazing new feature'
-   ```
+```bash
+git add .
+git commit -m "feat: amazing feature"
+```
 
-4. Push to your branch
+4. Push to the branch
 
-   ```bash
-   git push origin feat/amazing-feature
-   ```
+```bash
+git push origin feat/amazing-feature
+```
 
 5. Open a Pull Request
 
-## License 📝
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Support the Project 💝
+## Support
 
-If you find Assign Watch valuable, consider:
+If you find this extension useful, please consider:
 
-- ⭐ Starring the repository
-- 🐛 Reporting bugs or suggesting features
-- 💻 Contributing code improvements
-- 📢 Sharing with your classmates
-- 📝 Writing documentation or tutorials
-
-Your support helps make Assign Watch better for everyone!
+- [Starring the repository on GitHub](https://github.com/thrxpt/assign-watch)
+- [Sponsoring me on GitHub](https://github.com/sponsors/thrxpt)
+- Sharing it with your friends!

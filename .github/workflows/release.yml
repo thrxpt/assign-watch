@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -23,15 +23,15 @@ jobs:
           version: 10
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: lts/*
+          node-version: "lts/*"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Zip extensions
+      - name: Zip
         run: |
           pnpm zip
           pnpm zip:firefox
@@ -40,7 +40,8 @@ jobs:
         run: |
           pnpm wxt submit \
             --chrome-zip .output/*-chrome.zip \
-            --firefox-zip .output/*-firefox.zip --firefox-sources-zip .output/*-sources.zip
+            --firefox-zip .output/*-firefox.zip \
+            --firefox-sources-zip .output/*-sources.zip
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
@@ -50,7 +51,7 @@ jobs:
           FIREFOX_JWT_ISSUER: ${{ secrets.FIREFOX_JWT_ISSUER }}
           FIREFOX_JWT_SECRET: ${{ secrets.FIREFOX_JWT_SECRET }}
 
-      - name: Create github release
+      - name: Upload to GitHub Release
         run: npx changelogithub --assets ".output/*-chrome.zip,.output/*-firefox.zip"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
