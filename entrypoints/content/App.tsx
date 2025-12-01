@@ -254,6 +254,7 @@ function App() {
         <DialogContent
           showCloseButton={false}
           className="rounded-xl sm:max-w-3xl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <Tabs
             defaultValue="list"
