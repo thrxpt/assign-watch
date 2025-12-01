@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Filter } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -43,8 +42,6 @@ export function AssignmentFilters({
   filters,
   onFiltersChange,
 }: AssignmentFiltersProps) {
-  const [open, setOpen] = useState(false);
-
   const updateFilter = (
     category: keyof FilterState,
     key: string,
@@ -83,7 +80,7 @@ export function AssignmentFilters({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <Filter />

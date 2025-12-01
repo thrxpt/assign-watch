@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ArrowDownUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,8 +30,6 @@ export function AssignmentSort({
   sortState,
   onSortChange,
 }: AssignmentSortProps) {
-  const [open, setOpen] = useState(false);
-
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "dueDate", label: "วันที่กำหนดส่ง" },
     { value: "postedDate", label: "วันที่สั่ง" },
@@ -58,7 +55,7 @@ export function AssignmentSort({
   };
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <ArrowDownUp />

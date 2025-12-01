@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Activity, ClassInfo } from "@/types";
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
 
@@ -31,8 +30,6 @@ export function HiddenItemsManager({
   allClassInfo,
   allAssignments,
 }: HiddenItemsManagerProps) {
-  const [open, setOpen] = useState(false);
-
   const hiddenClassItems = hiddenClasses
     .map((classId) => allClassInfo.find((c) => c.id === classId))
     .filter((c) => c !== undefined);
@@ -56,7 +53,7 @@ export function HiddenItemsManager({
   }
 
   return (
-    <DropdownMenu open={open} onOpenChange={setOpen}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <EyeOff />
