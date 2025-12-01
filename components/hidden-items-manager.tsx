@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { StatusBadge } from "@/components/status-badge";
 import { Tips } from "@/components/tips";
 
 interface HiddenItemsManagerProps {
