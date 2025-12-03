@@ -15,7 +15,8 @@
     "postinstall": "wxt prepare",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "bump": "bumpp"
   },
   "dependencies": {
     "@fontsource-variable/anuphan": "^5.2.8",
@@ -50,6 +51,7 @@
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/auto-icons": "^1.1.0",
     "@wxt-dev/module-react": "^1.1.5",
+    "bumpp": "^10.3.2",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
