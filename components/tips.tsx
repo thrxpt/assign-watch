@@ -10,7 +10,7 @@ import {
 export function Tips() {
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <Button variant="secondary" size="icon-sm">
           <CircleQuestionMark />
           <span className="sr-only">Tips</span>
