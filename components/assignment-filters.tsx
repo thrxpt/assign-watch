@@ -1,3 +1,4 @@
+import { i18n } from "#i18n";
 import { Filter } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -84,7 +85,7 @@ export function AssignmentFilters({
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <Filter />
-          ตัวกรอง
+          {i18n.t("filter")}
           {activeFilterCount > 0 && (
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
               {activeFilterCount}
@@ -94,7 +95,7 @@ export function AssignmentFilters({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>สถานะการส่ง</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("submission_status")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.submitted}
             onCheckedChange={(checked) =>
@@ -105,7 +106,7 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            ส่งแล้ว
+            {i18n.t("submitted")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.notSubmitted}
@@ -117,14 +118,14 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            ยังไม่ได้ส่ง
+            {i18n.t("not_submitted")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>ประเภทงาน</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("assignment_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.assignment}
             onCheckedChange={(checked) =>
@@ -135,7 +136,7 @@ export function AssignmentFilters({
                 "pointer-events-none",
             )}
           >
-            การบ้าน
+            {i18n.t("assignment")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.quiz}
@@ -146,14 +147,14 @@ export function AssignmentFilters({
               isOnlyChecked("assignmentType", "quiz") && "pointer-events-none",
             )}
           >
-            แบบทดสอบ
+            {i18n.t("quiz")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>ประเภทกลุ่ม</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("group_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
             onCheckedChange={(checked) =>
@@ -163,7 +164,7 @@ export function AssignmentFilters({
               isOnlyChecked("groupType", "individual") && "pointer-events-none",
             )}
           >
-            งานเดี่ยว
+            {i18n.t("individual")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
@@ -174,7 +175,7 @@ export function AssignmentFilters({
               isOnlyChecked("groupType", "group") && "pointer-events-none",
             )}
           >
-            งานกลุ่ม
+            {i18n.t("group")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

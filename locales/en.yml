@@ -1,0 +1,33 @@
+todo: To-do
+calendar: Calendar
+list_view: List View
+calendar_view: Calendar View
+filter: Filter
+submission_status: Submission Status
+submitted: Submitted
+not_submitted: Not Submitted
+assignment_type: Assignment Type
+assignment: Assignment
+quiz: Quiz
+group_type: Group Type
+individual: Individual
+group: Group
+due_date: Due Date
+posted_date: Posted Date
+sort: Sort
+sort_by: Sort By
+order: Order
+asc: Ascending
+desc: Descending
+hidden: Hidden
+hidden_items: Hidden Items
+clear_all: Clear All
+class: Class
+no_assignments: No Assignments
+no_assignments_desc: Congratulations! You have no assignments to do.
+done_not_submitted_yet: Done (Not Submitted Yet)
+hide_class: Hide Class
+hide_assignment: Hide Assignment
+tips: Tips
+tips_desc: Right-click within the frame of each class or assignment to hide it.
+go_to_current_week: Go to Current Week

@@ -1,3 +1,4 @@
+import { i18n } from "#i18n";
 import { ArrowDownUp } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,8 @@ export function AssignmentSort({
   onSortChange,
 }: AssignmentSortProps) {
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: "dueDate", label: "วันที่กำหนดส่ง" },
-    { value: "postedDate", label: "วันที่สั่ง" },
+    { value: "dueDate", label: i18n.t("due_date") },
+    { value: "postedDate", label: i18n.t("posted_date") },
   ];
 
   const handleSortChange = (value: SortOption) => {
@@ -51,7 +52,7 @@ export function AssignmentSort({
 
   const getSortLabel = () => {
     const option = sortOptions.find((opt) => opt.value === sortState.sortBy);
-    return option?.label || "เรียงลำดับ";
+    return option?.label || i18n.t("sort");
   };
 
   return (
@@ -64,7 +65,7 @@ export function AssignmentSort({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>เรียงตาม</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("sort_by")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={sortState.sortBy}
             onValueChange={(value) => handleSortChange(value as SortOption)}
@@ -80,16 +81,18 @@ export function AssignmentSort({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>ลำดับ</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("order")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             value={sortState.direction}
             onValueChange={(value) =>
               handleDirectionChange(value as SortDirection)
             }
           >
-            <DropdownMenuRadioItem value="asc">น้อยไปมาก</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="asc">
+              {i18n.t("asc")}
+            </DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="desc">
-              มากไปน้อย
+              {i18n.t("desc")}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>

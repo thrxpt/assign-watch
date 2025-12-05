@@ -1,4 +1,5 @@
 import { Activity, ClassInfo } from "@/types";
+import { i18n } from "#i18n";
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
 
 import {
@@ -59,7 +60,7 @@ export function HiddenItemsManager({
       <DropdownMenuTrigger asChild>
         <Button variant="secondary" size="sm">
           <EyeOff />
-          ที่ซ่อนไว้
+          {i18n.t("hidden")}
           {totalHidden > 0 && (
             <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
               {totalHidden}
@@ -69,10 +70,10 @@ export function HiddenItemsManager({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between">
-          <DropdownMenuLabel>รายการที่ซ่อนไว้</DropdownMenuLabel>
+          <DropdownMenuLabel>{i18n.t("hidden_items")}</DropdownMenuLabel>
           <Button variant="outline" size="xs" onClick={clearAllHiddenItems}>
             <BrushCleaning />
-            ล้างทั้งหมด
+            {i18n.t("clear_all")}
           </Button>
         </div>
         <DropdownMenuSeparator />
@@ -80,7 +81,7 @@ export function HiddenItemsManager({
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              วิชา
+              {i18n.t("class")}
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
               <DropdownMenuItem
@@ -105,7 +106,7 @@ export function HiddenItemsManager({
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              การบ้าน
+              {i18n.t("assignment")}
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (
               <DropdownMenuItem

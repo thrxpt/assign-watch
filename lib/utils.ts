@@ -1,7 +1,7 @@
 import { Activity, ClassInfo, RootResponse } from "@/types";
 import { clsx, type ClassValue } from "clsx";
 import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { enUS, th } from "date-fns/locale";
 import moment from "moment/min/moment-with-locales";
 import { twMerge } from "tailwind-merge";
 
@@ -13,7 +13,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatDateRelative(date: Date) {
-  moment.locale("th");
+  moment.locale(i18n.t("@@ui_locale") === "th" ? "th" : "en");
   return {
     text: moment(date).fromNow(),
     status: moment(date).isBefore(moment())
@@ -25,7 +25,9 @@ export function formatDateRelative(date: Date) {
 }
 
 export function formatDate(date: Date) {
-  return format(date, "eeee, d MMM yyyy ⋅ p", { locale: th });
+  return format(date, "eeee, d MMM yyyy ⋅ p", {
+    locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+  });
 }
 
 export function getUserId() {

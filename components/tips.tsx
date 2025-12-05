@@ -1,3 +1,4 @@
+import { i18n } from "#i18n";
 import { CircleQuestionMark } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,8 @@ export function Tips() {
       </TooltipTrigger>
       <TooltipContent>
         <p>
-          <span className="font-semibold">Tips:</span>{" "}
-          คลิกขวาภายในกรอบของแต่ละวิชา หรือแต่ละงาน เพื่อซ่อนได้
+          <span className="font-semibold">{i18n.t("tips")}:</span>{" "}
+          {i18n.t("tips_desc")}
         </p>
       </TooltipContent>
     </Tooltip>

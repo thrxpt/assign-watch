@@ -9,7 +9,7 @@ import {
   isToday,
   startOfWeek,
 } from "date-fns";
-import { th } from "date-fns/locale";
+import { enUS, th } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 
 import { cn, getSubmissionStatus, hideAssignment } from "@/lib/utils";
@@ -107,21 +107,26 @@ export function CalendarView({
       <div className="flex items-center justify-center">
         <Button variant="ghost" size="icon" onClick={goToPreviousWeek}>
           <ChevronLeft />
-          <span className="sr-only">สัปดาห์ก่อนหน้า</span>
+          <span className="sr-only">Previous Week</span>
         </Button>
         <div className="text-center">
           <Button
             variant="ghost"
             onClick={() => weekOffset !== 0 && goToCurrentWeek()}
-            title={weekOffset !== 0 ? "ไปยังสัปดาห์ปัจจุบัน" : undefined}
+            title={weekOffset !== 0 ? i18n.t("go_to_current_week") : undefined}
           >
-            {format(weekStart, "MMM d", { locale: th })} -{" "}
-            {format(weekEnd, "MMM d, yyyy", { locale: th })}
+            {format(weekStart, "MMM d", {
+              locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+            })}{" "}
+            -{" "}
+            {format(weekEnd, "MMM d, yyyy", {
+              locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+            })}
           </Button>
         </div>
         <Button variant="ghost" size="icon" onClick={goToNextWeek}>
           <ChevronRight />
-          <span className="sr-only">สัปดาห์ถัดไป</span>
+          <span className="sr-only">Next Week</span>
         </Button>
       </div>
       <div className="grid flex-1 grid-cols-7 rounded-lg border">
@@ -137,7 +142,9 @@ export function CalendarView({
                   isToday(day) && "text-[#17b5be]",
                 )}
               >
-                {format(day, "EEE", { locale: th })}
+                {format(day, "EEE", {
+                  locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+                })}
               </div>
               <div
                 className={cn(
@@ -145,7 +152,9 @@ export function CalendarView({
                   isToday(day) && "bg-[#17b5be] text-white",
                 )}
               >
-                {format(day, "d", { locale: th })}
+                {format(day, "d", {
+                  locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+                })}
               </div>
             </div>
             <div className="space-y-1">
@@ -169,7 +178,7 @@ export function CalendarView({
                         </div>
                         <div>
                           {format(new Date(assignment.due_date), "p", {
-                            locale: th,
+                            locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
                           })}
                         </div>
                       </a>
@@ -179,7 +188,7 @@ export function CalendarView({
                         onSelect={() => hideAssignment(assignment.id)}
                       >
                         <EyeOff />
-                        ซ่อนงานนี้
+                        {i18n.t("hide_assignment")}
                       </ContextMenuItem>
                     </ContextMenuContent>
                   </ContextMenu>

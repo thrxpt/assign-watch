@@ -95,20 +95,24 @@ export function Assignment({ assignment }: AssignmentProps) {
                 <CircleX />
               )}
               {getSubmissionStatus(assignment) === "submitted"
-                ? "ส่งแล้ว"
+                ? i18n.t("submitted")
                 : getSubmissionStatus(assignment) === "quiz_not_submitted"
-                  ? "ทำแล้วแต่ยังไม่ได้ส่ง"
-                  : "ยังไม่ได้ส่ง"}
+                  ? i18n.t("done_not_submitted_yet")
+                  : i18n.t("not_submitted")}
             </StatusBadge>
             <StatusBadge color={assignment.type === "ASM" ? "teal" : "orange"}>
               {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
-              {assignment.type === "ASM" ? "การบ้าน" : "แบบทดสอบ"}
+              {assignment.type === "ASM"
+                ? i18n.t("assignment")
+                : i18n.t("quiz")}
             </StatusBadge>
             <StatusBadge
               color={assignment.group_type === "IND" ? "cyan" : "rose"}
             >
               {assignment.group_type === "IND" ? <User /> : <Users />}
-              {assignment.group_type === "IND" ? "งานเดี่ยว" : "งานกลุ่ม"}
+              {assignment.group_type === "IND"
+                ? i18n.t("individual")
+                : i18n.t("group")}
             </StatusBadge>
           </div>
         </div>
@@ -116,7 +120,7 @@ export function Assignment({ assignment }: AssignmentProps) {
       <ContextMenuContent>
         <ContextMenuItem onSelect={() => hideAssignment(assignment.id)}>
           <EyeOff />
-          ซ่อนงานนี้
+          {i18n.t("hide_assignment")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

@@ -1,3 +1,4 @@
+import { i18n } from "#i18n";
 import { PartyPopper } from "lucide-react";
 
 import {
@@ -15,8 +16,8 @@ export function NoAssignments() {
         <EmptyMedia variant="icon">
           <PartyPopper />
         </EmptyMedia>
-        <EmptyTitle>ไม่มีการบ้าน</EmptyTitle>
-        <EmptyDescription>ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ</EmptyDescription>
+        <EmptyTitle>{i18n.t("no_assignments")}</EmptyTitle>
+        <EmptyDescription>{i18n.t("no_assignments_desc")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );

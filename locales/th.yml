@@ -1,0 +1,33 @@
+todo: สิ่งที่ต้องทำ
+calendar: ปฏิทิน
+list_view: มุมมองรายการ
+calendar_view: มุมมองปฏิทิน
+filter: ตัวกรอง
+submission_status: สถานะการส่ง
+submitted: ส่งแล้ว
+not_submitted: ยังไม่ได้ส่ง
+assignment_type: ประเภทงาน
+assignment: การบ้าน
+quiz: แบบทดสอบ
+group_type: ประเภทกลุ่ม
+individual: งานเดี่ยว
+group: งานกลุ่ม
+due_date: วันที่กำหนดส่ง
+posted_date: วันที่สั่ง
+sort: เรียงลำดับ
+sort_by: เรียงตาม
+order: ลำดับ
+asc: น้อยไปมาก
+desc: มากไปน้อย
+hidden: ที่ซ่อนไว้
+hidden_items: รายการที่ซ่อนไว้
+clear_all: ล้างทั้งหมด
+class: ชั้นเรียน
+no_assignments: ไม่มีการบ้าน
+no_assignments_desc: ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ
+done_not_submitted_yet: ทำแล้วแต่ยังไม่ได้ส่ง
+hide_class: ซ่อนชั้นเรียน
+hide_assignment: ซ่อนงาน
+tips: เคล็ดลับ
+tips_desc: คลิกขวาภายในกรอบของแต่ละวิชา หรือแต่ละงาน เพื่อซ่อนได้
+go_to_current_week: ไปยังสัปดาห์ปัจจุบัน

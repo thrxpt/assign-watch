@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity } from "@/types";
 import { useQueries } from "@tanstack/react-query";
+import { i18n } from "#i18n";
 import { Calendar, LayoutList } from "lucide-react";
 
 import {
@@ -266,7 +267,7 @@ function App() {
           >
             <DialogHeader className="flex-row items-center justify-between">
               <DialogTitle className="text-xl">
-                {activeTab === "list" ? "สิ่งที่ต้องทำ" : "ปฏิทิน"}
+                {activeTab === "list" ? i18n.t("todo") : i18n.t("calendar")}
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <HiddenItemsManager
@@ -286,11 +287,11 @@ function App() {
                 <TabsList className="h-8">
                   <TabsTrigger value="list">
                     <LayoutList />
-                    <span className="sr-only">มุมมองรายการ</span>
+                    <span className="sr-only">{i18n.t("list_view")}</span>
                   </TabsTrigger>
                   <TabsTrigger value="calendar">
                     <Calendar />
-                    <span className="sr-only">มุมมองปฏิทิน</span>
+                    <span className="sr-only">{i18n.t("calendar_view")}</span>
                   </TabsTrigger>
                 </TabsList>
               </div>
