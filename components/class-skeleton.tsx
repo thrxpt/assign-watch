@@ -7,10 +7,10 @@ export function ClassSkeleton() {
       <div className="flex w-full flex-col gap-3">
         {Array.from({ length: 2 }).map((_, index) => (
           <div key={index} className="space-y-2">
-            <Skeleton className="h-6 w-[100px]" />
+            <Skeleton className="h-6 w-25" />
             <div className="space-y-2">
-              <Skeleton className="h-4 w-[400px]" />
-              <Skeleton className="h-4 w-[300px]" />
+              <Skeleton className="h-4 w-100" />
+              <Skeleton className="h-4 w-75" />
             </div>
           </div>
         ))}
