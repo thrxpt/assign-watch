@@ -1,9 +1,12 @@
-import { Activity } from "@/types";
+import { Activity, ClassInfo } from "@/types";
 import {
+  BookMarked,
+  Calendar,
   CircleAlert,
   CircleCheckBig,
   CircleX,
   ClipboardList,
+  Clock,
   EyeOff,
   Timer,
   User,
@@ -23,13 +26,15 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/status-badge";
 
 interface AssignmentProps {
   assignment: Activity;
+  classInfo?: ClassInfo;
 }
 
-export function Assignment({ assignment }: AssignmentProps) {
+export function Assignment({ assignment, classInfo }: AssignmentProps) {
   const getAssignmentStatusColor = (assignment: Activity) => {
     if (getSubmissionStatus(assignment) === "submitted") {
       return cn("after:bg-green-500/70");
@@ -59,23 +64,54 @@ export function Assignment({ assignment }: AssignmentProps) {
           >
             {assignment.title}
           </a>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex h-5.5 items-center gap-2">
             <div className="text-sm text-muted-foreground">
-              {formatDate(new Date(assignment.due_date))}
-            </div>
-            <StatusBadge
-              className={cn(
-                formatDateRelative(new Date(assignment.due_date)).status ===
-                  "late"
-                  ? "text-red-600"
-                  : formatDateRelative(new Date(assignment.due_date)).status ===
-                      "today"
-                    ? "text-yellow-600"
-                    : "text-green-600",
+              {classInfo ? (
+                <div className="flex gap-2">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="size-3.5 stroke-muted-foreground" />
+                    {formatDate(new Date(assignment.due_date), "p")}
+                  </span>
+                  <Separator orientation="vertical" />
+                  <a
+                    className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"
+                    href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                  >
+                    <BookMarked className="size-3.5 stroke-muted-foreground" />
+                    {classInfo.title}
+                  </a>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Calendar className="size-3.5 stroke-muted-foreground" />
+                    {formatDate(
+                      new Date(assignment.due_date),
+                      "eeee, d MMM yyyy",
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1 text-muted-foreground">
+                    <Clock className="size-3.5 stroke-muted-foreground" />
+                    {formatDate(new Date(assignment.due_date), "p")}
+                  </span>
+                </div>
               )}
-            >
-              {formatDateRelative(new Date(assignment.due_date)).text}
-            </StatusBadge>
+            </div>
+            {!classInfo && (
+              <StatusBadge
+                className={cn(
+                  formatDateRelative(new Date(assignment.due_date)).status ===
+                    "late"
+                    ? "text-red-600"
+                    : formatDateRelative(new Date(assignment.due_date))
+                          .status === "today"
+                      ? "text-yellow-600"
+                      : "text-green-600",
+                )}
+              >
+                {formatDateRelative(new Date(assignment.due_date)).text}
+              </StatusBadge>
+            )}
           </div>
           <div className="mt-3 flex items-center gap-2">
             <StatusBadge

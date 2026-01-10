@@ -11,6 +11,7 @@ import {
   getAssignments,
   getSubmissionStatus,
   getUserId,
+  groupStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   sortStorage,
@@ -28,10 +29,12 @@ import {
   AssignmentFilters,
   FilterState,
 } from "@/components/assignment-filters";
-import { AssignmentSort } from "@/components/assignment-sort";
+import { AssignmentGroup, GroupState } from "@/components/assignment-group";
+import { AssignmentSort, SortState } from "@/components/assignment-sort";
 import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
 import { ClassSkeleton } from "@/components/class-skeleton";
+import { DateGroup } from "@/components/date-group";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { NoAssignments } from "@/components/no-assignments";
 
@@ -57,6 +60,9 @@ function App() {
     sortBy: "dueDate",
     direction: "asc",
   });
+  const [groupState, setGroupState] = useState<GroupState>({
+    groupBy: "class",
+  });
 
   useEffect(() => {
     const shouldOpenDialog =
@@ -71,12 +77,13 @@ function App() {
 
   useEffect(() => {
     const loadStorageData = async () => {
-      const [classes, assignments, storedFilters, storedSort] =
+      const [classes, assignments, storedFilters, storedSort, storedGroup] =
         await Promise.all([
           hiddenClassesStorage.getValue(),
           hiddenAssignmentsStorage.getValue(),
           filtersStorage.getValue(),
           sortStorage.getValue(),
+          groupStorage.getValue(),
         ]);
       setHiddenClasses(classes ?? []);
       setHiddenAssignments(assignments ?? []);
@@ -85,6 +92,9 @@ function App() {
       }
       if (storedSort) {
         setSortState(storedSort);
+      }
+      if (storedGroup) {
+        setGroupState(storedGroup);
       }
     };
     loadStorageData();
@@ -109,11 +119,18 @@ function App() {
       }
     });
 
+    const unwatchGroup = groupStorage.watch((newValue) => {
+      if (newValue) {
+        setGroupState(newValue);
+      }
+    });
+
     return () => {
       unwatchClasses();
       unwatchAssignments();
       unwatchFilters();
       unwatchSort();
+      unwatchGroup();
     };
   }, []);
 
@@ -197,6 +214,11 @@ function App() {
   const handleSortChange = async (newSort: SortState) => {
     setSortState(newSort);
     await sortStorage.setValue(newSort);
+  };
+
+  const handleGroupChange = async (newGroup: GroupState) => {
+    setGroupState(newGroup);
+    await groupStorage.setValue(newGroup);
   };
 
   const sortAssignments = (assignments: Activity[]) => {
@@ -284,6 +306,12 @@ function App() {
                   filters={filters}
                   onFiltersChange={handleFiltersChange}
                 />
+                {activeTab === "list" && (
+                  <AssignmentGroup
+                    groupState={groupState}
+                    onGroupChange={handleGroupChange}
+                  />
+                )}
                 <TabsList className="h-8">
                   <TabsTrigger value="list">
                     <LayoutList />
@@ -300,77 +328,138 @@ function App() {
               <ScrollArea className="rounded-lg">
                 <div className="max-h-[75dvh] space-y-5 pr-4">
                   {(() => {
-                    const visibleClasses = assignments.data
-                      .map((query, index) => {
-                        if (assignments.pending) {
-                          return { type: "skeleton" as const, index };
-                        }
+                    // Handle loading state
+                    if (assignments.pending) {
+                      return Array.from({ length: 4 }).map((_, index) => (
+                        <ClassSkeleton key={index} />
+                      ));
+                    }
 
-                        const classInfo = allClassInfo[index];
+                    // Collect all filtered and sorted assignments
+                    const allFilteredAssignments: {
+                      assignment: Activity;
+                      classInfo: (typeof allClassInfo)[0];
+                    }[] = [];
 
-                        if (hiddenClasses.includes(classInfo.id)) {
-                          return null;
-                        }
+                    assignments.data.forEach((query, index) => {
+                      const classInfo = allClassInfo[index];
 
-                        if (!query || query.length === 0) {
-                          return null;
-                        }
-                        const submittedAssignments = query.filter(
-                          (assignment) => {
-                            const status = getSubmissionStatus(assignment);
-                            return (
-                              status === "submitted" ||
-                              status === "submitted_late"
-                            );
-                          },
-                        );
-                        const exceededAssignments = query.filter(
-                          (assignment) => assignment.due_date_exceed,
-                        );
-                        const filteredAssignments = query
-                          .filter(
-                            (assignment) =>
-                              !exceededAssignments.includes(assignment) ||
-                              !submittedAssignments.includes(assignment),
-                          )
-                          .filter(
-                            (assignment) =>
-                              !hiddenAssignments.includes(assignment.id),
-                          )
-                          .filter(applyFilters);
+                      if (hiddenClasses.includes(classInfo.id)) {
+                        return;
+                      }
 
-                        const sortedAssignments =
-                          sortAssignments(filteredAssignments);
+                      if (!query || query.length === 0) {
+                        return;
+                      }
 
-                        if (sortedAssignments.length === 0) {
-                          return null;
-                        }
+                      const submittedAssignments = query.filter(
+                        (assignment) => {
+                          const status = getSubmissionStatus(assignment);
+                          return (
+                            status === "submitted" ||
+                            status === "submitted_late"
+                          );
+                        },
+                      );
 
-                        return {
-                          type: "class" as const,
-                          classInfo,
-                          assignments: sortedAssignments,
-                        };
-                      })
-                      .filter((item) => item !== null);
+                      const exceededAssignments = query.filter(
+                        (assignment) => assignment.due_date_exceed,
+                      );
 
-                    if (!assignments.pending && visibleClasses.length === 0) {
+                      const filteredAssignments = query
+                        .filter(
+                          (assignment) =>
+                            !exceededAssignments.includes(assignment) ||
+                            !submittedAssignments.includes(assignment),
+                        )
+                        .filter(
+                          (assignment) =>
+                            !hiddenAssignments.includes(assignment.id),
+                        )
+                        .filter(applyFilters);
+
+                      filteredAssignments.forEach((assignment) => {
+                        allFilteredAssignments.push({ assignment, classInfo });
+                      });
+                    });
+
+                    if (allFilteredAssignments.length === 0) {
                       return <NoAssignments />;
                     }
 
-                    return visibleClasses.map((item) => {
-                      if (item.type === "skeleton") {
-                        return <ClassSkeleton key={item.index} />;
-                      }
+                    // Group by class
+                    if (groupState.groupBy === "class") {
+                      const classGroups = new Map<
+                        number,
+                        {
+                          classInfo: (typeof allClassInfo)[0];
+                          assignments: Activity[];
+                        }
+                      >();
 
-                      return (
-                        <Class
-                          key={item.classInfo.id}
-                          classInfo={item.classInfo}
-                          assignments={item.assignments}
-                        />
+                      allFilteredAssignments.forEach(
+                        ({ assignment, classInfo }) => {
+                          if (!classGroups.has(classInfo.id)) {
+                            classGroups.set(classInfo.id, {
+                              classInfo,
+                              assignments: [],
+                            });
+                          }
+                          classGroups
+                            .get(classInfo.id)!
+                            .assignments.push(assignment);
+                        },
                       );
+
+                      return Array.from(classGroups.values()).map((group) => (
+                        <Class
+                          key={group.classInfo.id}
+                          classInfo={group.classInfo}
+                          assignments={sortAssignments(group.assignments)}
+                        />
+                      ));
+                    }
+
+                    // Group by due date
+                    const dateGroups = new Map<string, Activity[]>();
+                    const classInfoMap = new Map(
+                      allClassInfo.map((c) => [c.id, c]),
+                    );
+
+                    // Sort all assignments first
+                    const sortedAssignments = sortAssignments(
+                      allFilteredAssignments.map((item) => item.assignment),
+                    );
+
+                    sortedAssignments.forEach((assignment) => {
+                      const dateKey = new Date(assignment.due_date)
+                        .toISOString()
+                        .split("T")[0];
+                      if (!dateGroups.has(dateKey)) {
+                        dateGroups.set(dateKey, []);
+                      }
+                      dateGroups.get(dateKey)!.push(assignment);
                     });
+
+                    // Sort date groups by date
+                    const sortedDateGroups = Array.from(
+                      dateGroups.entries(),
+                    ).sort(([a], [b]) => {
+                      const comparison =
+                        new Date(a).getTime() - new Date(b).getTime();
+                      return sortState.direction === "asc"
+                        ? comparison
+                        : -comparison;
+                    });
+
+                    return sortedDateGroups.map(([date, dateAssignments]) => (
+                      <DateGroup
+                        key={date}
+                        date={date}
+                        assignments={dateAssignments}
+                        classInfoMap={classInfoMap}
+                      />
+                    ));
                   })()}
                 </div>
               </ScrollArea>
