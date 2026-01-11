@@ -17,11 +17,11 @@ By default, LEB2 doesn't show all of your assignments in a single place, you nee
 ## Features
 
 - **Unified Dashboard**: View all your assignments in one place without navigating through multiple class pages.
-- **Calendar View**: Visualize your workload with an interactive weekly calendar.
+- **Calendar View**: Visualize your workload with an interactive weekly or monthly calendar.
 - **Notifications**: Get timely alerts for assignments that are due soon.
-- **Filtering**: Filter assignments by status (e.g. Submitted, Not Submitted, etc.).
 - **Customizable View**: Hide or show classes or assignments you don't want to see.
 - **Quick Access**: Instantly open with keyboard shortcut (<kbd>Alt</kbd>+<kbd>A</kbd> or <kbd>Option</kbd>+<kbd>A</kbd>).
+- **Multi-language**: Supports English and Thai.
 
 ## Installation
 
