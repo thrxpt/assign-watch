@@ -31,3 +31,6 @@ hide_assignment: ซ่อนงาน
 tips: เคล็ดลับ
 tips_desc: คลิกขวาภายในกรอบของแต่ละวิชา หรือแต่ละงาน เพื่อซ่อนได้
 go_to_current_week: ไปยังสัปดาห์ปัจจุบัน
+group_by: จัดกลุ่มตาม
+group_by_class: ตามวิชา
+group_by_due_date: ตามวันกำหนดส่ง

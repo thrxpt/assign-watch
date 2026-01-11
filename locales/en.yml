@@ -31,3 +31,6 @@ hide_assignment: Hide Assignment
 tips: Tips
 tips_desc: Right-click within the frame of each class or assignment to hide it.
 go_to_current_week: Go to Current Week
+group_by: Group By
+group_by_class: By Class
+group_by_due_date: By Due Date

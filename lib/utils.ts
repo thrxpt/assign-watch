@@ -6,6 +6,7 @@ import moment from "moment/min/moment-with-locales";
 import { twMerge } from "tailwind-merge";
 
 import { FilterState } from "@/components/assignment-filters";
+import { GroupState } from "@/components/assignment-group";
 import { SortState } from "@/components/assignment-sort";
 
 export function cn(...inputs: ClassValue[]) {
@@ -24,8 +25,8 @@ export function formatDateRelative(date: Date) {
   };
 }
 
-export function formatDate(date: Date) {
-  return format(date, "eeee, d MMM yyyy ⋅ p", {
+export function formatDate(date: Date, formatStr: string) {
+  return format(date, formatStr, {
     locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
   });
 }
@@ -127,6 +128,15 @@ export const sortStorage = storage.defineItem<SortState>(
     fallback: {
       sortBy: "dueDate",
       direction: "asc",
+    },
+  },
+);
+
+export const groupStorage = storage.defineItem<GroupState>(
+  "local:assignmentGroup",
+  {
+    fallback: {
+      groupBy: "class",
     },
   },
 );
