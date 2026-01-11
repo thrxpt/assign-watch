@@ -30,7 +30,15 @@ hide_class: ซ่อนชั้นเรียน
 hide_assignment: ซ่อนงาน
 tips: เคล็ดลับ
 tips_desc: คลิกขวาภายในกรอบของแต่ละวิชา หรือแต่ละงาน เพื่อซ่อนได้
-go_to_current_week: ไปยังสัปดาห์ปัจจุบัน
 group_by: จัดกลุ่มตาม
 group_by_class: ตามวิชา
 group_by_due_date: ตามวันกำหนดส่ง
+weekly_view: สัปดาห์
+monthly_view: เดือน
+previous_month: เดือนก่อนหน้า
+next_month: เดือนถัดไป
+go_to_current_month: ไปยังเดือนปัจจุบัน
+previous_week: สัปดาห์ก่อนหน้า
+next_week: สัปดาห์ถัดไป
+go_to_current_week: ไปยังสัปดาห์ปัจจุบัน
+more: เพิ่มเติม

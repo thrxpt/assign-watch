@@ -30,7 +30,15 @@ hide_class: Hide Class
 hide_assignment: Hide Assignment
 tips: Tips
 tips_desc: Right-click within the frame of each class or assignment to hide it.
-go_to_current_week: Go to Current Week
 group_by: Group By
 group_by_class: By Class
 group_by_due_date: By Due Date
+weekly_view: Week
+monthly_view: Month
+previous_month: Previous Month
+next_month: Next Month
+go_to_current_month: Go to Current Month
+previous_week: Previous Week
+next_week: Next Week
+go_to_current_week: Go to Current Week
+more: more

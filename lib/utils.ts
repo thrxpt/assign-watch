@@ -141,6 +141,15 @@ export const groupStorage = storage.defineItem<GroupState>(
   },
 );
 
+export type ShowCalendarBy = "month" | "week";
+
+export const showCalendarByStorage = storage.defineItem<ShowCalendarBy>(
+  "local:showCalendarBy",
+  {
+    fallback: "month",
+  },
+);
+
 export const userIdStorage = storage.defineItem<string | null>("local:userId", {
   fallback: null,
 });
