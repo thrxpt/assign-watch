@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/icon.png" />
+  <img src="./assets/icon.png" width="64" height="64"/>
   <h1>
     Assign Watch
   </h1>
