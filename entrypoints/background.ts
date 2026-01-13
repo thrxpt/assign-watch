@@ -8,6 +8,14 @@ import {
 } from "@/lib/utils";
 
 export default defineBackground(() => {
+  browser.runtime.onInstalled.addListener((details) => {
+    if (details.reason === "install") {
+      browser.tabs.create({
+        url: browser.runtime.getURL("/onboarding.html"),
+      });
+    }
+  });
+
   browser.alarms.create("checkAssignments", { periodInMinutes: 1 });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {
