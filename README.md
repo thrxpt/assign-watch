@@ -22,9 +22,9 @@ Assign Watch aggregates all your assignments across courses, providing instant v
 
 ## Features
 
-- **Unified Dashboard:** View all assignments across courses in one place
+- **Unified Dashboard:** View all assignments across courses in one place.
 - **Calendar View:** Visualize your workload with an interactive weekly or monthly calendar.
-- **Notifications:** Get timely alerts for assignments that are due soon
+- **Notifications:** Get timely alerts for assignments that are due soon.
 - **Customizable View:** Hide or show classes or assignments you don't want to see.
 - **Quick Access:** Instantly open with keyboard shortcut (<kbd>Alt</kbd>+<kbd>A</kbd> or <kbd>Option</kbd>+<kbd>A</kbd>).
 - **Multi-language Support:** Available in English and Thai.
