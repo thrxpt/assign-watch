@@ -62,7 +62,6 @@ Download the latest release from the [GitHub Releases](https://github.com/thrxpt
 
 > [!WARNING]
 > **Firefox Limitation:** Extensions installed via "Load Temporary Add-on" will be removed when you close or restart Firefox. For permanent usage, please install via the Firefox Add-ons store link above.
-> Extensions installed manually in Firefox will be removed when the browser is restarted.
 
 ## Development
 
