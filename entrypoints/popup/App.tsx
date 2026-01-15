@@ -7,7 +7,7 @@ function App() {
         <img
           src={browser.runtime.getURL("/icons/128.png")}
           alt="Assign Watch Logo"
-          className="size-12 rounded-xl shadow-sm"
+          className="size-12 rounded-lg shadow-sm"
         />
         <div className="text-center">
           <h1 className="text-lg font-bold tracking-tight">Assign Watch</h1>
