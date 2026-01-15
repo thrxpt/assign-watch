@@ -1,6 +1,8 @@
 import { Activity, ClassInfo } from "@/types";
+import { i18n } from "#i18n";
+import { isToday, isTomorrow } from "date-fns";
 
-import { cn, formatDate, formatDateRelative } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { Assignment } from "@/components/assignment";
 
 interface DateGroupProps {
@@ -11,25 +13,18 @@ interface DateGroupProps {
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   const dateObj = new Date(date);
-  const relativeDate = formatDateRelative(dateObj);
   const formattedDate = formatDate(dateObj, "d MMMM yyyy");
 
   return (
     <div className="flex gap-3">
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
-          <div className="text-lg font-medium">{formattedDate}</div>
-          <div
-            className={cn(
-              "text-xs",
-              relativeDate.status === "late"
-                ? "text-red-500"
-                : relativeDate.status === "today"
-                  ? "text-yellow-500"
-                  : "text-green-500",
-            )}
-          >
-            {relativeDate.text}
+          <div className="text-lg font-medium">
+            {isToday(dateObj)
+              ? i18n.t("today")
+              : isTomorrow(dateObj)
+                ? i18n.t("tomorrow")
+                : formattedDate}
           </div>
         </div>
       </div>
