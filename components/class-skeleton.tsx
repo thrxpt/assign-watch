@@ -6,7 +6,7 @@ export function ClassSkeleton() {
       <Skeleton className="w-48 rounded-lg" />
       <div className="flex w-full flex-col gap-3">
         {Array.from({ length: 2 }).map((_, index) => (
-          <div key={index} className="space-y-2">
+          <div className="space-y-2" key={index}>
             <Skeleton className="h-6 w-25" />
             <div className="space-y-2">
               <Skeleton className="h-4 w-100" />

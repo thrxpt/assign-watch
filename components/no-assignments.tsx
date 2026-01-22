@@ -1,5 +1,5 @@
-import { i18n } from "#i18n";
 import { PartyPopper } from "lucide-react";
+import { i18n } from "#i18n";
 
 import {
   Empty,

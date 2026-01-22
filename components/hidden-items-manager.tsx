@@ -1,12 +1,7 @@
-import { Activity, ClassInfo } from "@/types";
-import { i18n } from "#i18n";
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
-
-import {
-  clearAllHiddenItems,
-  unhideAssignment,
-  unhideClass,
-} from "@/lib/utils";
+import { i18n } from "#i18n";
+import { StatusBadge } from "@/components/status-badge";
+import { Tips } from "@/components/tips";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,8 +12,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { StatusBadge } from "@/components/status-badge";
-import { Tips } from "@/components/tips";
+import {
+  clearAllHiddenItems,
+  unhideAssignment,
+  unhideClass,
+} from "@/lib/utils";
+import type { Activity, ClassInfo } from "@/types";
 
 interface HiddenItemsManagerProps {
   hiddenClasses: number[];
@@ -42,7 +41,9 @@ export function HiddenItemsManager({
       for (const assignments of allAssignments) {
         if (assignments) {
           const found = assignments.find((a) => a.id === assignmentId);
-          if (found) return found;
+          if (found) {
+            return found;
+          }
         }
       }
       return undefined;
@@ -58,11 +59,11 @@ export function HiddenItemsManager({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm">
+        <Button size="sm" variant="secondary">
           <EyeOff />
           {i18n.t("hidden")}
           {totalHidden > 0 && (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
               {totalHidden}
             </span>
           )}
@@ -71,7 +72,7 @@ export function HiddenItemsManager({
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between">
           <DropdownMenuLabel>{i18n.t("hidden_items")}</DropdownMenuLabel>
-          <Button variant="outline" size="xs" onClick={clearAllHiddenItems}>
+          <Button onClick={clearAllHiddenItems} size="xs" variant="outline">
             <BrushCleaning />
             {i18n.t("clear_all")}
           </Button>
@@ -80,7 +81,7 @@ export function HiddenItemsManager({
 
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
               {i18n.t("class")}
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
@@ -105,7 +106,7 @@ export function HiddenItemsManager({
 
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
-            <DropdownMenuLabel className="text-xs text-muted-foreground">
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
               {i18n.t("assignment")}
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (

@@ -1,13 +1,16 @@
-import App from "@/entrypoints/content/App";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ReactDOM from "react-dom/client";
+import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
+import { defineContentScript } from "wxt/utils/define-content-script";
+import App from "@/entrypoints/content/app";
 
 import "@/assets/tailwind.css";
 import "@fontsource-variable/anuphan";
 
-// Suppress console.error and console.warn from radix-ui's Dialog
 if (process.env.NODE_ENV === "production") {
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: Suppress console.error and console.warn from radix-ui's Dialog
   console.error = () => {};
+  // biome-ignore lint/suspicious/noEmptyBlockStatements: Suppress console.error and console.warn from radix-ui's Dialog
   console.warn = () => {};
 }
 
@@ -30,7 +33,7 @@ export default defineContentScript({
         root.render(
           <QueryClientProvider client={queryClient}>
             <App />
-          </QueryClientProvider>,
+          </QueryClientProvider>
         );
         return root;
       },

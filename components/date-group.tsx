@@ -1,9 +1,9 @@
-import { Activity, ClassInfo } from "@/types";
-import { i18n } from "#i18n";
 import { isToday, isTomorrow } from "date-fns";
+import { i18n } from "#i18n";
+import { Assignment } from "@/components/assignment";
 
 import { cn, formatDate } from "@/lib/utils";
-import { Assignment } from "@/components/assignment";
+import type { Activity, ClassInfo } from "@/types";
 
 interface DateGroupProps {
   date: string;
@@ -19,7 +19,7 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
     <div className="flex gap-3">
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
-          <div className="text-lg font-medium">
+          <div className="font-medium text-lg">
             {isToday(dateObj)
               ? i18n.t("today")
               : isTomorrow(dateObj)
@@ -33,9 +33,9 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
           const classInfo = classInfoMap.get(assignment.class_id);
           return (
             <Assignment
-              key={assignment.id}
               assignment={assignment}
               classInfo={classInfo}
+              key={assignment.id}
             />
           );
         })}
