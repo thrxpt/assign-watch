@@ -351,7 +351,7 @@ function App() {
                 <div className="max-h-[75dvh] space-y-5 pr-4">
                   {(() => {
                     // Handle loading state
-                    if (!assignments.pending) {
+                    if (assignments.pending) {
                       return Array.from({ length: 4 }).map((_, index) => (
                         <ClassSkeleton key={index} />
                       ));
