@@ -1,14 +1,14 @@
-import { Activity, ClassInfo } from "@/types";
 import { EyeOff } from "lucide-react";
-
-import { cn, hideClass } from "@/lib/utils";
+import { i18n } from "#i18n";
+import { Assignment } from "@/components/assignment";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { Assignment } from "@/components/assignment";
+import { cn, hideClass } from "@/lib/utils";
+import type { Activity, ClassInfo } from "@/types";
 
 interface ClassProps {
   classInfo: ClassInfo;
@@ -23,15 +23,15 @@ export function Class({ classInfo, assignments }: ClassProps) {
           <div className="w-48 rounded-lg bg-muted p-4">
             <div className={cn(assignments.length > 1 && "sticky top-4")}>
               <a
-                className="text-lg font-medium underline-offset-4 hover:underline"
+                className="font-medium text-lg underline-offset-4 hover:underline"
                 href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
               >
                 {classInfo.title}
               </a>
               <div
                 className={cn(
-                  "text-xs text-muted-foreground",
-                  assignments.length === 1 && "line-clamp-3",
+                  "text-muted-foreground text-xs",
+                  assignments.length === 1 && "line-clamp-3"
                 )}
               >
                 {classInfo.description}
@@ -40,7 +40,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
           </div>
           <div className="flex w-full flex-col gap-3">
             {assignments.map((assignment) => (
-              <Assignment key={assignment.id} assignment={assignment} />
+              <Assignment assignment={assignment} key={assignment.id} />
             ))}
           </div>
         </div>

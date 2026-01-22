@@ -1,3 +1,5 @@
+import { browser } from "wxt/browser";
+import { defineBackground } from "wxt/utils/define-background";
 import {
   classInfoStorage,
   getAssignments,
@@ -18,6 +20,7 @@ export default defineBackground(() => {
 
   browser.alarms.create("checkAssignments", { periodInMinutes: 1 });
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Suppress complexity warning
   browser.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === "checkAssignments") {
       const userId = await userIdStorage.getValue();
@@ -27,7 +30,9 @@ export default defineBackground(() => {
       const notifiedAssignments1h =
         (await notifiedAssignments1hStorage.getValue()) ?? [];
 
-      if (!userId || !classInfo) return;
+      if (!(userId && classInfo)) {
+        return;
+      }
 
       let shouldUpdate = false;
       let shouldUpdate1h = false;
@@ -46,23 +51,25 @@ export default defineBackground(() => {
             const dueDate = new Date(assignment.due_date);
             const isOverdue = dueDate < now;
 
-            if (notifiedAssignments.includes(assignment.id)) {
-              if (isSubmitted || isOverdue) {
-                const index = notifiedAssignments.indexOf(assignment.id);
-                if (index > -1) {
-                  notifiedAssignments.splice(index, 1);
-                  shouldUpdate = true;
-                }
+            if (
+              notifiedAssignments.includes(assignment.id) &&
+              (isSubmitted || isOverdue)
+            ) {
+              const index = notifiedAssignments.indexOf(assignment.id);
+              if (index > -1) {
+                notifiedAssignments.splice(index, 1);
+                shouldUpdate = true;
               }
             }
 
-            if (notifiedAssignments1h.includes(assignment.id)) {
-              if (isSubmitted || isOverdue) {
-                const index = notifiedAssignments1h.indexOf(assignment.id);
-                if (index > -1) {
-                  notifiedAssignments1h.splice(index, 1);
-                  shouldUpdate1h = true;
-                }
+            if (
+              notifiedAssignments1h.includes(assignment.id) &&
+              (isSubmitted || isOverdue)
+            ) {
+              const index = notifiedAssignments1h.indexOf(assignment.id);
+              if (index > -1) {
+                notifiedAssignments1h.splice(index, 1);
+                shouldUpdate1h = true;
               }
             }
 
@@ -84,7 +91,7 @@ export default defineBackground(() => {
                         title: "View Assignment",
                       },
                     ],
-                  },
+                  }
                 );
 
                 notifiedAssignments.push(assignment.id);
@@ -108,7 +115,7 @@ export default defineBackground(() => {
                         title: "View Assignment",
                       },
                     ],
-                  },
+                  }
                 );
 
                 notifiedAssignments1h.push(assignment.id);
@@ -119,7 +126,7 @@ export default defineBackground(() => {
         } catch (error) {
           console.error(
             `Failed to check assignments for class ${cls.id}:`,
-            error,
+            error
           );
         }
       }

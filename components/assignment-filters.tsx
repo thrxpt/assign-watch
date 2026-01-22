@@ -1,7 +1,5 @@
-import { i18n } from "#i18n";
 import { Filter } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { i18n } from "#i18n";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,8 +10,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 
-export type FilterState = {
+export interface FilterState {
   submissionStatus: {
     submitted: boolean;
     notSubmitted: boolean;
@@ -26,7 +25,7 @@ export type FilterState = {
     individual: boolean;
     group: boolean;
   };
-};
+}
 
 const VALID_KEYS: Record<keyof FilterState, string[]> = {
   submissionStatus: ["submitted", "notSubmitted"],
@@ -46,7 +45,7 @@ export function AssignmentFilters({
   const updateFilter = (
     category: keyof FilterState,
     key: string,
-    value: boolean,
+    value: boolean
   ) => {
     const categoryFilters = filters[category] as Record<string, boolean>;
     const validKeys = VALID_KEYS[category];
@@ -83,11 +82,11 @@ export function AssignmentFilters({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm">
+        <Button size="sm" variant="secondary">
           <Filter />
           {i18n.t("filter")}
           {activeFilterCount > 0 && (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground tabular-nums">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
               {activeFilterCount}
             </span>
           )}
@@ -98,25 +97,25 @@ export function AssignmentFilters({
           <DropdownMenuLabel>{i18n.t("submission_status")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.submitted}
+            className={cn(
+              isOnlyChecked("submissionStatus", "submitted") &&
+                "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("submissionStatus", "submitted", !!checked)
             }
-            className={cn(
-              isOnlyChecked("submissionStatus", "submitted") &&
-                "pointer-events-none",
-            )}
           >
             {i18n.t("submitted")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.notSubmitted}
+            className={cn(
+              isOnlyChecked("submissionStatus", "notSubmitted") &&
+                "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("submissionStatus", "notSubmitted", !!checked)
             }
-            className={cn(
-              isOnlyChecked("submissionStatus", "notSubmitted") &&
-                "pointer-events-none",
-            )}
           >
             {i18n.t("not_submitted")}
           </DropdownMenuCheckboxItem>
@@ -128,24 +127,24 @@ export function AssignmentFilters({
           <DropdownMenuLabel>{i18n.t("assignment_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.assignment}
+            className={cn(
+              isOnlyChecked("assignmentType", "assignment") &&
+                "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("assignmentType", "assignment", !!checked)
             }
-            className={cn(
-              isOnlyChecked("assignmentType", "assignment") &&
-                "pointer-events-none",
-            )}
           >
             {i18n.t("assignment")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.quiz}
+            className={cn(
+              isOnlyChecked("assignmentType", "quiz") && "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("assignmentType", "quiz", !!checked)
             }
-            className={cn(
-              isOnlyChecked("assignmentType", "quiz") && "pointer-events-none",
-            )}
           >
             {i18n.t("quiz")}
           </DropdownMenuCheckboxItem>
@@ -157,23 +156,23 @@ export function AssignmentFilters({
           <DropdownMenuLabel>{i18n.t("group_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
+            className={cn(
+              isOnlyChecked("groupType", "individual") && "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("groupType", "individual", !!checked)
             }
-            className={cn(
-              isOnlyChecked("groupType", "individual") && "pointer-events-none",
-            )}
           >
             {i18n.t("individual")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
+            className={cn(
+              isOnlyChecked("groupType", "group") && "pointer-events-none"
+            )}
             onCheckedChange={(checked) =>
               updateFilter("groupType", "group", !!checked)
             }
-            className={cn(
-              isOnlyChecked("groupType", "group") && "pointer-events-none",
-            )}
           >
             {i18n.t("group")}
           </DropdownMenuCheckboxItem>

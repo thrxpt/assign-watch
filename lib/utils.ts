@@ -1,13 +1,14 @@
-import { Activity, ClassInfo, RootResponse } from "@/types";
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import moment from "moment/min/moment-with-locales";
 import { twMerge } from "tailwind-merge";
-
-import { FilterState } from "@/components/assignment-filters";
-import { GroupState } from "@/components/assignment-group";
-import { SortState } from "@/components/assignment-sort";
+import { storage } from "wxt/utils/storage";
+import { i18n } from "#i18n";
+import type { FilterState } from "@/components/assignment-filters";
+import type { GroupState } from "@/components/assignment-group";
+import type { SortState } from "@/components/assignment-sort";
+import type { Activity, ClassInfo, RootResponse } from "@/types";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -41,14 +42,16 @@ export function getUserId() {
 export function getAllClassInfo() {
   const classCards = document.querySelectorAll(".class-card");
   const classTextElements = document.querySelectorAll(
-    "#font-color-main-card p",
+    "#font-color-main-card p"
   );
-  const classesInfo = [];
+  const classesInfo: ClassInfo[] = [];
 
   for (let i = 0; i < classCards.length; i++) {
     const cardName = classCards[i].getAttribute("name");
     const classId = cardName?.split("-")[1];
-    if (!classId) continue;
+    if (!classId) {
+      continue;
+    }
     const classTitle = classTextElements[i * 2].textContent;
     const classDescription = classTextElements[i * 2 + 1].textContent;
 
@@ -64,7 +67,7 @@ export function getAllClassInfo() {
 export async function getAssignments(classId: number, userId?: string) {
   const finalUserId = userId ?? getUserId();
   const res = await fetch(
-    `https://app.leb2.org/api/get/assessment-activities/student?class_id=${classId}&student_id=${finalUserId}&filter_groups[0][filters][0][key]=class_id&filter_groups[0][filters][0][value]=${classId}&sort[]=sequence&sort[]=id&select[]=activities:id,user_id,class_id,adv_starred,group_type,type,peer_assessment,is_allow_repeat,title,description,start_date,due_date,edit_group_mode,created_at&select[]=user:id,firstname_en,lastname_en,firstname_th,lastname_th&includes[]=user:sideload&includes[]=fileactivities:ids&includes[]=questions:ids`,
+    `https://app.leb2.org/api/get/assessment-activities/student?class_id=${classId}&student_id=${finalUserId}&filter_groups[0][filters][0][key]=class_id&filter_groups[0][filters][0][value]=${classId}&sort[]=sequence&sort[]=id&select[]=activities:id,user_id,class_id,adv_starred,group_type,type,peer_assessment,is_allow_repeat,title,description,start_date,due_date,edit_group_mode,created_at&select[]=user:id,firstname_en,lastname_en,firstname_th,lastname_th&includes[]=user:sideload&includes[]=fileactivities:ids&includes[]=questions:ids`
   );
   const data = (await res.json()) as RootResponse;
   return data.activities.filter((activity) => activity.due_date !== null);
@@ -74,32 +77,30 @@ export function getSubmissionStatus(assignment: Activity) {
   if (assignment.activity_submission_id) {
     if (assignment.activity_submission_is_late) {
       return "submitted_late";
-    } else if (assignment.quiz_submission_is_submitted === 0) {
+    }
+    if (assignment.quiz_submission_is_submitted === 0) {
       return "quiz_not_submitted";
-    } else {
-      return "submitted";
     }
-  } else {
-    if (assignment.due_date_exceed) {
-      return "not_submitted";
-    } else {
-      return "in_progress";
-    }
+    return "submitted";
   }
+  if (assignment.due_date_exceed) {
+    return "not_submitted";
+  }
+  return "in_progress";
 }
 
 export const hiddenClassesStorage = storage.defineItem<number[]>(
   "local:hiddenClasses",
   {
     fallback: [],
-  },
+  }
 );
 
 export const hiddenAssignmentsStorage = storage.defineItem<number[]>(
   "local:hiddenAssignments",
   {
     fallback: [],
-  },
+  }
 );
 
 export const filtersStorage = storage.defineItem<FilterState>(
@@ -119,7 +120,7 @@ export const filtersStorage = storage.defineItem<FilterState>(
         group: true,
       },
     },
-  },
+  }
 );
 
 export const sortStorage = storage.defineItem<SortState>(
@@ -129,7 +130,7 @@ export const sortStorage = storage.defineItem<SortState>(
       sortBy: "dueDate",
       direction: "asc",
     },
-  },
+  }
 );
 
 export const groupStorage = storage.defineItem<GroupState>(
@@ -138,7 +139,7 @@ export const groupStorage = storage.defineItem<GroupState>(
     fallback: {
       groupBy: "class",
     },
-  },
+  }
 );
 
 export type ShowCalendarBy = "month" | "week";
@@ -147,7 +148,7 @@ export const showCalendarByStorage = storage.defineItem<ShowCalendarBy>(
   "local:showCalendarBy",
   {
     fallback: "month",
-  },
+  }
 );
 
 export const userIdStorage = storage.defineItem<string | null>("local:userId", {
@@ -158,21 +159,21 @@ export const classInfoStorage = storage.defineItem<ClassInfo[]>(
   "local:classInfo",
   {
     fallback: [],
-  },
+  }
 );
 
 export const notifiedAssignmentsStorage = storage.defineItem<number[]>(
   "local:notifiedAssignments",
   {
     fallback: [],
-  },
+  }
 );
 
 export const notifiedAssignments1hStorage = storage.defineItem<number[]>(
   "local:notifiedAssignments1h",
   {
     fallback: [],
-  },
+  }
 );
 
 export async function getHiddenClasses() {
@@ -203,7 +204,7 @@ export async function isClassHidden(classId: number) {
 }
 
 export async function isAssignmentHidden(
-  assignmentId: number,
+  assignmentId: number
 ): Promise<boolean> {
   const hidden = await getHiddenAssignments();
   return hidden.includes(assignmentId);
@@ -217,7 +218,7 @@ export async function unhideClass(classId: number) {
 export async function unhideAssignment(assignmentId: number) {
   const hidden = await getHiddenAssignments();
   await hiddenAssignmentsStorage.setValue(
-    hidden.filter((id) => id !== assignmentId),
+    hidden.filter((id) => id !== assignmentId)
   );
 }
 

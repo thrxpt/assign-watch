@@ -1,5 +1,5 @@
-import { i18n } from "#i18n";
 import { ArrowDownUp } from "lucide-react";
+import { i18n } from "#i18n";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +58,7 @@ export function AssignmentSort({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="secondary" size="sm">
+        <Button size="sm" variant="secondary">
           <ArrowDownUp />
           {getSortLabel()}
         </Button>
@@ -67,8 +67,8 @@ export function AssignmentSort({
         <DropdownMenuGroup>
           <DropdownMenuLabel>{i18n.t("sort_by")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={sortState.sortBy}
             onValueChange={(value) => handleSortChange(value as SortOption)}
+            value={sortState.sortBy}
           >
             {sortOptions.map((option) => (
               <DropdownMenuRadioItem key={option.value} value={option.value}>
@@ -83,10 +83,10 @@ export function AssignmentSort({
         <DropdownMenuGroup>
           <DropdownMenuLabel>{i18n.t("order")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
-            value={sortState.direction}
             onValueChange={(value) =>
               handleDirectionChange(value as SortDirection)
             }
+            value={sortState.direction}
           >
             <DropdownMenuRadioItem value="asc">
               {i18n.t("asc")}

@@ -3,11 +3,11 @@ import {
   BookCheck,
   ChevronRight,
   Languages,
-  LucideIcon,
+  type LucideIcon,
 } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { browser } from "wxt/browser";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const features: {
   icon: LucideIcon;
@@ -32,11 +32,13 @@ function App() {
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="flex max-w-md flex-col items-center text-center">
         <img
-          src={browser.runtime.getURL("/icons/128.png")}
           alt="Assign Watch"
           className="mb-6 size-20 rounded-2xl shadow-lg"
+          height={80}
+          src={browser.runtime.getURL("/icons/128.png")}
+          width={80}
         />
-        <h1 className="mb-2 text-2xl font-semibold tracking-tight">
+        <h1 className="mb-2 font-semibold text-2xl tracking-tight">
           Thank you for installing Assign Watch!
         </h1>
         <p className="mb-8 text-base text-muted-foreground">
@@ -46,8 +48,8 @@ function App() {
         <div className="mx-auto mb-8 space-y-3">
           {features.map((feature, index) => (
             <div
-              key={index}
               className="flex items-center gap-3 rounded-lg bg-card/50 p-3 text-left text-sm"
+              key={index}
             >
               <div className="rounded-lg bg-muted p-2">
                 <feature.icon className="size-5 shrink-0" />
@@ -58,13 +60,13 @@ function App() {
         </div>
 
         <a
-          href="https://app.leb2.org/class"
-          target="_blank"
-          rel="noopener noreferrer"
           className={cn(
             buttonVariants({ size: "lg" }),
-            "group relative overflow-hidden",
+            "group relative overflow-hidden"
           )}
+          href="https://app.leb2.org/class"
+          rel="noopener noreferrer"
+          target="_blank"
         >
           <span className="mr-8 text-primary-foreground transition-opacity duration-500 group-hover:opacity-0">
             Get Started
@@ -74,7 +76,7 @@ function App() {
           </span>
         </a>
 
-        <p className="mt-4 text-xs text-muted-foreground">
+        <p className="mt-4 text-muted-foreground text-xs">
           Visit LEB2 to see something special ✨
         </p>
       </div>

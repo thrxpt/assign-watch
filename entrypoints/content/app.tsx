@@ -1,9 +1,30 @@
-import { useEffect, useMemo, useState } from "react";
-import { Activity } from "@/types";
 import { useQueries } from "@tanstack/react-query";
-import { i18n } from "#i18n";
 import { Calendar, LayoutList } from "lucide-react";
-
+import { useEffect, useMemo, useState } from "react";
+import { i18n } from "#i18n";
+import {
+  AssignmentFilters,
+  type FilterState,
+} from "@/components/assignment-filters";
+import {
+  AssignmentGroup,
+  type GroupState,
+} from "@/components/assignment-group";
+import { AssignmentSort, type SortState } from "@/components/assignment-sort";
+import { CalendarView } from "@/components/calendar-view";
+import { Class } from "@/components/class";
+import { ClassSkeleton } from "@/components/class-skeleton";
+import { DateGroup } from "@/components/date-group";
+import { HiddenItemsManager } from "@/components/hidden-items-manager";
+import { NoAssignments } from "@/components/no-assignments";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   classInfoStorage,
   filtersStorage,
@@ -17,26 +38,7 @@ import {
   sortStorage,
   userIdStorage,
 } from "@/lib/utils";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  AssignmentFilters,
-  FilterState,
-} from "@/components/assignment-filters";
-import { AssignmentGroup, GroupState } from "@/components/assignment-group";
-import { AssignmentSort, SortState } from "@/components/assignment-sort";
-import { CalendarView } from "@/components/calendar-view";
-import { Class } from "@/components/class";
-import { ClassSkeleton } from "@/components/class-skeleton";
-import { DateGroup } from "@/components/date-group";
-import { HiddenItemsManager } from "@/components/hidden-items-manager";
-import { NoAssignments } from "@/components/no-assignments";
+import type { Activity } from "@/types";
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,31 +101,39 @@ function App() {
     };
     loadStorageData();
 
-    const unwatchClasses = hiddenClassesStorage.watch((newValue) => {
-      setHiddenClasses(newValue ?? []);
-    });
-
-    const unwatchAssignments = hiddenAssignmentsStorage.watch((newValue) => {
-      setHiddenAssignments(newValue ?? []);
-    });
-
-    const unwatchFilters = filtersStorage.watch((newValue) => {
-      if (newValue) {
-        setFilters(newValue);
+    const unwatchClasses = hiddenClassesStorage.watch(
+      (newValue: number[] | undefined) => {
+        setHiddenClasses(newValue ?? []);
       }
-    });
+    );
 
-    const unwatchSort = sortStorage.watch((newValue) => {
+    const unwatchAssignments = hiddenAssignmentsStorage.watch(
+      (newValue: number[] | undefined) => {
+        setHiddenAssignments(newValue ?? []);
+      }
+    );
+
+    const unwatchFilters = filtersStorage.watch(
+      (newValue: FilterState | undefined) => {
+        if (newValue) {
+          setFilters(newValue);
+        }
+      }
+    );
+
+    const unwatchSort = sortStorage.watch((newValue: SortState | undefined) => {
       if (newValue) {
         setSortState(newValue);
       }
     });
 
-    const unwatchGroup = groupStorage.watch((newValue) => {
-      if (newValue) {
-        setGroupState(newValue);
+    const unwatchGroup = groupStorage.watch(
+      (newValue: GroupState | undefined) => {
+        if (newValue) {
+          setGroupState(newValue);
+        }
       }
-    });
+    );
 
     return () => {
       unwatchClasses();
@@ -137,7 +147,7 @@ function App() {
   useEffect(() => {
     let button: HTMLButtonElement | null = null;
     const targetElement = document.querySelector(
-      ".nav.navbar-nav.page-menu.flex-container.fxf-rnw",
+      ".nav.navbar-nav.page-menu.flex-container.fxf-rnw"
     );
     if (targetElement) {
       button = document.createElement("button");
@@ -156,7 +166,7 @@ function App() {
       targetElement.appendChild(button);
     }
     return () => {
-      if (button && button.parentNode) {
+      if (button?.parentNode) {
         button.parentNode.removeChild(button);
       }
     };
@@ -178,7 +188,7 @@ function App() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isModalOpen]);
+  }, []);
 
   const allClassInfo = useMemo(() => getAllClassInfo(), []);
 
@@ -234,6 +244,8 @@ function App() {
           comparison =
             new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
           break;
+        default:
+          break;
       }
 
       return sortState.direction === "asc" ? comparison : -comparison;
@@ -248,23 +260,33 @@ function App() {
     if (
       (status === "submitted" || status === "submitted_late") &&
       !filters.submissionStatus.submitted
-    )
+    ) {
       return false;
+    }
     if (
       (status === "not_submitted" ||
         status === "in_progress" ||
         status === "quiz_not_submitted") &&
       !filters.submissionStatus.notSubmitted
-    )
+    ) {
       return false;
+    }
 
     const isAssignment = assignment.type === "ASM";
-    if (isAssignment && !filters.assignmentType.assignment) return false;
-    if (!isAssignment && !filters.assignmentType.quiz) return false;
+    if (isAssignment && !filters.assignmentType.assignment) {
+      return false;
+    }
+    if (!(isAssignment || filters.assignmentType.quiz)) {
+      return false;
+    }
 
     const isIndividual = assignment.group_type === "IND";
-    if (isIndividual && !filters.groupType.individual) return false;
-    if (!isIndividual && !filters.groupType.group) return false;
+    if (isIndividual && !filters.groupType.individual) {
+      return false;
+    }
+    if (!(isIndividual || filters.groupType.group)) {
+      return false;
+    }
 
     return true;
   };
@@ -273,19 +295,19 @@ function App() {
 
   return (
     <div>
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog onOpenChange={setIsModalOpen} open={isModalOpen}>
         <DialogContent
-          showCloseButton={false}
           className="rounded-xl sm:max-w-3xl"
           onOpenAutoFocus={(e) => e.preventDefault()}
+          showCloseButton={false}
         >
           <Tabs
-            defaultValue="list"
             className="gap-4"
-            value={activeTab}
+            defaultValue="list"
             onValueChange={(value) =>
               setActiveTab(value as "list" | "calendar")
             }
+            value={activeTab}
           >
             <DialogHeader className="flex-row items-center justify-between">
               <DialogTitle className="text-xl">
@@ -293,14 +315,14 @@ function App() {
               </DialogTitle>
               <div className="flex items-center gap-2">
                 <HiddenItemsManager
-                  hiddenClasses={hiddenClasses}
-                  hiddenAssignments={hiddenAssignments}
-                  allClassInfo={allClassInfo}
                   allAssignments={assignments.data}
+                  allClassInfo={allClassInfo}
+                  hiddenAssignments={hiddenAssignments}
+                  hiddenClasses={hiddenClasses}
                 />
                 <AssignmentSort
-                  sortState={sortState}
                   onSortChange={handleSortChange}
+                  sortState={sortState}
                 />
                 <AssignmentFilters
                   filters={filters}
@@ -329,7 +351,7 @@ function App() {
                 <div className="max-h-[75dvh] space-y-5 pr-4">
                   {(() => {
                     // Handle loading state
-                    if (assignments.pending) {
+                    if (!assignments.pending) {
                       return Array.from({ length: 4 }).map((_, index) => (
                         <ClassSkeleton key={index} />
                       ));
@@ -359,28 +381,33 @@ function App() {
                             status === "submitted" ||
                             status === "submitted_late"
                           );
-                        },
+                        }
                       );
 
                       const exceededAssignments = query.filter(
-                        (assignment) => assignment.due_date_exceed,
+                        (assignment) => assignment.due_date_exceed
                       );
 
                       const filteredAssignments = query
                         .filter(
                           (assignment) =>
-                            !exceededAssignments.includes(assignment) ||
-                            !submittedAssignments.includes(assignment),
+                            !(
+                              exceededAssignments.includes(assignment) &&
+                              submittedAssignments.includes(assignment)
+                            )
                         )
                         .filter(
                           (assignment) =>
-                            !hiddenAssignments.includes(assignment.id),
+                            !hiddenAssignments.includes(assignment.id)
                         )
                         .filter(applyFilters);
 
-                      filteredAssignments.forEach((assignment) => {
-                        allFilteredAssignments.push({ assignment, classInfo });
-                      });
+                      for (const assignment of filteredAssignments) {
+                        allFilteredAssignments.push({
+                          assignment,
+                          classInfo,
+                        });
+                      }
                     });
 
                     if (allFilteredAssignments.length === 0) {
@@ -397,25 +424,26 @@ function App() {
                         }
                       >();
 
-                      allFilteredAssignments.forEach(
-                        ({ assignment, classInfo }) => {
-                          if (!classGroups.has(classInfo.id)) {
-                            classGroups.set(classInfo.id, {
-                              classInfo,
-                              assignments: [],
-                            });
-                          }
-                          classGroups
-                            .get(classInfo.id)!
-                            .assignments.push(assignment);
-                        },
-                      );
+                      for (const {
+                        assignment,
+                        classInfo,
+                      } of allFilteredAssignments) {
+                        if (!classGroups.has(classInfo.id)) {
+                          classGroups.set(classInfo.id, {
+                            classInfo,
+                            assignments: [],
+                          });
+                        }
+                        classGroups
+                          .get(classInfo.id)
+                          ?.assignments.push(assignment);
+                      }
 
                       return Array.from(classGroups.values()).map((group) => (
                         <Class
-                          key={group.classInfo.id}
-                          classInfo={group.classInfo}
                           assignments={sortAssignments(group.assignments)}
+                          classInfo={group.classInfo}
+                          key={group.classInfo.id}
                         />
                       ));
                     }
@@ -423,27 +451,27 @@ function App() {
                     // Group by due date
                     const dateGroups = new Map<string, Activity[]>();
                     const classInfoMap = new Map(
-                      allClassInfo.map((c) => [c.id, c]),
+                      allClassInfo.map((c) => [c.id, c])
                     );
 
                     // Sort all assignments first
                     const sortedAssignments = sortAssignments(
-                      allFilteredAssignments.map((item) => item.assignment),
+                      allFilteredAssignments.map((item) => item.assignment)
                     );
 
-                    sortedAssignments.forEach((assignment) => {
+                    for (const assignment of sortedAssignments) {
                       const dateKey = new Date(assignment.due_date)
                         .toISOString()
                         .split("T")[0];
                       if (!dateGroups.has(dateKey)) {
                         dateGroups.set(dateKey, []);
                       }
-                      dateGroups.get(dateKey)!.push(assignment);
-                    });
+                      dateGroups.get(dateKey)?.push(assignment);
+                    }
 
                     // Sort date groups by date
                     const sortedDateGroups = Array.from(
-                      dateGroups.entries(),
+                      dateGroups.entries()
                     ).sort(([a], [b]) => {
                       const comparison =
                         new Date(a).getTime() - new Date(b).getTime();
@@ -454,10 +482,10 @@ function App() {
 
                     return sortedDateGroups.map(([date, dateAssignments]) => (
                       <DateGroup
-                        key={date}
-                        date={date}
                         assignments={dateAssignments}
                         classInfoMap={classInfoMap}
+                        date={date}
+                        key={date}
                       />
                     ));
                   })()}
@@ -467,10 +495,10 @@ function App() {
             <TabsContent value="calendar">
               <div className="h-[75dvh]">
                 <CalendarView
-                  allClassInfo={allClassInfo}
                   allAssignments={assignments.data}
-                  hiddenAssignments={hiddenAssignments}
+                  allClassInfo={allClassInfo}
                   applyFilters={applyFilters}
+                  hiddenAssignments={hiddenAssignments}
                 />
               </div>
             </TabsContent>
