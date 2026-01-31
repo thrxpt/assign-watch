@@ -52,6 +52,19 @@ export function getAllClassInfo() {
     if (!classId) {
       continue;
     }
+
+    const cardElement = classCards[i];
+    const nextElement = cardElement.nextElementSibling;
+
+    if (nextElement?.tagName === "UL") {
+      const settingsIcon = nextElement.querySelector(
+        "li > div > div.icon-setting-2.fix-oncard-btn"
+      );
+      if (settingsIcon) {
+        continue;
+      }
+    }
+
     const classTitle = classTextElements[i * 2].textContent;
     const classDescription = classTextElements[i * 2 + 1].textContent;
 
