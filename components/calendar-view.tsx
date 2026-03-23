@@ -423,7 +423,7 @@ export function CalendarView({
                 className="min-w-35 text-center"
                 onClick={() => weekOffset !== 0 && goToCurrentWeek()}
                 title={
-                  weekOffset !== 0 ? i18n.t("go_to_current_week") : undefined
+                  weekOffset === 0 ? undefined : i18n.t("go_to_current_week")
                 }
                 variant="ghost"
               >
@@ -448,7 +448,7 @@ export function CalendarView({
                 className="min-w-35 text-center"
                 onClick={() => monthOffset !== 0 && goToCurrentMonth()}
                 title={
-                  monthOffset !== 0 ? i18n.t("go_to_current_month") : undefined
+                  monthOffset === 0 ? undefined : i18n.t("go_to_current_month")
                 }
                 variant="ghost"
               >

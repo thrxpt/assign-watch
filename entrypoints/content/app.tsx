@@ -156,11 +156,11 @@ function App() {
       button.style.border = "none";
       button.style.background = "transparent";
       button.onclick = () => {
-        if (window.location.pathname !== "/class") {
+        if (window.location.pathname === "/class") {
+          setIsModalOpen(true);
+        } else {
           sessionStorage.setItem("shouldOpenDialog", "true");
           window.location.href = "/class";
-        } else {
-          setIsModalOpen(true);
         }
       };
       targetElement.appendChild(button);
@@ -176,11 +176,11 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.code === "KeyA") {
         e.preventDefault();
-        if (window.location.pathname !== "/class") {
+        if (window.location.pathname === "/class") {
+          setIsModalOpen((prev) => !prev);
+        } else {
           sessionStorage.setItem("shouldOpenDialog", "true");
           window.location.href = "/class";
-        } else {
-          setIsModalOpen((prev) => !prev);
         }
       }
     };
