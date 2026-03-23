@@ -1,8 +1,8 @@
 import { isToday, isTomorrow } from "date-fns";
 import { i18n } from "#i18n";
 import { Assignment } from "@/components/assignment";
-
-import { cn, formatDate } from "@/lib/utils";
+import { StatusBadge } from "@/components/status-badge";
+import { cn, formatDate, formatDateRelative } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface DateGroupProps {
@@ -26,6 +26,18 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
                 ? i18n.t("tomorrow")
                 : formattedDate}
           </div>
+          <StatusBadge
+            className={cn(
+              "mt-1 bg-white/50",
+              formatDateRelative(new Date(date)).status === "late"
+                ? "text-red-600"
+                : formatDateRelative(new Date(date)).status === "today"
+                  ? "text-yellow-600"
+                  : "text-green-600"
+            )}
+          >
+            {formatDateRelative(new Date(date)).text}
+          </StatusBadge>
         </div>
       </div>
       <div className="flex w-full flex-col gap-3">
