@@ -36,6 +36,15 @@ export function Class({ classInfo, assignments }: ClassProps) {
               >
                 {classInfo.description}
               </div>
+              <hr className="my-2 border-muted-foreground/20" />
+              <div className="flex flex-col gap-0.5">
+                <div className="text-muted-foreground text-xs">
+                  Section {classInfo.section}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  Semester {classInfo.semester}
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex w-full flex-col gap-3">
