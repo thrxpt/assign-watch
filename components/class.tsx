@@ -11,8 +11,8 @@ import { cn, hideClass } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface ClassProps {
-  classInfo: ClassInfo;
   assignments: Activity[];
+  classInfo: ClassInfo;
 }
 
 export function Class({ classInfo, assignments }: ClassProps) {
@@ -35,6 +35,13 @@ export function Class({ classInfo, assignments }: ClassProps) {
                 )}
               >
                 {classInfo.description}
+              </div>
+              <hr className="my-[0.4rem]" />
+              <div className="text-[11px] text-muted-foreground">
+                Sec {classInfo.section}
+              </div>
+              <div className="text-[11px] text-muted-foreground">
+                Sem {classInfo.semester}
               </div>
             </div>
           </div>

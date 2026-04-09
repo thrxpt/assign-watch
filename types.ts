@@ -2,6 +2,8 @@ export interface ClassInfo {
   id: number;
   title: string;
   description: string;
+  section: string;
+  semester: string;
 }
 
 export interface RootResponse {

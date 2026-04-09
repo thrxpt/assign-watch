@@ -68,10 +68,20 @@ export function getAllClassInfo() {
     const classTitle = classTextElements[i * 2].textContent;
     const classDescription = classTextElements[i * 2 + 1].textContent;
 
+    const cardFooter = cardElement.querySelector(
+      "div.card-block.card-footer.flex-container.f-jc-sb.f-ai-c"
+    );
+    const classSection =
+      cardFooter?.querySelector("span:nth-child(1) > p.h5")?.textContent ?? "";
+    const classSemester =
+      cardFooter?.querySelector("span:nth-child(2) > p.h5")?.textContent ?? "";
+
     classesInfo.push({
       id: Number(classId),
       title: classTitle,
       description: classDescription,
+      section: classSection,
+      semester: classSemester,
     });
   }
   return classesInfo;
