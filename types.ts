@@ -1,88 +1,88 @@
 export interface ClassInfo {
-  id: number;
-  title: string;
   description: string;
+  id: number;
   section: string;
   semester: string;
+  title: string;
 }
 
 export interface RootResponse {
-  user: User[];
   activities: Activity[];
+  user: User[];
 }
 
 export interface Activity {
-  id: number;
-  user_id: number;
-  class_id: number;
-  adv_starred: number;
-  group_type: "IND" | "STU";
-  type: "ASM" | "QUZ";
-  peer_assessment: number;
-  is_allow_repeat: number;
-  title: string;
-  description: string;
-  start_date: string;
-  due_date: string;
-  edit_group_mode: string;
-  created_at: string;
-  user: number;
-  activity_submission_id: number;
-  class_user_id: number;
   activity_group_id: null;
   activity_group_name: null;
-  activity_submission_submitted_at: Activitysubmissionsubmittedat;
-  due_date_exceed: boolean;
-  quiz_submission_is_submitted: number;
-  count_group_member: number;
+  activity_submission_id: number;
   activity_submission_is_late: boolean;
+  activity_submission_submitted_at: Activitysubmissionsubmittedat;
+  adv_starred: number;
+  class_id: number;
+  class_user_id: number;
+  count_group_member: number;
+  created_at: string;
+  description: string;
+  due_date: string;
+  due_date_exceed: boolean;
+  edit_group_mode: string;
   fileactivities: number[];
+  group_type: "IND" | "STU";
+  id: number;
+  is_allow_repeat: number;
+  peer_assessment: number;
   questions: number[];
+  quiz_submission_is_submitted: number;
+  start_date: string;
   submissions?: Submission[];
+  title: string;
+  type: "ASM" | "QUZ";
+  user: number;
+  user_id: number;
 }
 
 interface Submission {
-  id: number;
   activity_id: number;
-  group_id: null;
-  user_id: number;
-  spent_time: null;
+  created_at: string;
+  deleted_at: null;
   description: string;
   description_file_id: null | number;
-  is_submitted: number;
-  submitted_at: string;
-  deleted_at: null;
-  created_at: string;
-  updated_at: string;
   file_activity_submissions?: Fileactivitysubmission[];
+  group_id: null;
+  id: number;
+  is_submitted: number;
+  spent_time: null;
+  submitted_at: string;
+  updated_at: string;
+  user_id: number;
 }
 
 interface Fileactivitysubmission {
-  id: number;
-  submission_id: number;
   activity_id: number;
-  group_id: null;
-  user_id: number;
-  file_id: number;
+  created_at: string;
+  deleted_at: null;
   display_name: string;
+  file_id: number;
   file_size: string;
   file_type: string;
+  group_id: null;
+  id: number;
+  submission_id: number;
   system_generate: number;
-  deleted_at: null;
-  created_at: string;
   updated_at: string;
+  user_id: number;
 }
 
 interface Activitysubmissionsubmittedat {
   date: string;
-  timezone_type: number;
   timezone: string;
+  timezone_type: number;
 }
 
 interface User {
-  id: number;
   firstname_en: string;
-  lastname_en: string;
   firstname_th: string;
+  id: number;
+  lastname_en: string;
   lastname_th: string;
 }

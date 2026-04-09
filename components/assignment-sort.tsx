@@ -18,13 +18,13 @@ export type SortOption = "postedDate" | "dueDate";
 export type SortDirection = "asc" | "desc";
 
 export interface SortState {
-  sortBy: SortOption;
   direction: SortDirection;
+  sortBy: SortOption;
 }
 
 interface AssignmentSortProps {
-  sortState: SortState;
   onSortChange: (sortState: SortState) => void;
+  sortState: SortState;
 }
 
 export function AssignmentSort({

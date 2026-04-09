@@ -13,10 +13,6 @@ import {
 import { cn } from "@/lib/utils";
 
 export interface FilterState {
-  submissionStatus: {
-    submitted: boolean;
-    notSubmitted: boolean;
-  };
   assignmentType: {
     assignment: boolean;
     quiz: boolean;
@@ -24,6 +20,10 @@ export interface FilterState {
   groupType: {
     individual: boolean;
     group: boolean;
+  };
+  submissionStatus: {
+    submitted: boolean;
+    notSubmitted: boolean;
   };
 }
 

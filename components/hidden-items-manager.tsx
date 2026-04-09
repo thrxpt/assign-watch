@@ -20,10 +20,10 @@ import {
 import type { Activity, ClassInfo } from "@/types";
 
 interface HiddenItemsManagerProps {
-  hiddenClasses: number[];
-  hiddenAssignments: number[];
-  allClassInfo: ClassInfo[];
   allAssignments: (Activity[] | undefined)[];
+  allClassInfo: ClassInfo[];
+  hiddenAssignments: number[];
+  hiddenClasses: number[];
 }
 
 export function HiddenItemsManager({

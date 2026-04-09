@@ -6,9 +6,9 @@ import { cn, formatDate, formatDateRelative } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface DateGroupProps {
-  date: string;
   assignments: Activity[];
   classInfoMap: Map<number, ClassInfo>;
+  date: string;
 }
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {

@@ -37,10 +37,10 @@ import {
 import type { Activity, ClassInfo } from "@/types";
 
 interface CalendarViewProps {
-  allClassInfo: ClassInfo[];
   allAssignments: (Activity[] | undefined)[];
-  hiddenAssignments: number[];
+  allClassInfo: ClassInfo[];
   applyFilters: (assignment: Activity) => boolean;
+  hiddenAssignments: number[];
 }
 
 export function CalendarView({
