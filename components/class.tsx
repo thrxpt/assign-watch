@@ -31,17 +31,14 @@ export function Class({ classInfo, assignments }: ClassProps) {
               <div
                 className={cn(
                   "text-muted-foreground text-xs",
-                  assignments.length === 1 && "line-clamp-3"
+                  assignments.length === 1 && "line-clamp-2"
                 )}
               >
                 {classInfo.description}
               </div>
               <hr className="my-[0.4rem]" />
               <div className="text-[11px] text-muted-foreground">
-                Sec {classInfo.section}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Sem {classInfo.semester}
+                Section {classInfo.section}
               </div>
             </div>
           </div>

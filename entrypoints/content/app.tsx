@@ -348,7 +348,7 @@ function App() {
             </DialogHeader>
             <TabsContent value="list">
               <ScrollArea className="rounded-lg">
-                <div className="max-h-[75dvh] space-y-5 pr-4">
+                <div className="max-h-[75dvh] space-y-4 pr-4">
                   {(() => {
                     // Handle loading state
                     if (assignments.pending) {
