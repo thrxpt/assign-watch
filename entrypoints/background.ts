@@ -124,10 +124,17 @@ export default defineBackground(() => {
             }
           }
         } catch (error) {
-          console.error(
-            `Failed to check assignments for class ${cls.id}:`,
-            error
-          );
+          if (error instanceof Error) {
+            console.error(
+              `Failed to check assignments for class ${cls.id}:`,
+              error.message
+            );
+          } else {
+            console.error(
+              `Failed to check assignments for class ${cls.id}:`,
+              error
+            );
+          }
         }
       }
 
