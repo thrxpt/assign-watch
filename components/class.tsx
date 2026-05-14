@@ -7,7 +7,8 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import { cn, hideClass } from "@/lib/utils";
+import { hideClass } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface ClassProps {

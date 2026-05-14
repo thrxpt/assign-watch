@@ -20,13 +20,10 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Separator } from "@/components/ui/separator";
-import {
-  cn,
-  formatDate,
-  formatDateRelative,
-  getSubmissionStatus,
-  hideAssignment,
-} from "@/lib/utils";
+import { getSubmissionStatus } from "@/lib/assignment";
+import { formatDate, formatDateRelative } from "@/lib/date";
+import { hideAssignment } from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface AssignmentProps {
@@ -35,16 +32,17 @@ interface AssignmentProps {
 }
 
 const getAssignmentStatusColor = (assignment: Activity) => {
-  if (getSubmissionStatus(assignment) === "submitted") {
+  const status = getSubmissionStatus(assignment);
+  if (status === "submitted") {
     return cn("after:bg-green-500/70");
   }
-  if (getSubmissionStatus(assignment) === "not_submitted") {
+  if (status === "not_submitted") {
     return cn("after:bg-red-500/70");
   }
-  if (getSubmissionStatus(assignment) === "in_progress") {
+  if (status === "in_progress") {
     return cn("after:bg-neutral-500/70");
   }
-  if (getSubmissionStatus(assignment) === "quiz_not_submitted") {
+  if (status === "quiz_not_submitted") {
     return cn("after:bg-amber-500/70");
   }
 };

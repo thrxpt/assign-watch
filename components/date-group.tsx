@@ -2,7 +2,8 @@ import { isToday, isTomorrow } from "date-fns";
 import { i18n } from "#i18n";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
-import { cn, formatDate, formatDateRelative } from "@/lib/utils";
+import { formatDate, formatDateRelative } from "@/lib/date";
+import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface DateGroupProps {
