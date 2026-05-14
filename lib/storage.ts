@@ -121,7 +121,7 @@ export async function isClassHidden(classId: number) {
 export async function isAssignmentHidden(
   assignmentId: number
 ): Promise<boolean> {
-  const hidden = await getHiddenClasses();
+  const hidden = await getHiddenAssignments();
   return hidden.includes(assignmentId);
 }
 
