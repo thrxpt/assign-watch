@@ -27,7 +27,7 @@ export interface FilterState {
   };
 }
 
-const VALID_KEYS: Record<keyof FilterState, string[]> = {
+const VALID_KEYS: { [K in keyof FilterState]: (keyof FilterState[K])[] } = {
   submissionStatus: ["submitted", "notSubmitted"],
   assignmentType: ["assignment", "quiz"],
   groupType: ["individual", "group"],
@@ -42,12 +42,12 @@ export function AssignmentFilters({
   filters,
   onFiltersChange,
 }: AssignmentFiltersProps) {
-  const updateFilter = (
-    category: keyof FilterState,
-    key: string,
+  const updateFilter = <T extends keyof FilterState>(
+    category: T,
+    key: keyof FilterState[T],
     value: boolean
   ) => {
-    const categoryFilters = filters[category] as Record<string, boolean>;
+    const categoryFilters = filters[category];
     const validKeys = VALID_KEYS[category];
     const otherKeys = validKeys.filter((k) => k !== key);
 
@@ -70,8 +70,11 @@ export function AssignmentFilters({
     ...Object.values(filters.groupType),
   ].filter((v) => !v).length;
 
-  const isOnlyChecked = (category: keyof FilterState, key: string) => {
-    const categoryFilters = filters[category] as Record<string, boolean>;
+  const isOnlyChecked = <T extends keyof FilterState>(
+    category: T,
+    key: keyof FilterState[T]
+  ) => {
+    const categoryFilters = filters[category];
     const validKeys = VALID_KEYS[category];
     return (
       categoryFilters[key] &&
