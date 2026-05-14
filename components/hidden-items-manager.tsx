@@ -16,7 +16,7 @@ import {
   clearAllHiddenItems,
   unhideAssignment,
   unhideClass,
-} from "@/lib/utils";
+} from "@/lib/storage";
 import type { Activity, ClassInfo } from "@/types";
 
 interface HiddenItemsManagerProps {

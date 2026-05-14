@@ -1,13 +1,13 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
+import { fetchAssignments } from "@/lib/api";
+import { getSubmissionStatus } from "@/lib/assignment";
 import {
   classInfoStorage,
-  getAssignments,
-  getSubmissionStatus,
   notifiedAssignments1hStorage,
   notifiedAssignmentsStorage,
   userIdStorage,
-} from "@/lib/utils";
+} from "@/lib/storage";
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener((details) => {
@@ -39,7 +39,7 @@ export default defineBackground(() => {
 
       for (const cls of classInfo) {
         try {
-          const assignments = await getAssignments(cls.id, userId);
+          const assignments = await fetchAssignments(cls.id, userId);
           const now = new Date();
           const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
           const oneHour = new Date(now.getTime() + 60 * 60 * 1000);

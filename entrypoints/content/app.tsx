@@ -25,19 +25,18 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchAssignments } from "@/lib/api";
+import { getSubmissionStatus } from "@/lib/assignment";
+import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import {
   classInfoStorage,
   filtersStorage,
-  getAllClassInfo,
-  getAssignments,
-  getSubmissionStatus,
-  getUserId,
   groupStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   sortStorage,
   userIdStorage,
-} from "@/lib/utils";
+} from "@/lib/storage";
 import type { Activity } from "@/types";
 
 function App() {
@@ -190,11 +189,11 @@ function App() {
     };
   }, []);
 
-  const allClassInfo = useMemo(() => getAllClassInfo(), []);
+  const allClassInfo = useMemo(() => scrapeClassCards(), []);
 
   useEffect(() => {
     const saveInfo = async () => {
-      const userId = getUserId();
+      const userId = scrapeUserId();
       if (userId) {
         await userIdStorage.setValue(userId);
       }
@@ -206,7 +205,7 @@ function App() {
   const assignments = useQueries({
     queries: allClassInfo.map((classInfo) => ({
       queryKey: ["assignments", classInfo.id],
-      queryFn: () => getAssignments(classInfo.id),
+      queryFn: () => fetchAssignments(classInfo.id),
     })),
     combine: (results) => {
       return {

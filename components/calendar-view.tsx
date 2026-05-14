@@ -26,14 +26,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getSubmissionStatus } from "@/lib/assignment";
+import { formatDate } from "@/lib/date";
 import {
-  cn,
-  formatDate,
-  getSubmissionStatus,
   hideAssignment,
   type ShowCalendarBy,
   showCalendarByStorage,
-} from "@/lib/utils";
+} from "@/lib/storage";
+import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
 interface CalendarViewProps {
@@ -131,27 +131,28 @@ export function CalendarView({
   }));
 
   const getAssignmentStatusColor = (assignment: Activity) => {
-    if (getSubmissionStatus(assignment) === "submitted") {
+    const status = getSubmissionStatus(assignment);
+    if (status === "submitted") {
       return cn(
         "border-green-200 bg-green-100 text-green-700 hover:bg-green-200 [&>div:first-child]:text-green-700 [&>div:last-child]:text-green-700/80"
       );
     }
-    if (getSubmissionStatus(assignment) === "submitted_late") {
+    if (status === "submitted_late") {
       return cn(
         "border-orange-200 bg-orange-100 text-orange-700 hover:bg-orange-200 [&>div:first-child]:text-orange-700 [&>div:last-child]:text-orange-700/80"
       );
     }
-    if (getSubmissionStatus(assignment) === "not_submitted") {
+    if (status === "not_submitted") {
       return cn(
         "border-red-200 bg-red-100 text-red-700 hover:bg-red-200 [&>div:first-child]:text-red-700 [&>div:last-child]:text-red-700/80"
       );
     }
-    if (getSubmissionStatus(assignment) === "in_progress") {
+    if (status === "in_progress") {
       return cn(
         "border-neutral-200 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 [&>div:first-child]:text-neutral-700 [&>div:last-child]:text-neutral-700/80"
       );
     }
-    if (getSubmissionStatus(assignment) === "quiz_not_submitted") {
+    if (status === "quiz_not_submitted") {
       return cn(
         "border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 [&>div:first-child]:text-amber-700 [&>div:last-child]:text-amber-700/80"
       );
