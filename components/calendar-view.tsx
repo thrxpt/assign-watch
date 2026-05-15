@@ -357,27 +357,42 @@ export function CalendarView({
                             className="w-fit space-y-0.5 p-1"
                             side="right"
                           >
-                            {assignments.map((assignment) => (
-                              <a
-                                className={cn(
-                                  "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
-                                  getAssignmentStatusColor(assignment)
-                                )}
-                                href={`https://app.leb2.org/class/${assignment.class_id}/${
-                                  assignment.type === "ASM"
-                                    ? "activity"
-                                    : "quiz"
-                                }/${assignment.id}`}
-                                key={assignment.id}
-                                title={
-                                  assignment.title +
-                                  " - " +
-                                  getClassInfo(assignment.class_id)?.title
-                                }
-                              >
-                                {assignment.title}
-                              </a>
-                            ))}
+                            {assignments.map((assignment) => {
+                              const classInfo = getClassInfo(
+                                assignment.class_id
+                              );
+                              return (
+                                <ContextMenu key={assignment.id}>
+                                  <ContextMenuTrigger asChild>
+                                    <a
+                                      className={cn(
+                                        "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
+                                        getAssignmentStatusColor(assignment)
+                                      )}
+                                      href={`https://app.leb2.org/class/${assignment.class_id}/${
+                                        assignment.type === "ASM"
+                                          ? "activity"
+                                          : "quiz"
+                                      }/${assignment.id}`}
+                                      key={assignment.id}
+                                      title={`${assignment.title} - ${classInfo?.title}`}
+                                    >
+                                      {assignment.title}
+                                    </a>
+                                  </ContextMenuTrigger>
+                                  <ContextMenuContent>
+                                    <ContextMenuItem
+                                      onSelect={() =>
+                                        hideAssignment(assignment.id)
+                                      }
+                                    >
+                                      <EyeOff />
+                                      {i18n.t("hide_assignment")}
+                                    </ContextMenuItem>
+                                  </ContextMenuContent>
+                                </ContextMenu>
+                              );
+                            })}
                           </PopoverContent>
                         </Popover>
                       )}
