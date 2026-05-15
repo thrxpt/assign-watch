@@ -22,3 +22,8 @@ export function getSubmissionStatus(assignment: Activity): Status {
   }
   return "in_progress";
 }
+
+export function getAssignmentUrl(assignment: Activity) {
+  const typePath = assignment.type === "ASM" ? "activity" : "quiz";
+  return `https://app.leb2.org/class/${assignment.class_id}/${typePath}/${assignment.id}`;
+}

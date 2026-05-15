@@ -26,7 +26,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSubmissionStatus } from "@/lib/assignment";
+import { getAssignmentUrl, getSubmissionStatus } from "@/lib/assignment";
 import { formatDate } from "@/lib/date";
 import {
   hideAssignment,
@@ -219,9 +219,7 @@ export function CalendarView({
                         "block rounded-sm border p-2 text-xs transition-colors",
                         getAssignmentStatusColor(assignment)
                       )}
-                      href={`https://app.leb2.org/class/${assignment.class_id}/${
-                        assignment.type === "ASM" ? "activity" : "quiz"
-                      }/${assignment.id}`}
+                      href={getAssignmentUrl(assignment)}
                       title={`${assignment.title} - ${classInfo?.title}`}
                     >
                       <div className="truncate font-medium">
@@ -324,11 +322,7 @@ export function CalendarView({
                                     "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
                                     getAssignmentStatusColor(assignment)
                                   )}
-                                  href={`https://app.leb2.org/class/${assignment.class_id}/${
-                                    assignment.type === "ASM"
-                                      ? "activity"
-                                      : "quiz"
-                                  }/${assignment.id}`}
+                                  href={getAssignmentUrl(assignment)}
                                   title={`${assignment.title} - ${classInfo?.title}`}
                                 >
                                   {assignment.title}
@@ -369,11 +363,7 @@ export function CalendarView({
                                         "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
                                         getAssignmentStatusColor(assignment)
                                       )}
-                                      href={`https://app.leb2.org/class/${assignment.class_id}/${
-                                        assignment.type === "ASM"
-                                          ? "activity"
-                                          : "quiz"
-                                      }/${assignment.id}`}
+                                      href={getAssignmentUrl(assignment)}
                                       key={assignment.id}
                                       title={`${assignment.title} - ${classInfo?.title}`}
                                     >

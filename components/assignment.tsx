@@ -20,7 +20,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Separator } from "@/components/ui/separator";
-import { getSubmissionStatus } from "@/lib/assignment";
+import { getAssignmentUrl, getSubmissionStatus } from "@/lib/assignment";
 import { formatDate, formatDateRelative } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
 import { cn } from "@/lib/utils";
@@ -90,9 +90,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
         >
           <a
             className="font-medium text-[15px] underline-offset-4 hover:underline"
-            href={`https://app.leb2.org/class/${assignment.class_id}/${
-              assignment.type === "ASM" ? "activity" : "quiz"
-            }/${assignment.id}`}
+            href={getAssignmentUrl(assignment)}
           >
             {assignment.title}
           </a>
