@@ -34,7 +34,7 @@ export function HiddenItemsManager({
 }: HiddenItemsManagerProps) {
   const hiddenClassItems = hiddenClasses
     .map((classId) => allClassInfo.find((c) => c.id === classId))
-    .filter((c) => c !== undefined);
+    .filter((c): c is ClassInfo => c !== undefined);
 
   const hiddenAssignmentItems = hiddenAssignments
     .map((assignmentId) => {
@@ -46,9 +46,9 @@ export function HiddenItemsManager({
           }
         }
       }
-      return undefined;
+      return null;
     })
-    .filter((a) => a !== undefined);
+    .filter((a): a is Activity => a !== null);
 
   const totalHidden = hiddenClassItems.length + hiddenAssignmentItems.length;
 

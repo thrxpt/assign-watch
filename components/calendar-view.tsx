@@ -90,24 +90,21 @@ export function CalendarView({
   });
 
   // Get assignments for the current view
-  const getAssignmentsForRange = (start: Date, end: Date) => {
-    return allAssignments
-      .flat()
-      .filter((assignment): assignment is Activity => {
-        if (!assignment) {
-          return false;
-        }
-        if (hiddenAssignments.includes(assignment.id)) {
-          return false;
-        }
-        if (!applyFilters(assignment)) {
-          return false;
-        }
+  const getAssignmentsForRange = (start: Date, end: Date) =>
+    allAssignments.flat().filter((assignment): assignment is Activity => {
+      if (!assignment) {
+        return false;
+      }
+      if (hiddenAssignments.includes(assignment.id)) {
+        return false;
+      }
+      if (!applyFilters(assignment)) {
+        return false;
+      }
 
-        const dueDate = new Date(assignment.due_date);
-        return dueDate >= start && dueDate <= end;
-      });
-  };
+      const dueDate = new Date(assignment.due_date);
+      return dueDate >= start && dueDate <= end;
+    });
 
   const thisWeekAssignments = getAssignmentsForRange(weekStart, weekEnd);
   const thisMonthAssignments = getAssignmentsForRange(
@@ -159,9 +156,8 @@ export function CalendarView({
     }
   };
 
-  const getClassInfo = (classId: number) => {
-    return allClassInfo.find((c) => c.id === classId);
-  };
+  const getClassInfo = (classId: number) =>
+    allClassInfo.find((c) => c.id === classId);
 
   const goToPreviousWeek = () => {
     setWeekOffset((prev) => prev - 1);
