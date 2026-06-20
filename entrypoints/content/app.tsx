@@ -39,6 +39,11 @@ import {
 } from "@/lib/storage";
 import type { Activity } from "@/types";
 
+function navigateToClassPage() {
+  sessionStorage.setItem("shouldOpenDialog", "true");
+  window.location.href = "/class";
+}
+
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [hiddenClasses, setHiddenClasses] = useState<number[]>([]);
@@ -158,8 +163,7 @@ function App() {
         if (window.location.pathname === "/class") {
           setIsModalOpen(true);
         } else {
-          sessionStorage.setItem("shouldOpenDialog", "true");
-          window.location.href = "/class";
+          navigateToClassPage();
         }
       };
       targetElement.appendChild(button);
@@ -178,8 +182,7 @@ function App() {
         if (window.location.pathname === "/class") {
           setIsModalOpen((prev) => !prev);
         } else {
-          sessionStorage.setItem("shouldOpenDialog", "true");
-          window.location.href = "/class";
+          navigateToClassPage();
         }
       }
     };

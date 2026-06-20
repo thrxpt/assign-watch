@@ -8,6 +8,39 @@ import {
   notifiedAssignmentsStorage,
   userIdStorage,
 } from "@/lib/storage";
+import type { Activity } from "@/types";
+
+const DUE_SOON_MESSAGES = {
+  "24h": "is due in less than 24 hours.",
+  "1h": "is due in less than 1 hour.",
+} as const;
+
+function removeNotified(list: number[], id: number): boolean {
+  const index = list.indexOf(id);
+  if (index > -1) {
+    list.splice(index, 1);
+    return true;
+  }
+  return false;
+}
+
+function notifyDueSoon(assignment: Activity, timeframe: "24h" | "1h") {
+  const idSuffix = timeframe === "1h" ? "-1h" : "";
+  browser.notifications.create(
+    `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}${idSuffix}`,
+    {
+      type: "basic",
+      iconUrl: browser.runtime.getURL("/icons/128.png"),
+      title: "Assignment Due Soon!",
+      message: `"${assignment.title}" ${DUE_SOON_MESSAGES[timeframe]}`,
+      buttons: [
+        {
+          title: "View Assignment",
+        },
+      ],
+    }
+  );
+}
 
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener((details) => {
@@ -51,24 +84,11 @@ export default defineBackground(() => {
             const dueDate = new Date(assignment.due_date);
             const isOverdue = dueDate < now;
 
-            if (
-              notifiedAssignments.includes(assignment.id) &&
-              (isSubmitted || isOverdue)
-            ) {
-              const index = notifiedAssignments.indexOf(assignment.id);
-              if (index > -1) {
-                notifiedAssignments.splice(index, 1);
+            if (isSubmitted || isOverdue) {
+              if (removeNotified(notifiedAssignments, assignment.id)) {
                 shouldUpdate = true;
               }
-            }
-
-            if (
-              notifiedAssignments1h.includes(assignment.id) &&
-              (isSubmitted || isOverdue)
-            ) {
-              const index = notifiedAssignments1h.indexOf(assignment.id);
-              if (index > -1) {
-                notifiedAssignments1h.splice(index, 1);
+              if (removeNotified(notifiedAssignments1h, assignment.id)) {
                 shouldUpdate1h = true;
               }
             }
@@ -79,21 +99,7 @@ export default defineBackground(() => {
                 dueDate > now &&
                 dueDate <= tomorrow
               ) {
-                browser.notifications.create(
-                  `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}`,
-                  {
-                    type: "basic",
-                    iconUrl: browser.runtime.getURL("/icons/128.png"),
-                    title: "Assignment Due Soon!",
-                    message: `"${assignment.title}" is due in less than 24 hours.`,
-                    buttons: [
-                      {
-                        title: "View Assignment",
-                      },
-                    ],
-                  }
-                );
-
+                notifyDueSoon(assignment, "24h");
                 notifiedAssignments.push(assignment.id);
                 shouldUpdate = true;
               }
@@ -103,21 +109,7 @@ export default defineBackground(() => {
                 dueDate > now &&
                 dueDate <= oneHour
               ) {
-                browser.notifications.create(
-                  `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}-1h`,
-                  {
-                    type: "basic",
-                    iconUrl: browser.runtime.getURL("/icons/128.png"),
-                    title: "Assignment Due Soon!",
-                    message: `"${assignment.title}" is due in less than 1 hour.`,
-                    buttons: [
-                      {
-                        title: "View Assignment",
-                      },
-                    ],
-                  }
-                );
-
+                notifyDueSoon(assignment, "1h");
                 notifiedAssignments1h.push(assignment.id);
                 shouldUpdate1h = true;
               }
