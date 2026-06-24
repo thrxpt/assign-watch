@@ -1,16 +1,10 @@
 import { useQueries } from "@tanstack/react-query";
 import { Calendar, LayoutList } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { i18n } from "#i18n";
-import {
-  AssignmentFilters,
-  type FilterState,
-} from "@/components/assignment-filters";
-import {
-  AssignmentGroup,
-  type GroupState,
-} from "@/components/assignment-group";
-import { AssignmentSort, type SortState } from "@/components/assignment-sort";
+import { AssignmentFilters } from "@/components/assignment-filters";
+import { AssignmentGroup } from "@/components/assignment-group";
+import { AssignmentSort } from "@/components/assignment-sort";
 import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
 import { ClassSkeleton } from "@/components/class-skeleton";
@@ -26,8 +20,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchAssignments } from "@/lib/api";
-import { getSubmissionStatus } from "@/lib/assignment";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
+import {
+  collectAssignments,
+  groupByClass,
+  groupByDueDate,
+  passesFilters,
+} from "@/lib/group-assignments";
 import {
   classInfoStorage,
   filtersStorage,
@@ -37,6 +36,7 @@ import {
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
+import { useStorageState } from "@/lib/use-storage-state";
 import type { Activity } from "@/types";
 
 function navigateToClassPage() {
@@ -46,29 +46,13 @@ function navigateToClassPage() {
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hiddenClasses, setHiddenClasses] = useState<number[]>([]);
-  const [hiddenAssignments, setHiddenAssignments] = useState<number[]>([]);
-  const [filters, setFilters] = useState<FilterState>({
-    submissionStatus: {
-      submitted: true,
-      notSubmitted: true,
-    },
-    assignmentType: {
-      assignment: true,
-      quiz: true,
-    },
-    groupType: {
-      individual: true,
-      group: true,
-    },
-  });
-  const [sortState, setSortState] = useState<SortState>({
-    sortBy: "dueDate",
-    direction: "asc",
-  });
-  const [groupState, setGroupState] = useState<GroupState>({
-    groupBy: "class",
-  });
+  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+
+  const [hiddenClasses] = useStorageState(hiddenClassesStorage);
+  const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
+  const [filters, setFilters] = useStorageState(filtersStorage);
+  const [sortState, setSortState] = useStorageState(sortStorage);
+  const [groupState, setGroupState] = useStorageState(groupStorage);
 
   useEffect(() => {
     const shouldOpenDialog =
@@ -79,73 +63,6 @@ function App() {
       setIsModalOpen(true);
       sessionStorage.removeItem("shouldOpenDialog");
     }
-  }, []);
-
-  useEffect(() => {
-    const loadStorageData = async () => {
-      const [classes, assignments, storedFilters, storedSort, storedGroup] =
-        await Promise.all([
-          hiddenClassesStorage.getValue(),
-          hiddenAssignmentsStorage.getValue(),
-          filtersStorage.getValue(),
-          sortStorage.getValue(),
-          groupStorage.getValue(),
-        ]);
-      setHiddenClasses(classes ?? []);
-      setHiddenAssignments(assignments ?? []);
-      if (storedFilters) {
-        setFilters(storedFilters);
-      }
-      if (storedSort) {
-        setSortState(storedSort);
-      }
-      if (storedGroup) {
-        setGroupState(storedGroup);
-      }
-    };
-    loadStorageData();
-
-    const unwatchClasses = hiddenClassesStorage.watch(
-      (newValue: number[] | undefined) => {
-        setHiddenClasses(newValue ?? []);
-      }
-    );
-
-    const unwatchAssignments = hiddenAssignmentsStorage.watch(
-      (newValue: number[] | undefined) => {
-        setHiddenAssignments(newValue ?? []);
-      }
-    );
-
-    const unwatchFilters = filtersStorage.watch(
-      (newValue: FilterState | undefined) => {
-        if (newValue) {
-          setFilters(newValue);
-        }
-      }
-    );
-
-    const unwatchSort = sortStorage.watch((newValue: SortState | undefined) => {
-      if (newValue) {
-        setSortState(newValue);
-      }
-    });
-
-    const unwatchGroup = groupStorage.watch(
-      (newValue: GroupState | undefined) => {
-        if (newValue) {
-          setGroupState(newValue);
-        }
-      }
-    );
-
-    return () => {
-      unwatchClasses();
-      unwatchAssignments();
-      unwatchFilters();
-      unwatchSort();
-      unwatchGroup();
-    };
   }, []);
 
   useEffect(() => {
@@ -216,82 +133,52 @@ function App() {
     }),
   });
 
-  const handleFiltersChange = async (newFilters: FilterState) => {
-    setFilters(newFilters);
-    await filtersStorage.setValue(newFilters);
-  };
+  const applyFilters = useCallback(
+    (assignment: Activity) => passesFilters(assignment, filters),
+    [filters]
+  );
 
-  const handleSortChange = async (newSort: SortState) => {
-    setSortState(newSort);
-    await sortStorage.setValue(newSort);
-  };
+  const renderList = () => {
+    if (assignments.pending) {
+      return Array.from({ length: 4 }).map((_, index) => (
+        <ClassSkeleton key={index} />
+      ));
+    }
 
-  const handleGroupChange = async (newGroup: GroupState) => {
-    setGroupState(newGroup);
-    await groupStorage.setValue(newGroup);
-  };
-
-  const sortAssignments = (assignments: Activity[]) => {
-    const sorted = [...assignments].sort((a, b) => {
-      let comparison = 0;
-
-      switch (sortState.sortBy) {
-        case "dueDate":
-          comparison =
-            new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-          break;
-        case "postedDate":
-          comparison =
-            new Date(a.start_date).getTime() - new Date(b.start_date).getTime();
-          break;
-        default:
-          break;
-      }
-
-      return sortState.direction === "asc" ? comparison : -comparison;
+    const items = collectAssignments({
+      data: assignments.data,
+      allClassInfo,
+      hiddenClasses,
+      hiddenAssignments,
+      filters,
     });
 
-    return sorted;
+    if (items.length === 0) {
+      return <NoAssignments />;
+    }
+
+    if (groupState.groupBy === "class") {
+      return groupByClass(items, sortState).map((group) => (
+        <Class
+          assignments={group.assignments}
+          classInfo={group.classInfo}
+          key={group.classInfo.id}
+        />
+      ));
+    }
+
+    const classInfoMap = new Map(allClassInfo.map((c) => [c.id, c]));
+    return groupByDueDate(items, sortState).map(
+      ({ date, assignments: due }) => (
+        <DateGroup
+          assignments={due}
+          classInfoMap={classInfoMap}
+          date={date}
+          key={date}
+        />
+      )
+    );
   };
-
-  const applyFilters = (assignment: Activity) => {
-    const status = getSubmissionStatus(assignment);
-
-    if (
-      (status === "submitted" || status === "submitted_late") &&
-      !filters.submissionStatus.submitted
-    ) {
-      return false;
-    }
-    if (
-      (status === "not_submitted" ||
-        status === "in_progress" ||
-        status === "quiz_not_submitted") &&
-      !filters.submissionStatus.notSubmitted
-    ) {
-      return false;
-    }
-
-    const isAssignment = assignment.type === "ASM";
-    if (isAssignment && !filters.assignmentType.assignment) {
-      return false;
-    }
-    if (!(isAssignment || filters.assignmentType.quiz)) {
-      return false;
-    }
-
-    const isIndividual = assignment.group_type === "IND";
-    if (isIndividual && !filters.groupType.individual) {
-      return false;
-    }
-    if (!(isIndividual || filters.groupType.group)) {
-      return false;
-    }
-
-    return true;
-  };
-
-  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
 
   return (
     <div>
@@ -321,17 +208,17 @@ function App() {
                   hiddenClasses={hiddenClasses}
                 />
                 <AssignmentSort
-                  onSortChange={handleSortChange}
+                  onSortChange={setSortState}
                   sortState={sortState}
                 />
                 <AssignmentFilters
                   filters={filters}
-                  onFiltersChange={handleFiltersChange}
+                  onFiltersChange={setFilters}
                 />
                 {activeTab === "list" && (
                   <AssignmentGroup
                     groupState={groupState}
-                    onGroupChange={handleGroupChange}
+                    onGroupChange={setGroupState}
                   />
                 )}
                 <TabsList className="h-8">
@@ -349,146 +236,7 @@ function App() {
             <TabsContent value="list">
               <ScrollArea className="rounded-lg">
                 <div className="max-h-[75dvh] space-y-4 pr-4">
-                  {(() => {
-                    // Handle loading state
-                    if (assignments.pending) {
-                      return Array.from({ length: 4 }).map((_, index) => (
-                        <ClassSkeleton key={index} />
-                      ));
-                    }
-
-                    // Collect all filtered and sorted assignments
-                    const allFilteredAssignments: {
-                      assignment: Activity;
-                      classInfo: (typeof allClassInfo)[0];
-                    }[] = [];
-
-                    assignments.data.forEach((query, index) => {
-                      const classInfo = allClassInfo[index];
-
-                      if (hiddenClasses.includes(classInfo.id)) {
-                        return;
-                      }
-
-                      if (!query || query.length === 0) {
-                        return;
-                      }
-
-                      const submittedAssignments = query.filter(
-                        (assignment) => {
-                          const status = getSubmissionStatus(assignment);
-                          return (
-                            status === "submitted" ||
-                            status === "submitted_late"
-                          );
-                        }
-                      );
-
-                      const exceededAssignments = query.filter(
-                        (assignment) => assignment.due_date_exceed
-                      );
-
-                      const filteredAssignments = query
-                        .filter(
-                          (assignment) =>
-                            !(
-                              exceededAssignments.includes(assignment) &&
-                              submittedAssignments.includes(assignment)
-                            )
-                        )
-                        .filter(
-                          (assignment) =>
-                            !hiddenAssignments.includes(assignment.id)
-                        )
-                        .filter(applyFilters);
-
-                      for (const assignment of filteredAssignments) {
-                        allFilteredAssignments.push({
-                          assignment,
-                          classInfo,
-                        });
-                      }
-                    });
-
-                    if (allFilteredAssignments.length === 0) {
-                      return <NoAssignments />;
-                    }
-
-                    // Group by class
-                    if (groupState.groupBy === "class") {
-                      const classGroups = new Map<
-                        number,
-                        {
-                          classInfo: (typeof allClassInfo)[0];
-                          assignments: Activity[];
-                        }
-                      >();
-
-                      for (const {
-                        assignment,
-                        classInfo,
-                      } of allFilteredAssignments) {
-                        if (!classGroups.has(classInfo.id)) {
-                          classGroups.set(classInfo.id, {
-                            classInfo,
-                            assignments: [],
-                          });
-                        }
-                        classGroups
-                          .get(classInfo.id)
-                          ?.assignments.push(assignment);
-                      }
-
-                      return Array.from(classGroups.values()).map((group) => (
-                        <Class
-                          assignments={sortAssignments(group.assignments)}
-                          classInfo={group.classInfo}
-                          key={group.classInfo.id}
-                        />
-                      ));
-                    }
-
-                    // Group by due date
-                    const dateGroups = new Map<string, Activity[]>();
-                    const classInfoMap = new Map(
-                      allClassInfo.map((c) => [c.id, c])
-                    );
-
-                    // Sort all assignments first
-                    const sortedAssignments = sortAssignments(
-                      allFilteredAssignments.map((item) => item.assignment)
-                    );
-
-                    for (const assignment of sortedAssignments) {
-                      const dateKey = new Date(assignment.due_date)
-                        .toISOString()
-                        .split("T")[0];
-                      if (!dateGroups.has(dateKey)) {
-                        dateGroups.set(dateKey, []);
-                      }
-                      dateGroups.get(dateKey)?.push(assignment);
-                    }
-
-                    // Sort date groups by date
-                    const sortedDateGroups = Array.from(
-                      dateGroups.entries()
-                    ).sort(([a], [b]) => {
-                      const comparison =
-                        new Date(a).getTime() - new Date(b).getTime();
-                      return sortState.direction === "asc"
-                        ? comparison
-                        : -comparison;
-                    });
-
-                    return sortedDateGroups.map(([date, dateAssignments]) => (
-                      <DateGroup
-                        assignments={dateAssignments}
-                        classInfoMap={classInfoMap}
-                        date={date}
-                        key={date}
-                      />
-                    ));
-                  })()}
+                  {renderList()}
                 </div>
               </ScrollArea>
             </TabsContent>

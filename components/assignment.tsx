@@ -20,7 +20,12 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { Separator } from "@/components/ui/separator";
-import { getAssignmentUrl, getSubmissionStatus } from "@/lib/assignment";
+import {
+  getAssignmentUrl,
+  getRelativeStatusColor,
+  getStatusBarColor,
+  getSubmissionStatus,
+} from "@/lib/assignment";
 import { formatDate, formatDateRelative } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
 import { cn } from "@/lib/utils";
@@ -30,22 +35,6 @@ interface AssignmentProps {
   assignment: Activity;
   classInfo?: ClassInfo;
 }
-
-const getAssignmentStatusColor = (assignment: Activity) => {
-  const status = getSubmissionStatus(assignment);
-  if (status === "submitted") {
-    return cn("after:bg-green-500/70");
-  }
-  if (status === "not_submitted") {
-    return cn("after:bg-red-500/70");
-  }
-  if (status === "in_progress") {
-    return cn("after:bg-neutral-500/70");
-  }
-  if (status === "quiz_not_submitted") {
-    return cn("after:bg-amber-500/70");
-  }
-};
 
 function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
   const status = getSubmissionStatus(assignment);
@@ -79,13 +68,15 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 }
 
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
+  const relativeDue = formatDateRelative(new Date(assignment.due_date));
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <div
           className={cn(
             "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
-            getAssignmentStatusColor(assignment)
+            getStatusBarColor(assignment)
           )}
         >
           <a
@@ -129,17 +120,9 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
             </div>
             {!classInfo && (
               <StatusBadge
-                className={cn(
-                  formatDateRelative(new Date(assignment.due_date)).status ===
-                    "late"
-                    ? "text-red-600"
-                    : formatDateRelative(new Date(assignment.due_date))
-                          .status === "today"
-                      ? "text-yellow-600"
-                      : "text-green-600"
-                )}
+                className={getRelativeStatusColor(relativeDue.status)}
               >
-                {formatDateRelative(new Date(assignment.due_date)).text}
+                {relativeDue.text}
               </StatusBadge>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 import { fetchAssignments } from "@/lib/api";
-import { getSubmissionStatus } from "@/lib/assignment";
+import { getAssignmentUrl, getSubmissionStatus } from "@/lib/assignment";
 import {
   classInfoStorage,
   notifiedAssignments1hStorage,
@@ -78,9 +78,9 @@ export default defineBackground(() => {
           const oneHour = new Date(now.getTime() + 60 * 60 * 1000);
 
           for (const assignment of assignments) {
+            const status = getSubmissionStatus(assignment);
             const isSubmitted =
-              getSubmissionStatus(assignment) === "submitted" ||
-              getSubmissionStatus(assignment) === "submitted_late";
+              status === "submitted" || status === "submitted_late";
             const dueDate = new Date(assignment.due_date);
             const isOverdue = dueDate < now;
 
@@ -144,7 +144,11 @@ export default defineBackground(() => {
     if (notificationId.startsWith("assignwatch-")) {
       const [type, classId, assignmentId] = notificationId.split("-").slice(1);
       browser.tabs.create({
-        url: `https://app.leb2.org/class/${classId}/${type === "ASM" ? "activity" : "quiz"}/${assignmentId}`,
+        url: getAssignmentUrl({
+          type: type as Activity["type"],
+          class_id: Number(classId),
+          id: Number(assignmentId),
+        }),
       });
     }
   });

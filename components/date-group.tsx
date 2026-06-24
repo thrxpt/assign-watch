@@ -2,6 +2,7 @@ import { isToday, isTomorrow } from "date-fns";
 import { i18n } from "#i18n";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
+import { getRelativeStatusColor } from "@/lib/assignment";
 import { formatDate, formatDateRelative } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
@@ -15,6 +16,7 @@ interface DateGroupProps {
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   const dateObj = new Date(date);
   const formattedDate = formatDate(dateObj, "d MMMM yyyy");
+  const relative = formatDateRelative(dateObj);
 
   return (
     <div className="flex gap-3">
@@ -30,14 +32,10 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
           <StatusBadge
             className={cn(
               "mt-1 bg-white/50",
-              formatDateRelative(new Date(date)).status === "late"
-                ? "text-red-600"
-                : formatDateRelative(new Date(date)).status === "today"
-                  ? "text-yellow-600"
-                  : "text-green-600"
+              getRelativeStatusColor(relative.status)
             )}
           >
-            {formatDateRelative(new Date(date)).text}
+            {relative.text}
           </StatusBadge>
         </div>
       </div>

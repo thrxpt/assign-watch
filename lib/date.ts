@@ -3,7 +3,10 @@ import { enUS, th } from "date-fns/locale";
 import moment from "moment/min/moment-with-locales";
 import { i18n } from "#i18n";
 
-export function formatDateRelative(date: Date) {
+export function formatDateRelative(date: Date): {
+  status: "late" | "today" | "upcoming";
+  text: string;
+} {
   moment.locale(i18n.t("@@ui_locale") === "th" ? "th" : "en");
   return {
     text: moment(date).fromNow(),

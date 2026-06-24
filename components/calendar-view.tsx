@@ -11,7 +11,7 @@ import {
   startOfWeek,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { i18n } from "#i18n";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,13 +26,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getAssignmentUrl, getSubmissionStatus } from "@/lib/assignment";
+import { getAssignmentUrl, getStatusCalendarColor } from "@/lib/assignment";
 import { formatDate } from "@/lib/date";
 import {
   hideAssignment,
   type ShowCalendarBy,
   showCalendarByStorage,
 } from "@/lib/storage";
+import { useStorageState } from "@/lib/use-storage-state";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
@@ -49,23 +50,9 @@ export function CalendarView({
   hiddenAssignments,
   applyFilters,
 }: CalendarViewProps) {
-  const [showCalendarBy, setShowCalendarBy] = useState<ShowCalendarBy>("month");
-
-  useEffect(() => {
-    const loadStorageData = async () => {
-      const storedShowCalendarBy = await showCalendarByStorage.getValue();
-      setShowCalendarBy(storedShowCalendarBy);
-    };
-    loadStorageData();
-
-    const unwatch = showCalendarByStorage.watch((newValue) => {
-      setShowCalendarBy(newValue);
-    });
-
-    return () => {
-      unwatch();
-    };
-  }, []);
+  const [showCalendarBy, setShowCalendarBy] = useStorageState(
+    showCalendarByStorage
+  );
 
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
@@ -126,35 +113,6 @@ export function CalendarView({
       isSameDay(new Date(assignment.due_date), day)
     ),
   }));
-
-  const getAssignmentStatusColor = (assignment: Activity) => {
-    const status = getSubmissionStatus(assignment);
-    if (status === "submitted") {
-      return cn(
-        "border-green-200 bg-green-100 text-green-700 hover:bg-green-200 [&>div:first-child]:text-green-700 [&>div:last-child]:text-green-700/80"
-      );
-    }
-    if (status === "submitted_late") {
-      return cn(
-        "border-orange-200 bg-orange-100 text-orange-700 hover:bg-orange-200 [&>div:first-child]:text-orange-700 [&>div:last-child]:text-orange-700/80"
-      );
-    }
-    if (status === "not_submitted") {
-      return cn(
-        "border-red-200 bg-red-100 text-red-700 hover:bg-red-200 [&>div:first-child]:text-red-700 [&>div:last-child]:text-red-700/80"
-      );
-    }
-    if (status === "in_progress") {
-      return cn(
-        "border-neutral-200 bg-neutral-100 text-neutral-700 hover:bg-neutral-200 [&>div:first-child]:text-neutral-700 [&>div:last-child]:text-neutral-700/80"
-      );
-    }
-    if (status === "quiz_not_submitted") {
-      return cn(
-        "border-amber-200 bg-amber-100 text-amber-700 hover:bg-amber-200 [&>div:first-child]:text-amber-700 [&>div:last-child]:text-amber-700/80"
-      );
-    }
-  };
 
   const getClassInfo = (classId: number) =>
     allClassInfo.find((c) => c.id === classId);
@@ -217,7 +175,7 @@ export function CalendarView({
                     <a
                       className={cn(
                         "block rounded-sm border p-2 text-xs transition-colors",
-                        getAssignmentStatusColor(assignment)
+                        getStatusCalendarColor(assignment)
                       )}
                       href={getAssignmentUrl(assignment)}
                       title={`${assignment.title} - ${classInfo?.title}`}
@@ -320,7 +278,7 @@ export function CalendarView({
                                 <a
                                   className={cn(
                                     "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
-                                    getAssignmentStatusColor(assignment)
+                                    getStatusCalendarColor(assignment)
                                   )}
                                   href={getAssignmentUrl(assignment)}
                                   title={`${assignment.title} - ${classInfo?.title}`}
@@ -361,7 +319,7 @@ export function CalendarView({
                                     <a
                                       className={cn(
                                         "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
-                                        getAssignmentStatusColor(assignment)
+                                        getStatusCalendarColor(assignment)
                                       )}
                                       href={getAssignmentUrl(assignment)}
                                       key={assignment.id}
@@ -400,9 +358,7 @@ export function CalendarView({
   return (
     <Tabs
       className="flex h-full flex-col"
-      onValueChange={(value) =>
-        showCalendarByStorage.setValue(value as ShowCalendarBy)
-      }
+      onValueChange={(value) => setShowCalendarBy(value as ShowCalendarBy)}
       value={showCalendarBy}
     >
       <div className="grid grid-cols-3 items-center">
