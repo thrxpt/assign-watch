@@ -1,5 +1,5 @@
 import { PartyPopper } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 
 import {
   Empty,
@@ -13,7 +13,10 @@ export function NoAssignments() {
   return (
     <Empty>
       <EmptyHeader>
-        <EmptyMedia variant="icon">
+        <EmptyMedia
+          className="size-9 [&_svg:not([class*='size-'])]:size-5"
+          variant="icon"
+        >
           <PartyPopper />
         </EmptyMedia>
         <EmptyTitle>{i18n.t("no_assignments")}</EmptyTitle>

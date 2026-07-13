@@ -1,5 +1,5 @@
 import { ArrowDownUp } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,12 +57,14 @@ export function AssignmentSort({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary">
-          <ArrowDownUp />
-          {getSortLabel()}
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="secondary">
+            <ArrowDownUp />
+            {getSortLabel()}
+          </Button>
+        }
+      />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{i18n.t("sort_by")}</DropdownMenuLabel>

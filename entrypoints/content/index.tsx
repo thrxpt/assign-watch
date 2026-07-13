@@ -5,6 +5,7 @@ import { defineContentScript } from "wxt/utils/define-content-script";
 import App from "@/entrypoints/content/app";
 
 import "@/assets/tailwind.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 if (process.env.NODE_ENV === "production") {
   // biome-ignore lint/suspicious/noEmptyBlockStatements: Suppress console.error and console.warn from radix-ui's Dialog
@@ -31,7 +32,9 @@ export default defineContentScript({
         const root = ReactDOM.createRoot(app);
         root.render(
           <QueryClientProvider client={queryClient}>
-            <App />
+            <TooltipProvider>
+              <App />
+            </TooltipProvider>
           </QueryClientProvider>
         );
         return root;

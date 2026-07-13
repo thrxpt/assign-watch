@@ -1,5 +1,5 @@
 import { isToday, isTomorrow } from "date-fns";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";

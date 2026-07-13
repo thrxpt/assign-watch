@@ -1,5 +1,5 @@
 import { Filter } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -84,17 +84,19 @@ export function AssignmentFilters({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary">
-          <Filter />
-          {i18n.t("filter")}
-          {activeFilterCount > 0 && (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
-              {activeFilterCount}
-            </span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="secondary">
+            <Filter />
+            {i18n.t("filter")}
+            {activeFilterCount > 0 && (
+              <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        }
+      />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel>{i18n.t("submission_status")}</DropdownMenuLabel>

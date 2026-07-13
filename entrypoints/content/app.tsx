@@ -1,7 +1,7 @@
 import { useQueries } from "@tanstack/react-query";
 import { Calendar, LayoutList } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { AssignmentFilters } from "@/components/assignment-filters";
 import { AssignmentGroup } from "@/components/assignment-group";
 import { AssignmentSort } from "@/components/assignment-sort";
@@ -184,8 +184,8 @@ function App() {
     <div>
       <Dialog onOpenChange={setIsModalOpen} open={isModalOpen}>
         <DialogContent
-          className="rounded-xl sm:max-w-3xl"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="p-6 sm:max-w-3xl"
+          initialFocus={false}
           showCloseButton={false}
         >
           <Tabs
