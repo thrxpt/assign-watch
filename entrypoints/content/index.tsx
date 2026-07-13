@@ -5,7 +5,6 @@ import { defineContentScript } from "wxt/utils/define-content-script";
 import App from "@/entrypoints/content/app";
 
 import "@/assets/tailwind.css";
-import "@fontsource-variable/anuphan";
 
 if (process.env.NODE_ENV === "production") {
   // biome-ignore lint/suspicious/noEmptyBlockStatements: Suppress console.error and console.warn from radix-ui's Dialog
