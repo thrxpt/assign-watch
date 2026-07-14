@@ -62,7 +62,7 @@ function App() {
         <a
           className={cn(
             buttonVariants({ size: "lg" }),
-            "group relative overflow-hidden"
+            "group relative h-10 overflow-hidden"
           )}
           href="https://app.leb2.org/class"
           rel="noopener noreferrer"

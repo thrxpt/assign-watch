@@ -13,8 +13,8 @@ function App() {
           width={48}
         />
         <div className="text-center">
-          <h1 className="font-bold text-lg tracking-tight">Assign Watch</h1>
-          <p className="text-muted-foreground text-xs">
+          <h1 className="font-semibold text-lg tracking-tight">Assign Watch</h1>
+          <p className="mx-auto mt-1 w-fit rounded-full border bg-secondary px-2 py-0.5 font-medium text-secondary-foreground text-xs">
             v{browser.runtime.getManifest().version}
           </p>
         </div>
