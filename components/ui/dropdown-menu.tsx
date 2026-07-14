@@ -23,14 +23,23 @@ function DropdownMenuContent({
   side = "bottom",
   sideOffset = 4,
   className,
+  withBackdrop = true,
   ...props
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
-  >) {
+  > & {
+    withBackdrop?: boolean;
+  }) {
   return (
     <MenuPrimitive.Portal>
+      {withBackdrop && (
+        <MenuPrimitive.Backdrop
+          className="fixed inset-0 z-2000"
+          data-slot="dropdown-menu-backdrop"
+        />
+      )}
       <MenuPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
@@ -145,6 +154,7 @@ function DropdownMenuSubContent({
       data-slot="dropdown-menu-sub-content"
       side={side}
       sideOffset={sideOffset}
+      withBackdrop={false}
       {...props}
     />
   );

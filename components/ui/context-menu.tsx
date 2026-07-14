@@ -32,14 +32,23 @@ function ContextMenuContent({
   alignOffset = 4,
   side = "right",
   sideOffset = 0,
+  withBackdrop = true,
   ...props
 }: ContextMenuPrimitive.Popup.Props &
   Pick<
     ContextMenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
-  >) {
+  > & {
+    withBackdrop?: boolean;
+  }) {
   return (
     <ContextMenuPrimitive.Portal>
+      {withBackdrop && (
+        <ContextMenuPrimitive.Backdrop
+          className="fixed inset-0 z-2000"
+          data-slot="context-menu-backdrop"
+        />
+      )}
       <ContextMenuPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
@@ -147,6 +156,7 @@ function ContextMenuSubContent({
       className="shadow-lg"
       data-slot="context-menu-sub-content"
       side="right"
+      withBackdrop={false}
       {...props}
     />
   );
