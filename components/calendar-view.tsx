@@ -12,7 +12,7 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight, EyeOff } from "lucide-react";
 import { useState } from "react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -171,26 +171,28 @@ export function CalendarView({
               const classInfo = getClassInfo(assignment.class_id);
               return (
                 <ContextMenu key={assignment.id}>
-                  <ContextMenuTrigger asChild>
-                    <a
-                      className={cn(
-                        "block rounded-sm border p-2 text-xs transition-colors",
-                        getStatusCalendarColor(assignment)
-                      )}
-                      href={getAssignmentUrl(assignment)}
-                      title={`${assignment.title} - ${classInfo?.title}`}
-                    >
-                      <div className="truncate font-medium">
-                        {assignment.title}
-                      </div>
-                      <div>
-                        {formatDate(new Date(assignment.due_date), "p")}
-                      </div>
-                    </a>
-                  </ContextMenuTrigger>
+                  <ContextMenuTrigger
+                    render={
+                      <a
+                        className={cn(
+                          "block rounded-sm border p-2 text-xs transition-colors",
+                          getStatusCalendarColor(assignment)
+                        )}
+                        href={getAssignmentUrl(assignment)}
+                        title={`${assignment.title} - ${classInfo?.title}`}
+                      >
+                        <div className="truncate font-medium">
+                          {assignment.title}
+                        </div>
+                        <div>
+                          {formatDate(new Date(assignment.due_date), "p")}
+                        </div>
+                      </a>
+                    }
+                  />
                   <ContextMenuContent>
                     <ContextMenuItem
-                      onSelect={() => hideAssignment(assignment.id)}
+                      onClick={() => hideAssignment(assignment.id)}
                     >
                       <EyeOff />
                       {i18n.t("hide_assignment")}
@@ -274,21 +276,23 @@ export function CalendarView({
                           const classInfo = getClassInfo(assignment.class_id);
                           return (
                             <ContextMenu key={assignment.id}>
-                              <ContextMenuTrigger asChild>
-                                <a
-                                  className={cn(
-                                    "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
-                                    getStatusCalendarColor(assignment)
-                                  )}
-                                  href={getAssignmentUrl(assignment)}
-                                  title={`${assignment.title} - ${classInfo?.title}`}
-                                >
-                                  {assignment.title}
-                                </a>
-                              </ContextMenuTrigger>
+                              <ContextMenuTrigger
+                                render={
+                                  <a
+                                    className={cn(
+                                      "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
+                                      getStatusCalendarColor(assignment)
+                                    )}
+                                    href={getAssignmentUrl(assignment)}
+                                    title={`${assignment.title} - ${classInfo?.title}`}
+                                  >
+                                    {assignment.title}
+                                  </a>
+                                }
+                              />
                               <ContextMenuContent>
                                 <ContextMenuItem
-                                  onSelect={() => hideAssignment(assignment.id)}
+                                  onClick={() => hideAssignment(assignment.id)}
                                 >
                                   <EyeOff />
                                   {i18n.t("hide_assignment")}
@@ -299,38 +303,38 @@ export function CalendarView({
                         })}
                       {assignments.length > MAX_ASSIGNMENTS && (
                         <Popover>
-                          <PopoverTrigger asChild>
-                            <div className="block cursor-pointer truncate rounded-sm px-1 py-0.5 text-[10px] transition-colors hover:bg-accent hover:text-accent-foreground">
-                              +{assignments.length - MAX_ASSIGNMENTS}{" "}
-                              {i18n.t("more")}
-                            </div>
-                          </PopoverTrigger>
-                          <PopoverContent
-                            className="w-fit space-y-0.5 p-1"
-                            side="right"
-                          >
+                          <PopoverTrigger
+                            render={
+                              <div className="block cursor-pointer truncate rounded-sm px-1 py-0.5 text-[10px] transition-colors hover:bg-accent hover:text-accent-foreground">
+                                +{assignments.length - MAX_ASSIGNMENTS}{" "}
+                                {i18n.t("more")}
+                              </div>
+                            }
+                          />
+                          <PopoverContent className="w-fit" side="right">
                             {assignments.map((assignment) => {
                               const classInfo = getClassInfo(
                                 assignment.class_id
                               );
                               return (
                                 <ContextMenu key={assignment.id}>
-                                  <ContextMenuTrigger asChild>
-                                    <a
-                                      className={cn(
-                                        "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
-                                        getStatusCalendarColor(assignment)
-                                      )}
-                                      href={getAssignmentUrl(assignment)}
-                                      key={assignment.id}
-                                      title={`${assignment.title} - ${classInfo?.title}`}
-                                    >
-                                      {assignment.title}
-                                    </a>
-                                  </ContextMenuTrigger>
+                                  <ContextMenuTrigger
+                                    render={
+                                      <a
+                                        className={cn(
+                                          "block truncate rounded-sm border px-1 py-0.5 text-[10px] transition-colors",
+                                          getStatusCalendarColor(assignment)
+                                        )}
+                                        href={getAssignmentUrl(assignment)}
+                                        title={`${assignment.title} - ${classInfo?.title}`}
+                                      >
+                                        {assignment.title}
+                                      </a>
+                                    }
+                                  />
                                   <ContextMenuContent>
                                     <ContextMenuItem
-                                      onSelect={() =>
+                                      onClick={() =>
                                         hideAssignment(assignment.id)
                                       }
                                     >

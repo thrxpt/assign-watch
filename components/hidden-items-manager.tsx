@@ -1,5 +1,5 @@
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { StatusBadge } from "@/components/status-badge";
 import { Tips } from "@/components/tips";
 import { Button } from "@/components/ui/button";
@@ -58,25 +58,30 @@ export function HiddenItemsManager({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary">
-          <EyeOff />
-          {i18n.t("hidden")}
-          {totalHidden > 0 && (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
-              {totalHidden}
-            </span>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-80">
-        <div className="flex items-center justify-between">
-          <DropdownMenuLabel>{i18n.t("hidden_items")}</DropdownMenuLabel>
-          <Button onClick={clearAllHiddenItems} size="xs" variant="outline">
-            <BrushCleaning />
-            {i18n.t("clear_all")}
+      <DropdownMenuTrigger
+        render={
+          <Button variant="secondary">
+            <EyeOff />
+            {i18n.t("hidden")}
+            {totalHidden > 0 && (
+              <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
+                {totalHidden}
+              </span>
+            )}
           </Button>
-        </div>
+        }
+      />
+      <DropdownMenuContent align="end" className="w-80">
+        <DropdownMenuGroup>
+          <div className="flex items-center justify-between">
+            <DropdownMenuLabel>{i18n.t("hidden_items")}</DropdownMenuLabel>
+            <Button onClick={clearAllHiddenItems} size="sm" variant="outline">
+              <BrushCleaning />
+              {i18n.t("clear_all")}
+            </Button>
+          </div>
+        </DropdownMenuGroup>
+
         <DropdownMenuSeparator />
 
         {hiddenClassItems.length > 0 && (
@@ -87,7 +92,7 @@ export function HiddenItemsManager({
             {hiddenClassItems.map((classInfo) => (
               <DropdownMenuItem
                 key={classInfo.id}
-                onSelect={(e) => {
+                onClick={(e) => {
                   e.preventDefault();
                   unhideClass(classInfo.id);
                 }}
@@ -112,7 +117,7 @@ export function HiddenItemsManager({
             {hiddenAssignmentItems.map((assignment) => (
               <DropdownMenuItem
                 key={assignment.id}
-                onSelect={(e) => {
+                onClick={(e) => {
                   e.preventDefault();
                   unhideAssignment(assignment.id);
                 }}

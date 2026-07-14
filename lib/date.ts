@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import moment from "moment/min/moment-with-locales";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 
 export function formatDateRelative(date: Date): {
   status: "late" | "today" | "upcoming";

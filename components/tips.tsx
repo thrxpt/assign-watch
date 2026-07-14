@@ -1,5 +1,5 @@
 import { CircleQuestionMark } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,12 +11,14 @@ import {
 export function Tips() {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button size="icon-sm" variant="secondary">
-          <CircleQuestionMark />
-          <span className="sr-only">Tips</span>
-        </Button>
-      </TooltipTrigger>
+      <TooltipTrigger
+        render={
+          <Button size="icon" variant="secondary">
+            <CircleQuestionMark />
+            <span className="sr-only">Tips</span>
+          </Button>
+        }
+      />
       <TooltipContent>
         <p>
           <span className="font-semibold">{i18n.t("tips")}:</span>{" "}

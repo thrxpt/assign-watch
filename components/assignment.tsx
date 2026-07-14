@@ -11,7 +11,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ContextMenu,
@@ -72,81 +72,85 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>
-        <div
-          className={cn(
-            "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
-            getStatusBarColor(assignment)
-          )}
-        >
-          <a
-            className="font-medium text-[15px] underline-offset-4 hover:underline"
-            href={getAssignmentUrl(assignment)}
+      <ContextMenuTrigger
+        render={
+          <div
+            className={cn(
+              "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
+              getStatusBarColor(assignment)
+            )}
           >
-            {assignment.title}
-          </a>
-          <div className="mt-2 flex h-5.5 items-center gap-2">
-            <div className="text-muted-foreground text-sm">
-              {classInfo ? (
-                <div className="flex gap-2">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="size-3.5 stroke-muted-foreground" />
-                    {formatDate(new Date(assignment.due_date), "p")}
-                  </span>
-                  <Separator orientation="vertical" />
-                  <a
-                    className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"
-                    href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
-                  >
-                    <BookMarked className="size-3.5 stroke-muted-foreground" />
-                    {classInfo.title}
-                  </a>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Calendar className="size-3.5 stroke-muted-foreground" />
-                    {formatDate(
-                      new Date(assignment.due_date),
-                      "eeee, d MMM yyyy"
-                    )}
-                  </span>
-                  <span className="flex items-center gap-1 text-muted-foreground">
-                    <Clock className="size-3.5 stroke-muted-foreground" />
-                    {formatDate(new Date(assignment.due_date), "p")}
-                  </span>
-                </div>
+            <a
+              className="font-medium text-[15px] underline-offset-4 hover:underline"
+              href={getAssignmentUrl(assignment)}
+            >
+              {assignment.title}
+            </a>
+            <div className="mt-2 flex h-5.5 items-center gap-2">
+              <div className="text-muted-foreground text-sm">
+                {classInfo ? (
+                  <div className="flex gap-2">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="size-3.5 stroke-muted-foreground" />
+                      {formatDate(new Date(assignment.due_date), "p")}
+                    </span>
+                    <Separator orientation="vertical" />
+                    <a
+                      className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"
+                      href={`https://app.leb2.org/class/${classInfo.id}/checkAfterAccessClass`}
+                    >
+                      <BookMarked className="size-3.5 stroke-muted-foreground" />
+                      {classInfo.title}
+                    </a>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Calendar className="size-3.5 stroke-muted-foreground" />
+                      {formatDate(
+                        new Date(assignment.due_date),
+                        "eeee, d MMM yyyy"
+                      )}
+                    </span>
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <Clock className="size-3.5 stroke-muted-foreground" />
+                      {formatDate(new Date(assignment.due_date), "p")}
+                    </span>
+                  </div>
+                )}
+              </div>
+              {!classInfo && (
+                <StatusBadge
+                  className={getRelativeStatusColor(relativeDue.status)}
+                >
+                  {relativeDue.text}
+                </StatusBadge>
               )}
             </div>
-            {!classInfo && (
+            <div className="mt-3 flex items-center gap-2">
+              <SubmissionStatusBadge assignment={assignment} />
               <StatusBadge
-                className={getRelativeStatusColor(relativeDue.status)}
+                color={assignment.type === "ASM" ? "teal" : "orange"}
               >
-                {relativeDue.text}
+                {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
+                {assignment.type === "ASM"
+                  ? i18n.t("assignment")
+                  : i18n.t("quiz")}
               </StatusBadge>
-            )}
+              <StatusBadge
+                color={assignment.group_type === "IND" ? "cyan" : "rose"}
+              >
+                {assignment.group_type === "IND" ? <User /> : <Users />}
+                {assignment.group_type === "IND"
+                  ? i18n.t("individual")
+                  : i18n.t("group")}
+              </StatusBadge>
+            </div>
           </div>
-          <div className="mt-3 flex items-center gap-2">
-            <SubmissionStatusBadge assignment={assignment} />
-            <StatusBadge color={assignment.type === "ASM" ? "teal" : "orange"}>
-              {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
-              {assignment.type === "ASM"
-                ? i18n.t("assignment")
-                : i18n.t("quiz")}
-            </StatusBadge>
-            <StatusBadge
-              color={assignment.group_type === "IND" ? "cyan" : "rose"}
-            >
-              {assignment.group_type === "IND" ? <User /> : <Users />}
-              {assignment.group_type === "IND"
-                ? i18n.t("individual")
-                : i18n.t("group")}
-            </StatusBadge>
-          </div>
-        </div>
-      </ContextMenuTrigger>
+        }
+      />
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => hideAssignment(assignment.id)}>
+        <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
           {i18n.t("hide_assignment")}
         </ContextMenuItem>

@@ -1,10 +1,11 @@
 import { Layers } from "lucide-react";
-import { i18n } from "#i18n";
+import { i18n } from "#imports";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -44,24 +45,28 @@ export function AssignmentGroup({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="secondary">
-          <Layers />
-          {getGroupLabel()}
-        </Button>
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="secondary">
+            <Layers />
+            {getGroupLabel()}
+          </Button>
+        }
+      />
       <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>{i18n.t("group_by")}</DropdownMenuLabel>
-        <DropdownMenuRadioGroup
-          onValueChange={(value) => handleGroupChange(value as GroupOption)}
-          value={groupState.groupBy}
-        >
-          {groupOptions.map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={option.value}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>{i18n.t("group_by")}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup
+            onValueChange={(value) => handleGroupChange(value as GroupOption)}
+            value={groupState.groupBy}
+          >
+            {groupOptions.map((option) => (
+              <DropdownMenuRadioItem key={option.value} value={option.value}>
+                {option.label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );
