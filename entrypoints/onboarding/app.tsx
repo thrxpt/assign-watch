@@ -33,7 +33,7 @@ function App() {
       <div className="flex max-w-md flex-col items-center text-center">
         <img
           alt="Assign Watch"
-          className="mb-6 size-20 rounded-2xl shadow-lg"
+          className="mb-6 size-20"
           height={80}
           src={browser.runtime.getURL("/icons/128.png")}
           width={80}

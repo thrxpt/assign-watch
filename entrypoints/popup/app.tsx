@@ -7,7 +7,7 @@ function App() {
       <div className="mb-4 flex flex-col items-center gap-2">
         <img
           alt="Assign Watch Logo"
-          className="size-12 rounded-lg shadow-sm"
+          className="size-12"
           height={48}
           src={browser.runtime.getURL("/icons/128.png")}
           width={48}
