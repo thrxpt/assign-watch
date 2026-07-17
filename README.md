@@ -10,7 +10,7 @@
 
 ## About the Project
 
-**Assign Watch** is a browser extension designed for the [LEB2](https://www.leb2.org/what-is-leb2) educational platform.
+**Assign Watch** is a browser extension designed for [LEB2](https://www.leb2.org/what-is-leb2), an educational platform developed by [King Mongkut's University of Technology Thonburi (KMUTT)](https://www.kmutt.ac.th).
 
 ### The Problem
 
@@ -151,4 +151,4 @@ If you find Assign Watch helpful, please consider supporting the project:
 
 ## Disclaimer
 
-Assign Watch is **not affiliated with LEB2** or any other educational institution. It is a third-party tool created by the community for the community.
+Assign Watch is **not affiliated with LEB2 or KMUTT** or any other educational institution. It is a third-party tool created by the community for the community.
