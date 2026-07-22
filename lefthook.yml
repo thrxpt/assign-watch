@@ -1,0 +1,10 @@
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm commitlint --edit {1}
+
+pre-commit:
+  commands:
+    ultracite-check:
+      glob: "*.{js,ts,jsx,tsx,json,jsonc,css}"
+      run: pnpm ultracite check {staged_files}
