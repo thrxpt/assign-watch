@@ -1,8 +1,11 @@
 import { ChevronRight, Lightbulb } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 
 import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
+
+import { Kbd, KbdGroup } from "./ui/kbd";
 
 const TIPS = [
   "tips_desc",
@@ -11,11 +14,32 @@ const TIPS = [
   "tips_restore",
 ] as const;
 
-const SHORTCUT_KEY = /Mac/u.test(navigator.userAgent) ? "⌥" : "Alt";
+const SHORTCUT_TOKEN = "{shortcut}";
+const SHORTCUT_KEYS = [/Mac/u.test(navigator.userAgent) ? "⌥" : "Alt", "A"];
+const KBD_CLASS =
+  "border shadow-[0_1px_0_0_var(--border)] text-[10px] h-4 min-w-4 mb-0.5";
 
-function tipText(tip: (typeof TIPS)[number]) {
+function shortcutTip(): ReactNode {
+  const [before, after] = i18n.t("tips_shortcut").split(SHORTCUT_TOKEN);
+
+  return (
+    <>
+      {before}
+      <KbdGroup className="-my-1 mx-0.5 align-middle">
+        {SHORTCUT_KEYS.map((key) => (
+          <Kbd className={KBD_CLASS} key={key}>
+            {key}
+          </Kbd>
+        ))}
+      </KbdGroup>
+      {after ?? ""}
+    </>
+  );
+}
+
+function tipContent(tip: (typeof TIPS)[number]): ReactNode {
   if (tip === "tips_shortcut") {
-    return i18n.t("tips_shortcut", { key: SHORTCUT_KEY });
+    return shortcutTip();
   }
   return i18n.t(tip);
 }
@@ -30,7 +54,7 @@ export function DialogTips() {
       <Lightbulb className="size-3.5 shrink-0" />
       <p className="min-w-0 flex-1 leading-tight">
         <span className="font-semibold">{i18n.t("tips")}:</span>{" "}
-        {tipText(TIPS[index])}
+        {tipContent(TIPS[index])}
       </p>
       <Button
         onClick={() => setIndex((i) => (i + 1) % TIPS.length)}
