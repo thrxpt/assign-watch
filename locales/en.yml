@@ -30,6 +30,10 @@ hide_class: Hide Class
 hide_assignment: Hide Assignment
 tips: Tips
 tips_desc: Right-click within the frame of each class or assignment to hide it.
+tips_shortcut: Press {key}+A anywhere on LEB2 to open or close this dialog.
+tips_calendar: Switch to Calendar view to see your assignments by week or month.
+tips_restore: Hidden classes and assignments can be brought back from the Hidden menu.
+next_tip: Next tip
 group_by: Group By
 group_by_class: By Class
 group_by_due_date: By Due Date

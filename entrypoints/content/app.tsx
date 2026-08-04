@@ -10,11 +10,13 @@ import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
 import { ClassSkeleton } from "@/components/class-skeleton";
 import { DateGroup } from "@/components/date-group";
+import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { NoAssignments } from "@/components/no-assignments";
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -245,6 +247,9 @@ function App() {
               </div>
             </TabsContent>
           </Tabs>
+          <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
+            <DialogTips />
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -2,7 +2,6 @@ import { BrushCleaning, Eye, EyeOff } from "lucide-react";
 
 import { i18n } from "#imports";
 import { StatusBadge } from "@/components/status-badge";
-import { Tips } from "@/components/tips";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -54,7 +53,7 @@ export function HiddenItemsManager({
   const totalHidden = hiddenClassItems.length + hiddenAssignmentItems.length;
 
   if (totalHidden === 0) {
-    return <Tips />;
+    return null;
   }
 
   return (
