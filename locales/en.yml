@@ -50,3 +50,8 @@ more: more
 today: Today
 tomorrow: Tomorrow
 settings: Settings
+language: Language
+language_auto: Auto
+language_en: English
+language_th: Thai (ไทย)
+language_desc: Choose your preferred interface language.

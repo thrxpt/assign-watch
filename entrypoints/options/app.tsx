@@ -1,16 +1,31 @@
-import { BrushCleaning, Heart, Keyboard, Link, Settings } from "lucide-react";
+import {
+  BrushCleaning,
+  Heart,
+  Keyboard,
+  Languages,
+  Link,
+  Settings,
+} from "lucide-react";
 import { useState } from "react";
 
-import { browser, i18n } from "#imports";
+import { browser } from "#imports";
 import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Language } from "@/lib/preferences";
 import { clearAllHiddenItems } from "@/lib/storage";
+import { I18nProvider, useI18n } from "@/lib/use-i18n";
 
 const SHORTCUT_KEYS = [/Mac/u.test(navigator.userAgent) ? "⌥" : "Alt", "A"];
 const KBD_CLASS =
   "border shadow-[0_1px_0_0_var(--border)] text-[10px] h-4 min-w-4 mb-0.5";
 
-function App() {
+function isLanguage(val: string): val is Language {
+  return val === "auto" || val === "en" || val === "th";
+}
+
+function OptionsContent() {
+  const { language, setLanguage, t } = useI18n();
   const [cleared, setCleared] = useState(false);
 
   const handleClearHidden = async () => {
@@ -39,13 +54,45 @@ function App() {
                 v{browser.runtime.getManifest().version}
               </span>
             </div>
-            <p className="text-muted-foreground text-sm">
-              {i18n.t("settings")}
-            </p>
+            <p className="text-muted-foreground text-sm">{t("settings")}</p>
           </div>
         </div>
 
         <div className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <Languages className="size-4 text-muted-foreground" />
+                  <span>{t("language")}</span>
+                </div>
+                <p className="mt-1 text-muted-foreground text-xs">
+                  {t("language_desc")}
+                </p>
+              </div>
+              <Tabs
+                onValueChange={(val) => {
+                  if (isLanguage(val)) {
+                    setLanguage(val);
+                  }
+                }}
+                value={language}
+              >
+                <TabsList className="h-8">
+                  <TabsTrigger className="text-xs" value="auto">
+                    {t("language_auto")}
+                  </TabsTrigger>
+                  <TabsTrigger className="text-xs" value="en">
+                    {t("language_en")}
+                  </TabsTrigger>
+                  <TabsTrigger className="text-xs" value="th">
+                    {t("language_th")}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 font-medium text-sm">
               <Keyboard className="size-4 text-muted-foreground" />
@@ -71,7 +118,7 @@ function App() {
               <div>
                 <div className="flex items-center gap-2 font-medium text-sm">
                   <Settings className="size-4 text-muted-foreground" />
-                  <span>{i18n.t("hidden_items")}</span>
+                  <span>{t("hidden_items")}</span>
                 </div>
                 <p className="mt-1 text-muted-foreground text-xs">
                   Restore all classes and assignments hidden on LEB2.
@@ -84,7 +131,7 @@ function App() {
                 variant="outline"
               >
                 <BrushCleaning className="size-3.5" />
-                <span>{cleared ? "Cleared!" : i18n.t("clear_all")}</span>
+                <span>{cleared ? "Cleared!" : t("clear_all")}</span>
               </Button>
             </div>
           </div>
@@ -131,6 +178,14 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <OptionsContent />
+    </I18nProvider>
   );
 }
 

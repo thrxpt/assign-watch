@@ -1,6 +1,8 @@
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 
+import { yamlPlugin } from "./yaml-plugin";
+
 // See https://wxt.dev/api/config.html
 export default defineConfig({
   hooks: {
@@ -21,6 +23,6 @@ export default defineConfig({
     "@wxt-dev/i18n/module",
   ],
   vite: () => ({
-    plugins: [tailwindcss()],
+    plugins: [tailwindcss(), yamlPlugin()],
   }),
 });

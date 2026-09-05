@@ -50,3 +50,8 @@ more: เพิ่มเติม
 today: วันนี้
 tomorrow: พรุ่งนี้
 settings: การตั้งค่า
+language: ภาษา
+language_auto: อัตโนมัติ
+language_en: อังกฤษ
+language_th: ไทย
+language_desc: เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ

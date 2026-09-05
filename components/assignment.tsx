@@ -12,7 +12,6 @@ import {
   Users,
 } from "lucide-react";
 
-import { i18n } from "#imports";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ContextMenu,
@@ -29,6 +28,7 @@ import {
 } from "@/lib/assignment";
 import { formatDate, formatDateRelative } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
@@ -38,13 +38,14 @@ interface AssignmentProps {
 }
 
 function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
+  const { t } = useI18n();
   const status = getSubmissionStatus(assignment);
 
   if (status === "submitted") {
     return (
       <StatusBadge color="green">
         <CircleCheckBig />
-        {i18n.t("submitted")}
+        {t("submitted")}
       </StatusBadge>
     );
   }
@@ -53,7 +54,7 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
     return (
       <StatusBadge color="amber">
         <CircleAlert />
-        {i18n.t("done_not_submitted_yet")}
+        {t("done_not_submitted_yet")}
       </StatusBadge>
     );
   }
@@ -61,12 +62,13 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
   return (
     <StatusBadge color="red">
       <CircleX />
-      {i18n.t("not_submitted")}
+      {t("not_submitted")}
     </StatusBadge>
   );
 }
 
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
+  const { t } = useI18n();
   const relativeDue = formatDateRelative(new Date(assignment.due_date));
 
   return (
@@ -132,17 +134,13 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
                 color={assignment.type === "ASM" ? "teal" : "orange"}
               >
                 {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
-                {assignment.type === "ASM"
-                  ? i18n.t("assignment")
-                  : i18n.t("quiz")}
+                {assignment.type === "ASM" ? t("assignment") : t("quiz")}
               </StatusBadge>
               <StatusBadge
                 color={assignment.group_type === "IND" ? "cyan" : "rose"}
               >
                 {assignment.group_type === "IND" ? <User /> : <Users />}
-                {assignment.group_type === "IND"
-                  ? i18n.t("individual")
-                  : i18n.t("group")}
+                {assignment.group_type === "IND" ? t("individual") : t("group")}
               </StatusBadge>
             </div>
           </div>
@@ -151,7 +149,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
       <ContextMenuContent>
         <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
-          {i18n.t("hide_assignment")}
+          {t("hide_assignment")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

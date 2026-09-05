@@ -12,6 +12,7 @@ node_modules
 stats.html
 stats-*.json
 .wxt
+.vitest
 web-ext.config.ts
 
 .idea

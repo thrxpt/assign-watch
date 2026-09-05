@@ -2,13 +2,18 @@ import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import moment from "moment/min/moment-with-locales";
 
-import { i18n } from "#imports";
+import { getActiveLocale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
-export function formatDateRelative(date: Date): {
+export function formatDateRelative(
+  date: Date,
+  locale?: Locale
+): {
   status: "late" | "today" | "upcoming";
   text: string;
 } {
-  moment.locale(i18n.t("@@ui_locale") === "th" ? "th" : "en");
+  const activeLocale = locale ?? getActiveLocale();
+  moment.locale(activeLocale);
 
   const target = moment(date);
   let status: "late" | "today" | "upcoming" = "upcoming";
@@ -21,8 +26,13 @@ export function formatDateRelative(date: Date): {
   return { status, text: target.fromNow() };
 }
 
-export function formatDate(date: Date, formatStr: string) {
+export function formatDate(
+  date: Date,
+  formatStr: string,
+  locale?: Locale
+): string {
+  const activeLocale = locale ?? getActiveLocale();
   return format(date, formatStr, {
-    locale: i18n.t("@@ui_locale") === "th" ? th : enUS,
+    locale: activeLocale === "th" ? th : enUS,
   });
 }

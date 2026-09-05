@@ -1,10 +1,10 @@
 import { isToday, isTomorrow } from "date-fns";
 
-import { i18n } from "#imports";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";
 import { formatDate, formatDateRelative } from "@/lib/date";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
@@ -15,14 +15,15 @@ interface DateGroupProps {
 }
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
+  const { t } = useI18n();
   const dateObj = new Date(date);
   const relative = formatDateRelative(dateObj);
 
   let dateLabel = formatDate(dateObj, "d MMMM yyyy");
   if (isToday(dateObj)) {
-    dateLabel = i18n.t("today");
+    dateLabel = t("today");
   } else if (isTomorrow(dateObj)) {
-    dateLabel = i18n.t("tomorrow");
+    dateLabel = t("tomorrow");
   }
 
   return (

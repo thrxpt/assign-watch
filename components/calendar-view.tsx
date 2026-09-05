@@ -10,7 +10,6 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 
-import { i18n } from "#imports";
 import { CalendarMonthView } from "@/components/calendar-month-view";
 import { CalendarWeekView } from "@/components/calendar-week-view";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,7 @@ import { formatDate } from "@/lib/date";
 import { groupByDay } from "@/lib/group-assignments";
 import type { ShowCalendarBy } from "@/lib/preferences";
 import { showCalendarByStorage } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
 import type { VisibleAssignment } from "@/lib/visible-assignments";
 
@@ -29,6 +29,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ assignments }: CalendarViewProps) {
+  const { t } = useI18n();
   const [showCalendarBy, setShowCalendarBy] = useStorageState(
     showCalendarByStorage
   );
@@ -79,10 +80,10 @@ export function CalendarView({ assignments }: CalendarViewProps) {
       <div className="grid grid-cols-3 items-center">
         <TabsList className="h-8 w-fit">
           <TabsTrigger className="text-xs" value="week">
-            {i18n.t("weekly_view")}
+            {t("weekly_view")}
           </TabsTrigger>
           <TabsTrigger className="text-xs" value="month">
-            {i18n.t("monthly_view")}
+            {t("monthly_view")}
           </TabsTrigger>
         </TabsList>
         <div className="flex items-center justify-center">
@@ -94,14 +95,12 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronLeft />
-                <span className="sr-only">{i18n.t("previous_week")}</span>
+                <span className="sr-only">{t("previous_week")}</span>
               </Button>
               <Button
                 className="min-w-35 text-center"
                 onClick={() => setWeekOffset(0)}
-                title={
-                  weekOffset === 0 ? undefined : i18n.t("go_to_current_week")
-                }
+                title={weekOffset === 0 ? undefined : t("go_to_current_week")}
                 variant="ghost"
               >
                 {weekRangeLabel}
@@ -112,7 +111,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronRight />
-                <span className="sr-only">{i18n.t("next_week")}</span>
+                <span className="sr-only">{t("next_week")}</span>
               </Button>
             </>
           ) : (
@@ -123,14 +122,12 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronLeft />
-                <span className="sr-only">{i18n.t("previous_month")}</span>
+                <span className="sr-only">{t("previous_month")}</span>
               </Button>
               <Button
                 className="min-w-35 text-center"
                 onClick={() => setMonthOffset(0)}
-                title={
-                  monthOffset === 0 ? undefined : i18n.t("go_to_current_month")
-                }
+                title={monthOffset === 0 ? undefined : t("go_to_current_month")}
                 variant="ghost"
               >
                 {formatDate(currentMonth, "MMMM yyyy")}
@@ -141,7 +138,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronRight />
-                <span className="sr-only">{i18n.t("next_month")}</span>
+                <span className="sr-only">{t("next_month")}</span>
               </Button>
             </>
           )}
