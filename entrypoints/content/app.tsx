@@ -1,8 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
-import { Calendar, LayoutList } from "lucide-react";
+import { Calendar, LayoutList, Settings } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { i18n } from "#imports";
+import { browser, i18n } from "#imports";
 import { AssignmentFilters } from "@/components/assignment-filters";
 import { AssignmentGroup } from "@/components/assignment-group";
 import { AssignmentSort } from "@/components/assignment-sort";
@@ -13,6 +13,7 @@ import { DateGroup } from "@/components/date-group";
 import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { NoAssignments } from "@/components/no-assignments";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,18 @@ import { visibleAssignments } from "@/lib/visible-assignments";
 function navigateToClassPage() {
   sessionStorage.setItem("shouldOpenDialog", "true");
   window.location.href = "/class";
+}
+
+async function openOptionsPage() {
+  if (typeof browser?.runtime?.openOptionsPage === "function") {
+    try {
+      await browser.runtime.openOptionsPage();
+    } catch {
+      await browser.runtime.sendMessage({ action: "openOptionsPage" });
+    }
+  } else {
+    await browser.runtime.sendMessage({ action: "openOptionsPage" });
+  }
 }
 
 function shouldOpenDialogOnMount() {
@@ -202,6 +215,15 @@ function App() {
                 {activeTab === "list" ? i18n.t("todo") : i18n.t("calendar")}
               </DialogTitle>
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={openOptionsPage}
+                  size="icon"
+                  title={i18n.t("settings")}
+                  variant="secondary"
+                >
+                  <Settings />
+                  <span className="sr-only">{i18n.t("settings")}</span>
+                </Button>
                 <HiddenItemsManager
                   allAssignments={assignments.data}
                   allClassInfo={allClassInfo}
