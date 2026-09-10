@@ -32,6 +32,26 @@ describe("i18n", () => {
       expect(translate("language_desc", "th")).toBe(
         "เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ"
       );
+      expect(translate("keyboard_shortcut", "en")).toBe("Keyboard Shortcut");
+      expect(translate("keyboard_shortcut", "th")).toBe("แป้นพิมพ์ลัด");
+      expect(translate("keyboard_shortcut_desc", "en")).toBe(
+        "Toggle the assignment dialog anywhere on LEB2."
+      );
+      expect(translate("keyboard_shortcut_desc", "th")).toBe(
+        "เปิดหรือปิดหน้าต่างการบ้านที่หน้าไหนของ LEB2 ก็ได้"
+      );
+      expect(translate("shortcut", "en")).toBe("Shortcut");
+      expect(translate("shortcut", "th")).toBe("ปุ่มลัด");
+      expect(translate("hidden_items_desc", "en")).toBe(
+        "Restore all classes and assignments hidden on LEB2."
+      );
+      expect(translate("hidden_items_desc", "th")).toBe(
+        "กู้คืนชั้นเรียนและการบ้านทั้งหมดที่ซ่อนไว้บน LEB2"
+      );
+      expect(translate("cleared", "en")).toBe("Cleared!");
+      expect(translate("cleared", "th")).toBe("ล้างแล้ว!");
+      expect(translate("sponsor", "en")).toBe("Sponsor");
+      expect(translate("sponsor", "th")).toBe("สนับสนุน");
     });
 
     it("interpolates named tokens", () => {

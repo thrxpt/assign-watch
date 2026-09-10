@@ -55,3 +55,9 @@ language_auto: Auto
 language_en: English
 language_th: Thai (ไทย)
 language_desc: Choose your preferred interface language.
+keyboard_shortcut: Keyboard Shortcut
+keyboard_shortcut_desc: Toggle the assignment dialog anywhere on LEB2.
+shortcut: Shortcut
+hidden_items_desc: Restore all classes and assignments hidden on LEB2.
+cleared: Cleared!
+sponsor: Sponsor

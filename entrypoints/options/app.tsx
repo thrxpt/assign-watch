@@ -96,13 +96,13 @@ function OptionsContent() {
           <div className="rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 font-medium text-sm">
               <Keyboard className="size-4 text-muted-foreground" />
-              <span>Keyboard Shortcut</span>
+              <span>{t("keyboard_shortcut")}</span>
             </div>
             <p className="mt-1 text-muted-foreground text-xs">
-              Toggle the assignment dialog anywhere on LEB2.
+              {t("keyboard_shortcut_desc")}
             </p>
             <div className="mt-3 flex items-center gap-1 text-xs">
-              <span>Shortcut:</span>
+              <span>{t("shortcut")}:</span>
               <KbdGroup className="mx-1">
                 {SHORTCUT_KEYS.map((key) => (
                   <Kbd className={KBD_CLASS} key={key}>
@@ -121,7 +121,7 @@ function OptionsContent() {
                   <span>{t("hidden_items")}</span>
                 </div>
                 <p className="mt-1 text-muted-foreground text-xs">
-                  Restore all classes and assignments hidden on LEB2.
+                  {t("hidden_items_desc")}
                 </p>
               </div>
               <Button
@@ -131,7 +131,7 @@ function OptionsContent() {
                 variant="outline"
               >
                 <BrushCleaning className="size-3.5" />
-                <span>{cleared ? "Cleared!" : t("clear_all")}</span>
+                <span>{cleared ? t("cleared") : t("clear_all")}</span>
               </Button>
             </div>
           </div>
@@ -173,7 +173,7 @@ function OptionsContent() {
             target="_blank"
           >
             <Heart className="size-3.5" />
-            <span>Sponsor</span>
+            <span>{t("sponsor")}</span>
           </a>
         </div>
       </div>
