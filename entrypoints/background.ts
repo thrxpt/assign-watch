@@ -157,4 +157,16 @@ export default defineBackground(() => {
       });
     }
   });
+
+  browser.runtime.onMessage.addListener(async (message) => {
+    if (message?.action === "openOptionsPage") {
+      try {
+        await browser.runtime.openOptionsPage();
+      } catch {
+        await browser.tabs.create({
+          url: browser.runtime.getURL("/options.html"),
+        });
+      }
+    }
+  });
 });

@@ -1,6 +1,5 @@
 import { Filter } from "lucide-react";
 
-import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { FILTER_KEYS } from "@/lib/preferences";
 import type { FilterState } from "@/lib/preferences";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
 interface AssignmentFiltersProps {
@@ -24,6 +24,7 @@ export function AssignmentFilters({
   filters,
   onFiltersChange,
 }: AssignmentFiltersProps) {
+  const { t } = useI18n();
   const updateFilter = <T extends keyof FilterState>(
     category: T,
     key: keyof FilterState[T],
@@ -70,7 +71,7 @@ export function AssignmentFilters({
         render={
           <Button variant="secondary">
             <Filter />
-            {i18n.t("filter")}
+            {t("filter")}
             {activeFilterCount > 0 && (
               <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
                 {activeFilterCount}
@@ -81,7 +82,7 @@ export function AssignmentFilters({
       />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("submission_status")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("submission_status")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.submitted}
             className={cn(
@@ -92,7 +93,7 @@ export function AssignmentFilters({
               updateFilter("submissionStatus", "submitted", !!checked)
             }
           >
-            {i18n.t("submitted")}
+            {t("submitted")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.notSubmitted}
@@ -104,14 +105,14 @@ export function AssignmentFilters({
               updateFilter("submissionStatus", "notSubmitted", !!checked)
             }
           >
-            {i18n.t("not_submitted")}
+            {t("not_submitted")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("assignment_type")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("assignment_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.assignment}
             className={cn(
@@ -122,7 +123,7 @@ export function AssignmentFilters({
               updateFilter("assignmentType", "assignment", !!checked)
             }
           >
-            {i18n.t("assignment")}
+            {t("assignment")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.quiz}
@@ -133,14 +134,14 @@ export function AssignmentFilters({
               updateFilter("assignmentType", "quiz", !!checked)
             }
           >
-            {i18n.t("quiz")}
+            {t("quiz")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("group_type")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("group_type")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
             className={cn(
@@ -150,7 +151,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "individual", !!checked)
             }
           >
-            {i18n.t("individual")}
+            {t("individual")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
@@ -161,7 +162,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "group", !!checked)
             }
           >
-            {i18n.t("group")}
+            {t("group")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

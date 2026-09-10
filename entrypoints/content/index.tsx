@@ -5,6 +5,7 @@ import { defineContentScript } from "wxt/utils/define-content-script";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "@/entrypoints/content/app";
+import { I18nProvider } from "@/lib/use-i18n";
 
 import "@/assets/tailwind.css";
 
@@ -24,7 +25,9 @@ export default defineContentScript({
         root.render(
           <QueryClientProvider client={queryClient}>
             <TooltipProvider>
-              <App />
+              <I18nProvider>
+                <App />
+              </I18nProvider>
             </TooltipProvider>
           </QueryClientProvider>
         );

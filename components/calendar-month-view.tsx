@@ -1,14 +1,13 @@
 import { isSameMonth, isToday } from "date-fns";
 
-import { i18n } from "#imports";
 import { CalendarAssignmentChip } from "@/components/calendar-assignment-chip";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatDate } from "@/lib/date";
 import type { DayEntry } from "@/lib/group-assignments";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
 const DAYS_PER_WEEK = 7;
@@ -32,6 +31,7 @@ function CalendarMonthDay({
   isLastColumn,
   maxChips,
 }: CalendarMonthDayProps) {
+  const { formatDate, t } = useI18n();
   const isInMonth = isSameMonth(day, currentMonth);
   const overflowCount = assignments.length - maxChips;
 
@@ -68,7 +68,7 @@ function CalendarMonthDay({
             <PopoverTrigger
               render={
                 <div className="block cursor-pointer truncate rounded-sm px-1 py-0.5 text-[10px] transition-colors hover:bg-accent hover:text-accent-foreground">
-                  +{overflowCount} {i18n.t("more")}
+                  +{overflowCount} {t("more")}
                 </div>
               }
             />
@@ -102,6 +102,7 @@ export function CalendarMonthView({
   getClassTitle,
   weekdays,
 }: CalendarMonthViewProps) {
+  const { formatDate } = useI18n();
   const weeks: DayEntry[][] = [];
   for (let i = 0; i < days.length; i += DAYS_PER_WEEK) {
     weeks.push(days.slice(i, i + DAYS_PER_WEEK));

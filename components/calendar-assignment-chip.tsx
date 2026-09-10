@@ -1,6 +1,5 @@
 import { EyeOff } from "lucide-react";
 
-import { i18n } from "#imports";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -8,8 +7,8 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { getAssignmentUrl, getStatusCalendarColor } from "@/lib/assignment";
-import { formatDate } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Activity } from "@/types";
 
@@ -25,6 +24,7 @@ export function CalendarAssignmentChip({
   classTitle,
   size,
 }: CalendarAssignmentChipProps) {
+  const { formatDate, t } = useI18n();
   const isCompact = size === "compact";
 
   return (
@@ -54,7 +54,7 @@ export function CalendarAssignmentChip({
       <ContextMenuContent>
         <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
-          {i18n.t("hide_assignment")}
+          {t("hide_assignment")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

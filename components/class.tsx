@@ -1,6 +1,5 @@
 import { EyeOff } from "lucide-react";
 
-import { i18n } from "#imports";
 import { Assignment } from "@/components/assignment";
 import {
   ContextMenu,
@@ -9,6 +8,7 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { hideClass } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
@@ -18,6 +18,7 @@ interface ClassProps {
 }
 
 export function Class({ classInfo, assignments }: ClassProps) {
+  const { t } = useI18n();
   return (
     <ContextMenu>
       <ContextMenuTrigger
@@ -56,7 +57,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
       <ContextMenuContent>
         <ContextMenuItem onClick={() => hideClass(classInfo.id)}>
           <EyeOff />
-          {i18n.t("hide_class")}
+          {t("hide_class")}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

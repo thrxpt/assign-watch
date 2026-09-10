@@ -15,6 +15,8 @@
     "zip:firefox": "wxt zip -b firefox",
     "zip:safari": "wxt zip -b safari",
     "compile": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "wxt prepare",
     "check": "ultracite check",
     "fix": "ultracite fix",
@@ -52,6 +54,8 @@
     "oxlint-plugin-react-doctor": "^0.7.8",
     "typescript": "^7.0.2",
     "ultracite": "7.9.4",
-    "wxt": "^0.20.27"
+    "vitest": "^5.0.0",
+    "wxt": "^0.20.27",
+    "yaml": "^2.9.0"
   }
 }

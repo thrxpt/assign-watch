@@ -1,6 +1,5 @@
 import { ArrowDownUp } from "lucide-react";
 
-import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -13,21 +12,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { SortDirection, SortOption, SortState } from "@/lib/preferences";
+import { useI18n } from "@/lib/use-i18n";
 
 interface AssignmentSortProps {
   onSortChange: (sortState: SortState) => void;
   sortState: SortState;
 }
 
-const sortOptions: { value: SortOption; label: string }[] = [
-  { label: i18n.t("due_date"), value: "dueDate" },
-  { label: i18n.t("posted_date"), value: "postedDate" },
-];
-
 export function AssignmentSort({
   sortState,
   onSortChange,
 }: AssignmentSortProps) {
+  const { t } = useI18n();
+
+  const sortOptions: { label: string; value: SortOption }[] = [
+    { label: t("due_date"), value: "dueDate" },
+    { label: t("posted_date"), value: "postedDate" },
+  ];
+
   const handleSortChange = (value: SortOption) => {
     onSortChange({
       ...sortState,
@@ -44,7 +46,7 @@ export function AssignmentSort({
 
   const getSortLabel = () => {
     const option = sortOptions.find((opt) => opt.value === sortState.sortBy);
-    return option?.label || i18n.t("sort");
+    return option?.label || t("sort");
   };
 
   return (
@@ -59,7 +61,7 @@ export function AssignmentSort({
       />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("sort_by")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("sort_by")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             onValueChange={(value) => handleSortChange(value as SortOption)}
             value={sortState.sortBy}
@@ -75,7 +77,7 @@ export function AssignmentSort({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("order")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("order")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             onValueChange={(value) =>
               handleDirectionChange(value as SortDirection)
@@ -83,10 +85,10 @@ export function AssignmentSort({
             value={sortState.direction}
           >
             <DropdownMenuRadioItem value="asc">
-              {i18n.t("asc")}
+              {t("asc")}
             </DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="desc">
-              {i18n.t("desc")}
+              {t("desc")}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>

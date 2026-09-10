@@ -69,3 +69,7 @@ export const DEFAULT_GROUP: GroupState = {
 export type ShowCalendarBy = "month" | "week";
 
 export const DEFAULT_SHOW_CALENDAR_BY: ShowCalendarBy = "month";
+
+export type Language = "auto" | "en" | "th";
+
+export const DEFAULT_LANGUAGE: Language = "auto";

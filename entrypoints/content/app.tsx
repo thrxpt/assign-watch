@@ -1,8 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
-import { Calendar, LayoutList } from "lucide-react";
+import { Calendar, LayoutList, Settings } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { i18n } from "#imports";
+import { browser } from "#imports";
 import { AssignmentFilters } from "@/components/assignment-filters";
 import { AssignmentGroup } from "@/components/assignment-group";
 import { AssignmentSort } from "@/components/assignment-sort";
@@ -13,6 +13,7 @@ import { DateGroup } from "@/components/date-group";
 import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { NoAssignments } from "@/components/no-assignments";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -34,12 +35,30 @@ import {
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
 import { visibleAssignments } from "@/lib/visible-assignments";
 
 function navigateToClassPage() {
   sessionStorage.setItem("shouldOpenDialog", "true");
-  window.location.href = "/class";
+  window.location.pathname = "/class";
+}
+
+async function openOptionsPage() {
+  if (typeof browser?.runtime?.openOptionsPage === "function") {
+    try {
+      await browser.runtime.openOptionsPage();
+      return;
+    } catch {
+      // Fall through to message passing fallback
+    }
+  }
+
+  try {
+    await browser.runtime.sendMessage({ action: "openOptionsPage" });
+  } catch {
+    // Suppress unhandled rejection if receiver or background worker is unavailable
+  }
 }
 
 function shouldOpenDialogOnMount() {
@@ -50,6 +69,7 @@ function shouldOpenDialogOnMount() {
 }
 
 function App() {
+  const { t } = useI18n();
   const [isModalOpen, setIsModalOpen] = useState(shouldOpenDialogOnMount);
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
 
@@ -199,9 +219,18 @@ function App() {
           >
             <DialogHeader className="flex-row items-center justify-between">
               <DialogTitle className="text-xl">
-                {activeTab === "list" ? i18n.t("todo") : i18n.t("calendar")}
+                {activeTab === "list" ? t("todo") : t("calendar")}
               </DialogTitle>
               <div className="flex items-center gap-2">
+                <Button
+                  onClick={openOptionsPage}
+                  size="icon"
+                  title={t("settings")}
+                  variant="secondary"
+                >
+                  <Settings />
+                  <span className="sr-only">{t("settings")}</span>
+                </Button>
                 <HiddenItemsManager
                   allAssignments={assignments.data}
                   allClassInfo={allClassInfo}
@@ -225,11 +254,11 @@ function App() {
                 <TabsList className="h-8">
                   <TabsTrigger value="list">
                     <LayoutList />
-                    <span className="sr-only">{i18n.t("list_view")}</span>
+                    <span className="sr-only">{t("list_view")}</span>
                   </TabsTrigger>
                   <TabsTrigger value="calendar">
                     <Calendar />
-                    <span className="sr-only">{i18n.t("calendar_view")}</span>
+                    <span className="sr-only">{t("calendar_view")}</span>
                   </TabsTrigger>
                 </TabsList>
               </div>

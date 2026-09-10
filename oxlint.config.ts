@@ -33,6 +33,7 @@ export default defineConfig({
     ...(core.ignorePatterns ?? []),
     ".agents/skills",
     ".claude/skills",
+    ".vitest",
   ],
   rules: {
     "func-style": "off",

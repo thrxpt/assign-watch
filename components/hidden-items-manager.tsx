@@ -1,6 +1,5 @@
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
 
-import { i18n } from "#imports";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +16,7 @@ import {
   unhideAssignment,
   unhideClass,
 } from "@/lib/storage";
+import { useI18n } from "@/lib/use-i18n";
 import type { Activity, ClassInfo } from "@/types";
 
 interface HiddenItemsManagerProps {
@@ -32,6 +32,7 @@ export function HiddenItemsManager({
   allClassInfo,
   allAssignments,
 }: HiddenItemsManagerProps) {
+  const { t } = useI18n();
   const hiddenClassItems = hiddenClasses
     .map((classId) => allClassInfo.find((c) => c.id === classId))
     .filter((c): c is ClassInfo => c !== undefined);
@@ -62,7 +63,7 @@ export function HiddenItemsManager({
         render={
           <Button variant="secondary">
             <EyeOff />
-            {i18n.t("hidden")}
+            {t("hidden")}
             {totalHidden > 0 && (
               <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
                 {totalHidden}
@@ -74,10 +75,10 @@ export function HiddenItemsManager({
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuGroup>
           <div className="flex items-center justify-between">
-            <DropdownMenuLabel>{i18n.t("hidden_items")}</DropdownMenuLabel>
+            <DropdownMenuLabel>{t("hidden_items")}</DropdownMenuLabel>
             <Button onClick={clearAllHiddenItems} size="xs" variant="outline">
               <BrushCleaning />
-              {i18n.t("clear_all")}
+              {t("clear_all")}
             </Button>
           </div>
         </DropdownMenuGroup>
@@ -87,7 +88,7 @@ export function HiddenItemsManager({
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {i18n.t("class")}
+              {t("class")}
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
               <DropdownMenuItem
@@ -112,7 +113,7 @@ export function HiddenItemsManager({
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {i18n.t("assignment")}
+              {t("assignment")}
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (
               <DropdownMenuItem

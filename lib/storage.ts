@@ -3,12 +3,14 @@ import { storage } from "wxt/utils/storage";
 import {
   DEFAULT_FILTERS,
   DEFAULT_GROUP,
+  DEFAULT_LANGUAGE,
   DEFAULT_SHOW_CALENDAR_BY,
   DEFAULT_SORT,
 } from "@/lib/preferences";
 import type {
   FilterState,
   GroupState,
+  Language,
   ShowCalendarBy,
   SortState,
 } from "@/lib/preferences";
@@ -55,6 +57,10 @@ export const showCalendarByStorage = storage.defineItem<ShowCalendarBy>(
     fallback: DEFAULT_SHOW_CALENDAR_BY,
   }
 );
+
+export const languageStorage = storage.defineItem<Language>("local:language", {
+  fallback: DEFAULT_LANGUAGE,
+});
 
 export const userIdStorage = storage.defineItem<string | null>("local:userId", {
   fallback: null,

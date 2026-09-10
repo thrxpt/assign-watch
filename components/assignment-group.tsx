@@ -1,6 +1,5 @@
 import { Layers } from "lucide-react";
 
-import { i18n } from "#imports";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,21 +11,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { GroupOption, GroupState } from "@/lib/preferences";
+import { useI18n } from "@/lib/use-i18n";
 
 interface AssignmentGroupProps {
   groupState: GroupState;
   onGroupChange: (groupState: GroupState) => void;
 }
 
-const groupOptions: { value: GroupOption; label: string }[] = [
-  { label: i18n.t("group_by_class"), value: "class" },
-  { label: i18n.t("group_by_due_date"), value: "dueDate" },
-];
-
 export function AssignmentGroup({
   groupState,
   onGroupChange,
 }: AssignmentGroupProps) {
+  const { t } = useI18n();
+
+  const groupOptions: { label: string; value: GroupOption }[] = [
+    { label: t("group_by_class"), value: "class" },
+    { label: t("group_by_due_date"), value: "dueDate" },
+  ];
+
   const handleGroupChange = (value: GroupOption) => {
     onGroupChange({
       groupBy: value,
@@ -35,7 +37,7 @@ export function AssignmentGroup({
 
   const getGroupLabel = () => {
     const option = groupOptions.find((opt) => opt.value === groupState.groupBy);
-    return option?.label || i18n.t("group_by");
+    return option?.label || t("group_by");
   };
 
   return (
@@ -50,7 +52,7 @@ export function AssignmentGroup({
       />
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{i18n.t("group_by")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("group_by")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             onValueChange={(value) => handleGroupChange(value as GroupOption)}
             value={groupState.groupBy}

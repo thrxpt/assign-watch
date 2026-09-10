@@ -37,7 +37,7 @@ Hiding is a user preference, not a filter — it survives across sessions and is
 
 ## Preferences
 
-The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, group type), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), and how the calendar is shown (month or week).
+The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, group type), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), how the calendar is shown (month or week), and **Language** (`auto`, `en`, `th`).
 
 These live in `lib/`, not in the menus that edit them, so that storage and the assignment pipeline can depend on the model without depending on the UI. `lib/` must never import from `components/`.
 
