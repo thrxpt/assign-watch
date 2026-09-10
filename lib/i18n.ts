@@ -30,6 +30,7 @@ export type TranslationKey =
   | "hidden_items"
   | "clear_all"
   | "class"
+  | "section"
   | "no_assignments"
   | "no_assignments_desc"
   | "done_not_submitted_yet"
