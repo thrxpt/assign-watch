@@ -1,5 +1,6 @@
 import {
   BrushCleaning,
+  Clock,
   Heart,
   Keyboard,
   Languages,
@@ -12,16 +13,22 @@ import { browser } from "#imports";
 import { ShortcutKbd } from "@/components/shortcut-kbd";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Language } from "@/lib/preferences";
+import type { Language, TimeFormat } from "@/lib/preferences";
 import { clearAllHiddenItems } from "@/lib/storage";
 import { I18nProvider, useI18n } from "@/lib/use-i18n";
+import { useTimeFormat } from "@/lib/use-time-format";
 
 function isLanguage(val: string): val is Language {
   return val === "auto" || val === "en" || val === "th";
 }
 
+function isTimeFormat(val: string): val is TimeFormat {
+  return val === "12h" || val === "24h";
+}
+
 function OptionsContent() {
   const { language, locale, setLanguage, t } = useI18n();
+  const { timeFormat, setTimeFormat } = useTimeFormat();
   const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
@@ -76,10 +83,12 @@ function OptionsContent() {
                 </p>
               </div>
               <Tabs
+                aria-label={t("language")}
                 onValueChange={(val) => {
-                  if (isLanguage(val)) {
-                    setLanguage(val);
+                  if (!isLanguage(val)) {
+                    return;
                   }
+                  setLanguage(val);
                 }}
                 value={language}
               >
@@ -92,6 +101,39 @@ function OptionsContent() {
                   </TabsTrigger>
                   <TabsTrigger className="text-xs" value="th">
                     {t("language_th")}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 font-medium text-sm">
+                  <Clock className="size-4 text-muted-foreground" />
+                  <span>{t("time_format")}</span>
+                </div>
+                <p className="mt-1 text-muted-foreground text-xs">
+                  {t("time_format_desc")}
+                </p>
+              </div>
+              <Tabs
+                aria-label={t("time_format")}
+                onValueChange={(val) => {
+                  if (!isTimeFormat(val)) {
+                    return;
+                  }
+                  setTimeFormat(val);
+                }}
+                value={timeFormat}
+              >
+                <TabsList className="h-8">
+                  <TabsTrigger className="text-xs" value="12h">
+                    {t("time_format_12h")}
+                  </TabsTrigger>
+                  <TabsTrigger className="text-xs" value="24h">
+                    {t("time_format_24h")}
                   </TabsTrigger>
                 </TabsList>
               </Tabs>

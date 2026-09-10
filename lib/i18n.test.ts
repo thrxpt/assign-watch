@@ -32,6 +32,16 @@ describe("i18n", () => {
       expect(translate("language_desc", "th")).toBe(
         "เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ"
       );
+      expect(translate("time_format", "en")).toBe("Time Format");
+      expect(translate("time_format", "th")).toBe("รูปแบบเวลา");
+      expect(translate("time_format_desc", "en")).toBe(
+        "Choose how time is displayed."
+      );
+      expect(translate("time_format_desc", "th")).toBe("เลือกรูปแบบการแสดงเวลา");
+      expect(translate("time_format_12h", "en")).toBe("12-hour");
+      expect(translate("time_format_12h", "th")).toBe("12 ชั่วโมง");
+      expect(translate("time_format_24h", "en")).toBe("24-hour");
+      expect(translate("time_format_24h", "th")).toBe("24 ชั่วโมง");
       expect(translate("keyboard_shortcut", "en")).toBe("Keyboard Shortcut");
       expect(translate("keyboard_shortcut", "th")).toBe("แป้นพิมพ์ลัด");
       expect(translate("keyboard_shortcut_desc", "en")).toBe(

@@ -73,3 +73,7 @@ export const DEFAULT_SHOW_CALENDAR_BY: ShowCalendarBy = "month";
 export type Language = "auto" | "en" | "th";
 
 export const DEFAULT_LANGUAGE: Language = "auto";
+
+export type TimeFormat = "12h" | "24h";
+
+export const DEFAULT_TIME_FORMAT: TimeFormat = "12h";

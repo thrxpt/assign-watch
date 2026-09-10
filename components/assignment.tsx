@@ -28,6 +28,7 @@ import {
 } from "@/lib/assignment";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
+import { useTimeFormat } from "@/lib/use-time-format";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
 
@@ -68,7 +69,15 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
+  const { formatTime } = useTimeFormat();
   const relativeDue = formatDateRelative(new Date(assignment.due_date));
+
+  const dueTime = (
+    <span className="flex items-center gap-1 text-muted-foreground">
+      <Clock className="size-3.5 stroke-muted-foreground" />
+      {formatTime(new Date(assignment.due_date))}
+    </span>
+  );
 
   return (
     <ContextMenu>
@@ -90,10 +99,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
               <div className="text-muted-foreground text-sm">
                 {classInfo ? (
                   <div className="flex gap-2">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="size-3.5 stroke-muted-foreground" />
-                      {formatDate(new Date(assignment.due_date), "p")}
-                    </span>
+                    {dueTime}
                     <Separator orientation="vertical" />
                     <a
                       className="flex items-center gap-1 text-muted-foreground underline-offset-4 hover:underline"
@@ -112,10 +118,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
                         "eeee, d MMM yyyy"
                       )}
                     </span>
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Clock className="size-3.5 stroke-muted-foreground" />
-                      {formatDate(new Date(assignment.due_date), "p")}
-                    </span>
+                    {dueTime}
                   </div>
                 )}
               </div>

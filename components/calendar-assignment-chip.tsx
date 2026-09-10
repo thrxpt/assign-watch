@@ -9,6 +9,7 @@ import {
 import { getAssignmentUrl, getStatusCalendarColor } from "@/lib/assignment";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
+import { useTimeFormat } from "@/lib/use-time-format";
 import { cn } from "@/lib/utils";
 import type { Activity } from "@/types";
 
@@ -24,7 +25,8 @@ export function CalendarAssignmentChip({
   classTitle,
   size,
 }: CalendarAssignmentChipProps) {
-  const { formatDate, t } = useI18n();
+  const { t } = useI18n();
+  const { formatTime } = useTimeFormat();
   const isCompact = size === "compact";
 
   return (
@@ -45,7 +47,7 @@ export function CalendarAssignmentChip({
             ) : (
               <>
                 <div className="truncate font-medium">{assignment.title}</div>
-                <div>{formatDate(new Date(assignment.due_date), "p")}</div>
+                <div>{formatTime(new Date(assignment.due_date))}</div>
               </>
             )}
           </a>
