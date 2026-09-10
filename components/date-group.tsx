@@ -3,7 +3,6 @@ import { isToday, isTomorrow } from "date-fns";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";
-import { formatDate, formatDateRelative } from "@/lib/date";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
@@ -15,7 +14,7 @@ interface DateGroupProps {
 }
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
-  const { t } = useI18n();
+  const { formatDate, formatDateRelative, t } = useI18n();
   const dateObj = new Date(date);
   const relative = formatDateRelative(dateObj);
 

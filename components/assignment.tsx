@@ -26,7 +26,6 @@ import {
   getStatusBarColor,
   getSubmissionStatus,
 } from "@/lib/assignment";
-import { formatDate, formatDateRelative } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
@@ -68,7 +67,7 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 }
 
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
-  const { t } = useI18n();
+  const { formatDate, formatDateRelative, t } = useI18n();
   const relativeDue = formatDateRelative(new Date(assignment.due_date));
 
   return (

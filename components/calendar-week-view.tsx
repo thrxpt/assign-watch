@@ -1,8 +1,8 @@
 import { isToday } from "date-fns";
 
 import { CalendarAssignmentChip } from "@/components/calendar-assignment-chip";
-import { formatDate } from "@/lib/date";
 import type { DayEntry } from "@/lib/group-assignments";
+import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
 interface CalendarWeekViewProps {
@@ -14,6 +14,7 @@ export function CalendarWeekView({
   days,
   getClassTitle,
 }: CalendarWeekViewProps) {
+  const { formatDate } = useI18n();
   return (
     <div className="grid h-full flex-1 grid-cols-7 rounded-lg border">
       {days.map(({ day, assignments }) => (

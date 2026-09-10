@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveLocale, translate } from "@/lib/i18n";
+import { isTranslationKey, resolveLocale, translate } from "@/lib/i18n";
 
 describe("i18n", () => {
   describe("resolveLocale", () => {
@@ -65,6 +65,13 @@ describe("i18n", () => {
 
     it("returns key for missing translation", () => {
       expect(translate("unknown_key", "en")).toBe("unknown_key");
+    });
+
+    it("safely ignores Object.prototype properties without throwing", () => {
+      expect(isTranslationKey("toString")).toBe(false);
+      expect(isTranslationKey("valueOf")).toBe(false);
+      expect(translate("toString", "en")).toBe("toString");
+      expect(translate("valueOf", "th")).toBe("valueOf");
     });
   });
 });

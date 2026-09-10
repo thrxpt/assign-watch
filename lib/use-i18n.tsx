@@ -7,6 +7,10 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 
+import {
+  formatDate as formatWithLocale,
+  formatDateRelative as formatRelativeWithLocale,
+} from "@/lib/date";
 import { resolveLocale, setActiveLocale, translate } from "@/lib/i18n";
 import type { Locale, TranslationKey } from "@/lib/i18n";
 import type { Language } from "@/lib/preferences";
@@ -14,6 +18,11 @@ import { languageStorage } from "@/lib/storage";
 import { useStorageState } from "@/lib/use-storage-state";
 
 export interface I18nContextValue {
+  formatDate: (date: Date, formatStr: string) => string;
+  formatDateRelative: (date: Date) => {
+    status: "late" | "today" | "upcoming";
+    text: string;
+  };
   language: Language;
   locale: Locale;
   setLanguage: (lang: Language) => void;
@@ -29,8 +38,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useStorageState(languageStorage);
   const locale = resolveLocale(language);
 
-  setActiveLocale(locale);
-
   useEffect(() => {
     setActiveLocale(locale);
   }, [locale]);
@@ -41,14 +48,27 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [locale]
   );
 
+  const formatDate = useCallback(
+    (date: Date, formatStr: string) =>
+      formatWithLocale(date, formatStr, locale),
+    [locale]
+  );
+
+  const formatDateRelative = useCallback(
+    (date: Date) => formatRelativeWithLocale(date, locale),
+    [locale]
+  );
+
   const value = useMemo(
     () => ({
+      formatDate,
+      formatDateRelative,
       language,
       locale,
       setLanguage,
       t,
     }),
-    [language, locale, setLanguage, t]
+    [formatDate, formatDateRelative, language, locale, setLanguage, t]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

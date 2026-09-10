@@ -14,7 +14,6 @@ import { CalendarMonthView } from "@/components/calendar-month-view";
 import { CalendarWeekView } from "@/components/calendar-week-view";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDate } from "@/lib/date";
 import { groupByDay } from "@/lib/group-assignments";
 import type { ShowCalendarBy } from "@/lib/preferences";
 import { showCalendarByStorage } from "@/lib/storage";
@@ -29,7 +28,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ assignments }: CalendarViewProps) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const [showCalendarBy, setShowCalendarBy] = useStorageState(
     showCalendarByStorage
   );
@@ -71,6 +70,11 @@ export function CalendarView({ assignments }: CalendarViewProps) {
       ? formatDate(weekStart, "MMMM yyyy")
       : `${formatDate(weekStart, "MMM")} - ${formatDate(weekEnd, "MMM yyyy")}`;
 
+  const currentWeekTitle =
+    weekOffset === 0 ? undefined : t("go_to_current_week");
+  const currentMonthTitle =
+    monthOffset === 0 ? undefined : t("go_to_current_month");
+
   return (
     <Tabs
       className="flex h-full flex-col"
@@ -100,7 +104,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
               <Button
                 className="min-w-35 text-center"
                 onClick={() => setWeekOffset(0)}
-                title={weekOffset === 0 ? undefined : t("go_to_current_week")}
+                title={currentWeekTitle}
                 variant="ghost"
               >
                 {weekRangeLabel}
@@ -127,7 +131,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
               <Button
                 className="min-w-35 text-center"
                 onClick={() => setMonthOffset(0)}
-                title={monthOffset === 0 ? undefined : t("go_to_current_month")}
+                title={currentMonthTitle}
                 variant="ghost"
               >
                 {formatDate(currentMonth, "MMMM yyyy")}

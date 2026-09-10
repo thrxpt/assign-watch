@@ -7,7 +7,6 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { getAssignmentUrl, getStatusCalendarColor } from "@/lib/assignment";
-import { formatDate } from "@/lib/date";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
@@ -25,7 +24,7 @@ export function CalendarAssignmentChip({
   classTitle,
   size,
 }: CalendarAssignmentChipProps) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const isCompact = size === "compact";
 
   return (

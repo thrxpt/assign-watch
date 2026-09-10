@@ -6,7 +6,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatDate } from "@/lib/date";
 import type { DayEntry } from "@/lib/group-assignments";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
@@ -32,7 +31,7 @@ function CalendarMonthDay({
   isLastColumn,
   maxChips,
 }: CalendarMonthDayProps) {
-  const { t } = useI18n();
+  const { formatDate, t } = useI18n();
   const isInMonth = isSameMonth(day, currentMonth);
   const overflowCount = assignments.length - maxChips;
 
@@ -103,6 +102,7 @@ export function CalendarMonthView({
   getClassTitle,
   weekdays,
 }: CalendarMonthViewProps) {
+  const { formatDate } = useI18n();
   const weeks: DayEntry[][] = [];
   for (let i = 0; i < days.length; i += DAYS_PER_WEEK) {
     weeks.push(days.slice(i, i + DAYS_PER_WEEK));

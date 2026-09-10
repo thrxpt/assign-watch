@@ -41,18 +41,23 @@ import { visibleAssignments } from "@/lib/visible-assignments";
 
 function navigateToClassPage() {
   sessionStorage.setItem("shouldOpenDialog", "true");
-  window.location.href = "/class";
+  window.location.pathname = "/class";
 }
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
     try {
       await browser.runtime.openOptionsPage();
+      return;
     } catch {
-      await browser.runtime.sendMessage({ action: "openOptionsPage" });
+      // Fall through to message passing fallback
     }
-  } else {
+  }
+
+  try {
     await browser.runtime.sendMessage({ action: "openOptionsPage" });
+  } catch {
+    // Suppress unhandled rejection if receiver or background worker is unavailable
   }
 }
 

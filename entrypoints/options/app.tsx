@@ -6,32 +6,37 @@ import {
   Link,
   Settings,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { browser } from "#imports";
+import { ShortcutKbd } from "@/components/shortcut-kbd";
 import { Button } from "@/components/ui/button";
-import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Language } from "@/lib/preferences";
 import { clearAllHiddenItems } from "@/lib/storage";
 import { I18nProvider, useI18n } from "@/lib/use-i18n";
-
-const SHORTCUT_KEYS = [/Mac/u.test(navigator.userAgent) ? "⌥" : "Alt", "A"];
-const KBD_CLASS =
-  "border shadow-[0_1px_0_0_var(--border)] text-[10px] h-4 min-w-4 mb-0.5";
 
 function isLanguage(val: string): val is Language {
   return val === "auto" || val === "en" || val === "th";
 }
 
 function OptionsContent() {
-  const { language, setLanguage, t } = useI18n();
+  const { language, locale, setLanguage, t } = useI18n();
   const [cleared, setCleared] = useState(false);
 
+  useEffect(() => {
+    document.title = `Assign Watch - ${t("settings")}`;
+    document.documentElement.lang = locale;
+  }, [locale, t]);
+
   const handleClearHidden = async () => {
-    await clearAllHiddenItems();
-    setCleared(true);
-    setTimeout(() => setCleared(false), 2000);
+    try {
+      await clearAllHiddenItems();
+      setCleared(true);
+      setTimeout(() => setCleared(false), 2000);
+    } catch {
+      // Failed to clear hidden items in storage
+    }
   };
 
   return (
@@ -39,7 +44,7 @@ function OptionsContent() {
       <div className="w-full max-w-lg space-y-6">
         <div className="flex items-center gap-3 border-b pb-4">
           <img
-            alt="Assign Watch Logo"
+            alt="Assign Watch"
             className="size-10"
             height={40}
             src={browser.runtime.getURL("/icons/128.png")}
@@ -103,13 +108,7 @@ function OptionsContent() {
             </p>
             <div className="mt-3 flex items-center gap-1 text-xs">
               <span>{t("shortcut")}:</span>
-              <KbdGroup className="mx-1">
-                {SHORTCUT_KEYS.map((key) => (
-                  <Kbd className={KBD_CLASS} key={key}>
-                    {key}
-                  </Kbd>
-                ))}
-              </KbdGroup>
+              <ShortcutKbd className="mx-1" />
             </div>
           </div>
 
