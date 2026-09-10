@@ -42,7 +42,7 @@ export function Class({ classInfo, assignments }: ClassProps) {
                 </div>
                 <hr className="my-[0.4rem]" />
                 <div className="text-[11px] text-muted-foreground">
-                  Section {classInfo.section}
+                  {t("section")} {classInfo.section}
                 </div>
               </div>
             </div>

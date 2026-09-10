@@ -23,6 +23,7 @@ hidden: ที่ซ่อนไว้
 hidden_items: รายการที่ซ่อนไว้
 clear_all: ล้างทั้งหมด
 class: ชั้นเรียน
+section: กลุ่มที่
 no_assignments: ไม่มีการบ้าน
 no_assignments_desc: ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ
 done_not_submitted_yet: ทำแล้วแต่ยังไม่ได้ส่ง

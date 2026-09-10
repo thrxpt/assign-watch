@@ -23,6 +23,7 @@ hidden: Hidden
 hidden_items: Hidden Items
 clear_all: Clear All
 class: Class
+section: Section
 no_assignments: No Assignments
 no_assignments_desc: Congratulations! You have no assignments to do.
 done_not_submitted_yet: Done (Not Submitted Yet)

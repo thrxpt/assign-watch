@@ -60,6 +60,8 @@ describe("i18n", () => {
       );
       expect(translate("cleared", "en")).toBe("Cleared!");
       expect(translate("cleared", "th")).toBe("ล้างแล้ว!");
+      expect(translate("section", "en")).toBe("Section");
+      expect(translate("section", "th")).toBe("กลุ่มที่");
       expect(translate("sponsor", "en")).toBe("Sponsor");
       expect(translate("sponsor", "th")).toBe("สนับสนุน");
     });
