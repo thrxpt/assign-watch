@@ -55,6 +55,10 @@ language_auto: Auto
 language_en: English
 language_th: Thai (ไทย)
 language_desc: Choose your preferred interface language.
+time_format: Time Format
+time_format_desc: Choose how time is displayed.
+time_format_12h: 12-hour
+time_format_24h: 24-hour
 keyboard_shortcut: Keyboard Shortcut
 keyboard_shortcut_desc: Toggle the assignment dialog anywhere on LEB2.
 shortcut: Shortcut

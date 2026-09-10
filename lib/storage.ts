@@ -6,6 +6,7 @@ import {
   DEFAULT_LANGUAGE,
   DEFAULT_SHOW_CALENDAR_BY,
   DEFAULT_SORT,
+  DEFAULT_TIME_FORMAT,
 } from "@/lib/preferences";
 import type {
   FilterState,
@@ -13,6 +14,7 @@ import type {
   Language,
   ShowCalendarBy,
   SortState,
+  TimeFormat,
 } from "@/lib/preferences";
 import type { ClassInfo } from "@/types";
 
@@ -61,6 +63,13 @@ export const showCalendarByStorage = storage.defineItem<ShowCalendarBy>(
 export const languageStorage = storage.defineItem<Language>("local:language", {
   fallback: DEFAULT_LANGUAGE,
 });
+
+export const timeFormatStorage = storage.defineItem<TimeFormat>(
+  "local:timeFormat",
+  {
+    fallback: DEFAULT_TIME_FORMAT,
+  }
+);
 
 export const userIdStorage = storage.defineItem<string | null>("local:userId", {
   fallback: null,
