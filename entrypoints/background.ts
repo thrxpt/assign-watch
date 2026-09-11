@@ -53,9 +53,7 @@ function reviewAssignment(
   state: NotifiedState,
   now: Date
 ) {
-  const dueDate = new Date(assignment.due_date);
-
-  if (isSubmitted(assignment) || dueDate <= now) {
+  if (isSubmitted(assignment)) {
     state.changedDay = state.idsDay.delete(assignment.id) || state.changedDay;
     state.changedHour =
       state.idsHour.delete(assignment.id) || state.changedHour;
@@ -63,6 +61,14 @@ function reviewAssignment(
   }
 
   if (!assignment.due_date) {
+    return;
+  }
+
+  const dueDate = new Date(assignment.due_date);
+  if (dueDate <= now) {
+    state.changedDay = state.idsDay.delete(assignment.id) || state.changedDay;
+    state.changedHour =
+      state.idsHour.delete(assignment.id) || state.changedHour;
     return;
   }
 
@@ -128,6 +134,20 @@ async function checkAssignments() {
   }
 }
 
+function openNotificationAssignment(notificationId: string) {
+  if (notificationId.startsWith("assignwatch-")) {
+    const [type, classId, assignmentId] = notificationId.split("-").slice(1);
+    void browser.tabs.create({
+      url: getAssignmentUrl({
+        class_id: Number(classId),
+        id: Number(assignmentId),
+        type: type as Activity["type"],
+      }),
+    });
+    void browser.notifications.clear(notificationId);
+  }
+}
+
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener((details) => {
     if (details.reason === "install") {
@@ -146,16 +166,11 @@ export default defineBackground(() => {
   });
 
   browser.notifications.onButtonClicked.addListener((notificationId) => {
-    if (notificationId.startsWith("assignwatch-")) {
-      const [type, classId, assignmentId] = notificationId.split("-").slice(1);
-      browser.tabs.create({
-        url: getAssignmentUrl({
-          class_id: Number(classId),
-          id: Number(assignmentId),
-          type: type as Activity["type"],
-        }),
-      });
-    }
+    openNotificationAssignment(notificationId);
+  });
+
+  browser.notifications.onClicked.addListener((notificationId) => {
+    openNotificationAssignment(notificationId);
   });
 
   browser.runtime.onMessage.addListener(async (message) => {
