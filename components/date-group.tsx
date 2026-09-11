@@ -1,4 +1,4 @@
-import { isToday, isTomorrow } from "date-fns";
+import { isToday, isTomorrow, parse } from "date-fns";
 
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
@@ -15,8 +15,17 @@ interface DateGroupProps {
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
-  const dateObj = new Date(date);
-  const relative = formatDateRelative(dateObj);
+  const dateObj = parse(date, "yyyy-MM-dd", new Date());
+
+  let earliestDueDate: Date | null = null;
+  for (const curr of assignments) {
+    const current = new Date(curr.due_date);
+    if (!earliestDueDate || current.getTime() < earliestDueDate.getTime()) {
+      earliestDueDate = current;
+    }
+  }
+
+  const relative = formatDateRelative(earliestDueDate ?? dateObj);
 
   let dateLabel = formatDate(dateObj, "d MMMM yyyy");
   if (isToday(dateObj)) {

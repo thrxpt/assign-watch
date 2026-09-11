@@ -151,7 +151,7 @@ describe("group-assignments logic", () => {
       id: 1,
     });
     const item2 = createMockActivity({
-      due_date: "2026-09-15T18:00:00.000Z",
+      due_date: "2026-09-15T12:00:00.000Z",
       id: 2,
     });
     const item3 = createMockActivity({
@@ -184,6 +184,65 @@ describe("group-assignments logic", () => {
       expect(groups).toHaveLength(2);
       expect(groups[0].date).toBe("2026-09-15");
       expect(groups[1].date).toBe("2026-09-10");
+    });
+
+    it("groups post-midnight assignments into the correct local calendar date", () => {
+      const postMidnightItem = createMockActivity({
+        due_date: "2026-10-15T01:30:00",
+        id: 42,
+      });
+      const sortState: SortState = { direction: "asc", sortBy: "dueDate" };
+      const groups = groupByDueDate(
+        [{ assignment: postMidnightItem, classInfo }],
+        sortState
+      );
+
+      expect(groups).toHaveLength(1);
+      expect(groups[0].date).toBe("2026-10-15");
+      expect(groups[0].assignments.map((item) => item.id)).toEqual([42]);
+    });
+
+    it("orders date buckets correctly across multiple days in asc and desc", () => {
+      const dayA = createMockActivity({
+        due_date: "2026-10-14T23:59:00",
+        id: 10,
+      });
+      const dayB = createMockActivity({
+        due_date: "2026-10-15T01:30:00",
+        id: 20,
+      });
+      const dayC = createMockActivity({
+        due_date: "2026-10-16T12:00:00",
+        id: 30,
+      });
+
+      const items: VisibleAssignment[] = [
+        { assignment: dayB, classInfo },
+        { assignment: dayA, classInfo },
+        { assignment: dayC, classInfo },
+      ];
+
+      const ascGroups = groupByDueDate(items, {
+        direction: "asc",
+        sortBy: "dueDate",
+      });
+      expect(ascGroups.map((g) => g.date)).toEqual([
+        "2026-10-14",
+        "2026-10-15",
+        "2026-10-16",
+      ]);
+      expect(ascGroups[1].assignments[0].id).toBe(20);
+
+      const descGroups = groupByDueDate(items, {
+        direction: "desc",
+        sortBy: "dueDate",
+      });
+      expect(descGroups.map((g) => g.date)).toEqual([
+        "2026-10-16",
+        "2026-10-15",
+        "2026-10-14",
+      ]);
+      expect(descGroups[1].assignments[0].id).toBe(20);
     });
   });
 
