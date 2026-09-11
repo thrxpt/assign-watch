@@ -1,4 +1,4 @@
-import { isSameDay } from "date-fns";
+import { format, isSameDay, parse } from "date-fns";
 
 import type { SortState } from "@/lib/preferences";
 import type { VisibleAssignment } from "@/lib/visible-assignments";
@@ -60,7 +60,7 @@ export function groupByDueDate(
 
   const groups = new Map<string, Activity[]>();
   for (const assignment of sorted) {
-    const [dateKey] = new Date(assignment.due_date).toISOString().split("T");
+    const dateKey = format(new Date(assignment.due_date), "yyyy-MM-dd");
     const bucket = groups.get(dateKey);
     if (bucket) {
       bucket.push(assignment);
@@ -71,7 +71,9 @@ export function groupByDueDate(
 
   return [...groups.entries()]
     .toSorted(([a], [b]) => {
-      const comparison = new Date(a).getTime() - new Date(b).getTime();
+      const comparison =
+        parse(a, "yyyy-MM-dd", new Date()).getTime() -
+        parse(b, "yyyy-MM-dd", new Date()).getTime();
       return sortState.direction === "asc" ? comparison : -comparison;
     })
     .map(([date, assignments]) => ({ assignments, date }));
