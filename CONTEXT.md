@@ -6,7 +6,9 @@ Names this codebase uses, and what they mean. Keep this current — architecture
 
 A course the student is enrolled in. Modelled as `ClassInfo` (`types.ts`).
 
-Classes are **scraped** from the LEB2 class page rather than fetched, because there is no API for the enrolment list — see `lib/dom.ts`. TA classes are skipped during scraping: they are identified by a settings icon on the card.
+Classes are **scraped** from the LEB2 class page (`/class`) rather than fetched, because there is no API for the enrolment list — see `lib/dom.ts`. TA classes are skipped during scraping: they are identified by a settings icon on the card.
+
+Scraped classes are persisted in `classInfoStorage` (`lib/storage.ts`) so that the assignment dialog can be opened anywhere across LEB2 without redirecting to `/class`. When opened on a page before any classes have been synced, a prompt directs the user to `/class`.
 
 ## Assignment
 

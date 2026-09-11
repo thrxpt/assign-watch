@@ -1,6 +1,6 @@
 import { useQueries } from "@tanstack/react-query";
 import { Calendar, LayoutList, Settings } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { browser } from "#imports";
 import { AssignmentFilters } from "@/components/assignment-filters";
@@ -13,6 +13,7 @@ import { DateGroup } from "@/components/date-group";
 import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { NoAssignments } from "@/components/no-assignments";
+import { NoClasses } from "@/components/no-classes";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -39,11 +40,6 @@ import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
 import { visibleAssignments } from "@/lib/visible-assignments";
 
-function navigateToClassPage() {
-  sessionStorage.setItem("shouldOpenDialog", "true");
-  window.location.pathname = "/class";
-}
-
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
     try {
@@ -61,18 +57,13 @@ async function openOptionsPage() {
   }
 }
 
-function shouldOpenDialogOnMount() {
-  return (
-    window.location.pathname === "/class" &&
-    sessionStorage.getItem("shouldOpenDialog") === "true"
-  );
-}
-
 function App() {
   const { t } = useI18n();
-  const [isModalOpen, setIsModalOpen] = useState(shouldOpenDialogOnMount);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
 
+  const [allClassInfo] = useStorageState(classInfoStorage);
+  const [userId] = useStorageState(userIdStorage);
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
   const [filters, setFilters] = useStorageState(filtersStorage);
@@ -80,7 +71,21 @@ function App() {
   const [groupState, setGroupState] = useStorageState(groupStorage);
 
   useEffect(() => {
-    sessionStorage.removeItem("shouldOpenDialog");
+    const syncInfo = async () => {
+      const userIdFromDom = scrapeUserId();
+      if (userIdFromDom) {
+        await userIdStorage.setValue(userIdFromDom);
+      }
+
+      if (window.location.pathname === "/class") {
+        const scraped = scrapeClassCards();
+        if (scraped.length > 0) {
+          await classInfoStorage.setValue(scraped);
+        }
+      }
+    };
+
+    void syncInfo();
   }, []);
 
   useEffect(() => {
@@ -91,11 +96,7 @@ function App() {
     button.style.background = "transparent";
 
     const handleClick = () => {
-      if (window.location.pathname === "/class") {
-        setIsModalOpen(true);
-      } else {
-        navigateToClassPage();
-      }
+      setIsModalOpen(true);
     };
     button.addEventListener("click", handleClick);
 
@@ -113,11 +114,7 @@ function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.code === "KeyA") {
         e.preventDefault();
-        if (window.location.pathname === "/class") {
-          setIsModalOpen((prev) => !prev);
-        } else {
-          navigateToClassPage();
-        }
+        setIsModalOpen((prev) => !prev);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
@@ -126,27 +123,14 @@ function App() {
     };
   }, []);
 
-  const allClassInfo = useMemo(() => scrapeClassCards(), []);
-
-  useEffect(() => {
-    const saveInfo = async () => {
-      const userId = scrapeUserId();
-      if (userId) {
-        await userIdStorage.setValue(userId);
-      }
-      await classInfoStorage.setValue(allClassInfo);
-    };
-    saveInfo();
-  }, [allClassInfo]);
-
   const assignments = useQueries({
     combine: (results) => ({
       data: results.map((result) => result.data),
       pending: results.some((result) => result.isPending),
     }),
     queries: allClassInfo.map((classInfo) => ({
-      queryFn: () => fetchAssignments(classInfo.id),
-      queryKey: ["assignments", classInfo.id],
+      queryFn: () => fetchAssignments(classInfo.id, userId),
+      queryKey: ["assignments", classInfo.id, userId],
     })),
   });
 
@@ -168,6 +152,10 @@ function App() {
   });
 
   const renderList = () => {
+    if (allClassInfo.length === 0) {
+      return <NoClasses />;
+    }
+
     if (assignments.pending) {
       return Array.from({ length: 4 }).map((_, index) => (
         <ClassSkeleton key={index} />
@@ -272,7 +260,11 @@ function App() {
             </TabsContent>
             <TabsContent value="calendar">
               <div className="h-[75dvh]">
-                <CalendarView assignments={calendarItems} />
+                {allClassInfo.length === 0 ? (
+                  <NoClasses />
+                ) : (
+                  <CalendarView assignments={calendarItems} />
+                )}
               </div>
             </TabsContent>
           </Tabs>
