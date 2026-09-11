@@ -26,6 +26,9 @@ class: ชั้นเรียน
 section: กลุ่มที่
 no_assignments: ไม่มีการบ้าน
 no_assignments_desc: ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ
+no_classes: ไม่พบชั้นเรียน
+no_classes_desc: ไปที่หน้ารวมชั้นเรียนบน LEB2 เพื่อซิงค์วิชาที่คุณลงทะเบียน
+go_to_classes: ไปที่ชั้นเรียน
 done_not_submitted_yet: ทำแล้วแต่ยังไม่ได้ส่ง
 hide_class: ซ่อนชั้นเรียน
 hide_assignment: ซ่อนงาน
@@ -38,7 +41,7 @@ tips_restore: ชั้นเรียนและงานที่ซ่อน
 next_tip: เคล็ดลับถัดไป
 group_by: จัดกลุ่มตาม
 group_by_class: ตามวิชา
-group_by_due_date: ตามวันกำหนดส่ง
+group_by_due_date: ตามวันที่กำหนดส่ง
 weekly_view: สัปดาห์
 monthly_view: เดือน
 previous_month: เดือนก่อนหน้า
@@ -57,7 +60,7 @@ language_en: อังกฤษ
 language_th: ไทย
 language_desc: เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ
 time_format: รูปแบบเวลา
-time_format_desc: เลือกรูปแบบการแสดงเวลา
+time_format_desc: เลือกลักษณะการแสดงเวลา
 time_format_12h: 12 ชั่วโมง
 time_format_24h: 24 ชั่วโมง
 keyboard_shortcut: แป้นพิมพ์ลัด

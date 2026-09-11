@@ -37,7 +37,7 @@ describe("i18n", () => {
       expect(translate("time_format_desc", "en")).toBe(
         "Choose how time is displayed."
       );
-      expect(translate("time_format_desc", "th")).toBe("เลือกรูปแบบการแสดงเวลา");
+      expect(translate("time_format_desc", "th")).toBe("เลือกลักษณะการแสดงเวลา");
       expect(translate("time_format_12h", "en")).toBe("12-hour");
       expect(translate("time_format_12h", "th")).toBe("12 ชั่วโมง");
       expect(translate("time_format_24h", "en")).toBe("24-hour");
@@ -64,6 +64,16 @@ describe("i18n", () => {
       expect(translate("section", "th")).toBe("กลุ่มที่");
       expect(translate("sponsor", "en")).toBe("Sponsor");
       expect(translate("sponsor", "th")).toBe("สนับสนุน");
+      expect(translate("no_classes", "en")).toBe("No Classes Found");
+      expect(translate("no_classes", "th")).toBe("ไม่พบชั้นเรียน");
+      expect(translate("no_classes_desc", "en")).toBe(
+        "Go to the classes page on LEB2 to sync your enrolled courses."
+      );
+      expect(translate("no_classes_desc", "th")).toBe(
+        "ไปที่หน้ารวมชั้นเรียนบน LEB2 เพื่อซิงค์วิชาที่คุณลงทะเบียน"
+      );
+      expect(translate("go_to_classes", "en")).toBe("Go to Classes");
+      expect(translate("go_to_classes", "th")).toBe("ไปที่ชั้นเรียน");
     });
 
     it("interpolates named tokens", () => {
