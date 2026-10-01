@@ -129,6 +129,7 @@ function App() {
       pending: results.some((result) => result.isPending),
     }),
     queries: allClassInfo.map((classInfo) => ({
+      enabled: isModalOpen,
       queryFn: () => fetchAssignments(classInfo.id, userId),
       queryKey: ["assignments", classInfo.id, userId],
     })),

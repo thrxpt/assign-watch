@@ -9,7 +9,19 @@ import { I18nProvider } from "@/lib/use-i18n";
 
 import "@/assets/tailwind.css";
 
-const queryClient = new QueryClient();
+const QUERY_STALE_TIME_MS = 5 * 60 * 1000;
+const QUERY_GC_TIME_MS = 10 * 60 * 1000;
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      gcTime: QUERY_GC_TIME_MS,
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+      staleTime: QUERY_STALE_TIME_MS,
+    },
+  },
+});
 
 export default defineContentScript({
   cssInjectionMode: "ui",
