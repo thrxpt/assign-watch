@@ -13,7 +13,7 @@ export function NoAssignments() {
   const { t } = useI18n();
 
   return (
-    <Empty>
+    <Empty className="animate-in fade-in-0 duration-300">
       <EmptyHeader>
         <EmptyMedia
           className="size-9 [&_svg:not([class*='size-'])]:size-5"

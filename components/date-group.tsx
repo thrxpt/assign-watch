@@ -35,7 +35,7 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   }
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 animate-in fade-in-0 duration-300 slide-in-from-bottom-1">
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
           <div className="font-medium text-lg">{dateLabel}</div>

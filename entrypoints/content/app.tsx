@@ -126,7 +126,7 @@ function App() {
   const assignments = useQueries({
     combine: (results) => ({
       data: results.map((result) => result.data),
-      pending: results.some((result) => result.isPending),
+      results,
     }),
     queries: allClassInfo.map((classInfo) => ({
       enabled: isModalOpen,
@@ -157,28 +157,39 @@ function App() {
       return <NoClasses />;
     }
 
-    if (assignments.pending) {
-      return Array.from({ length: 4 }).map((_, index) => (
-        <ClassSkeleton key={index} />
-      ));
-    }
+    const hiddenClassSet = new Set(hiddenClasses);
+    const pendingClasses = allClassInfo.filter(
+      (cls, index) =>
+        !hiddenClassSet.has(cls.id) && assignments.results[index]?.isPending
+    );
 
-    if (listItems.length === 0) {
+    if (listItems.length === 0 && pendingClasses.length === 0) {
       return <NoAssignments />;
     }
 
+    const skeletons = pendingClasses.map((cls) => (
+      <ClassSkeleton key={cls.id} />
+    ));
+
     if (groupState.groupBy === "class") {
-      return groupByClass(listItems, sortState).map((group) => (
+      const classGroups = groupByClass(listItems, sortState).map((group) => (
         <Class
           assignments={group.assignments}
           classInfo={group.classInfo}
           key={group.classInfo.id}
         />
       ));
+
+      return (
+        <>
+          {classGroups}
+          {skeletons}
+        </>
+      );
     }
 
     const classInfoMap = new Map(allClassInfo.map((c) => [c.id, c]));
-    return groupByDueDate(listItems, sortState).map(
+    const dateGroups = groupByDueDate(listItems, sortState).map(
       ({ date, assignments: due }) => (
         <DateGroup
           assignments={due}
@@ -187,6 +198,13 @@ function App() {
           key={date}
         />
       )
+    );
+
+    return (
+      <>
+        {dateGroups}
+        {skeletons}
+      </>
     );
   };
 
