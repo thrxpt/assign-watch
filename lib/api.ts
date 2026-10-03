@@ -5,17 +5,17 @@ import type { RootResponse } from "@/types";
 export const REQUEST_PACING_MS = 100;
 
 let lastRequestTime = 0;
-let queueTail: Promise<null> = Promise.resolve(null);
+let queueTail: Promise<void> = Promise.resolve();
 
-function delay(ms: number): Promise<null> {
-  const { promise, resolve } = Promise.withResolvers<null>();
-  setTimeout(() => resolve(null), ms);
+const delay = (ms: number): Promise<void> => {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
   return promise;
-}
+};
 
 export async function paceRequest(): Promise<void> {
   const waitTurn = queueTail;
-  const { promise, resolve } = Promise.withResolvers<null>();
+  const { promise, resolve } = Promise.withResolvers<void>();
   queueTail = promise;
   try {
     await waitTurn;
@@ -26,13 +26,13 @@ export async function paceRequest(): Promise<void> {
     }
     lastRequestTime = Date.now();
   } finally {
-    resolve(null);
+    resolve();
   }
 }
 
 export function resetPacingQueue(): void {
   lastRequestTime = 0;
-  queueTail = Promise.resolve(null);
+  queueTail = Promise.resolve();
 }
 
 export async function fetchAssignments(

@@ -5,7 +5,8 @@ commit-msg:
 
 pre-commit:
   jobs:
-    - run: pnpm ultracite fix
+    - name: fix
+      run: pnpm ultracite fix
       glob:
         - "**/*.js"
         - "**/*.jsx"
@@ -15,3 +16,7 @@ pre-commit:
         - "**/*.jsonc"
         - "**/*.css"
       stage_fixed: true
+    - name: typecheck
+      run: pnpm compile
+    - name: test
+      run: pnpm test

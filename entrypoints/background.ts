@@ -4,7 +4,7 @@ import { defineBackground } from "wxt/utils/define-background";
 import { getAssignmentUrl } from "@/lib/assignment";
 import type { Activity } from "@/types";
 
-function openNotificationAssignment(notificationId: string) {
+const openNotificationAssignment = (notificationId: string) => {
   if (notificationId.startsWith("assignwatch-")) {
     const [type, classId, assignmentId] = notificationId.split("-").slice(1);
     void browser.tabs.create({
@@ -16,13 +16,15 @@ function openNotificationAssignment(notificationId: string) {
     });
     void browser.notifications.clear(notificationId);
   }
-}
+};
 
 export default defineBackground(() => {
-  void browser.alarms.clear("checkAssignments");
+  browser.runtime.onStartup.addListener(async () => {
+    await browser.alarms.clearAll();
+  });
 
   browser.runtime.onInstalled.addListener(async (details) => {
-    await browser.alarms.clear("checkAssignments");
+    await browser.alarms.clearAll();
 
     if (details.reason === "install") {
       await browser.tabs.create({
@@ -30,7 +32,6 @@ export default defineBackground(() => {
       });
     }
   });
-
   browser.notifications.onButtonClicked.addListener((notificationId) => {
     openNotificationAssignment(notificationId);
   });

@@ -45,4 +45,11 @@ These live in `lib/`, not in the menus that edit them, so that storage and the a
 
 ## Notification
 
-A due-soon alert raised by the background worker (`entrypoints/background.ts`) at two thresholds: 24 hours and 1 hour before the due date. Each assignment is notified at most once per threshold; the sent IDs are remembered in storage and cleared once the work is submitted or the due date passes.
+Notifications are user-action or one-shot event driven. Background polling alarms that query the LEB2 server periodically are explicitly prohibited to prevent server overload.
+
+## Background Service Worker (MV3)
+
+- Manifest V3 service workers are ephemeral: top-level code executes on every worker activation or message wake-up.
+- One-time browser startup listeners must be registered via `browser.runtime.onStartup.addListener(...)`.
+- Extension install, update, and migration tasks must be registered via `browser.runtime.onInstalled.addListener(...)`.
+- Background workers must never initiate unprompted, recurring network requests against external educational platforms.

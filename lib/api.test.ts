@@ -22,15 +22,14 @@ describe("api logic", () => {
 
       const order: number[] = [];
 
-      const p1 = paceRequest().then(() => {
-        order.push(1);
-      });
-      const p2 = paceRequest().then(() => {
-        order.push(2);
-      });
-      const p3 = paceRequest().then(() => {
-        order.push(3);
-      });
+      const runRequest = async (id: number) => {
+        await paceRequest();
+        order.push(id);
+      };
+
+      const p1 = runRequest(1);
+      const p2 = runRequest(2);
+      const p3 = runRequest(3);
 
       // p1 should resolve immediately
       await vi.advanceTimersByTimeAsync(0);
