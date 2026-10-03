@@ -28,6 +28,7 @@ import { fetchAssignments } from "@/lib/api";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
 import {
+  cachedAssignmentsStorage,
   classInfoStorage,
   filtersStorage,
   groupStorage,
@@ -42,6 +43,7 @@ import {
   getPendingClasses,
   visibleAssignments,
 } from "@/lib/visible-assignments";
+import type { Activity } from "@/types";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -137,6 +139,20 @@ function App() {
       queryKey: ["assignments", classInfo.id, userId],
     })),
   });
+
+  useEffect(() => {
+    const flatAssignments = assignments.data
+      .filter((items): items is Activity[] => Boolean(items))
+      .flat();
+
+    const isAllDone =
+      assignments.results.length > 0 &&
+      assignments.results.every((result) => !result.isPending);
+
+    if (flatAssignments.length > 0 || isAllDone) {
+      void cachedAssignmentsStorage.setValue(flatAssignments);
+    }
+  }, [assignments.data, assignments.results]);
 
   const visibility = {
     allClassInfo,

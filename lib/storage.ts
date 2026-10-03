@@ -16,7 +16,7 @@ import type {
   SortState,
   TimeFormat,
 } from "@/lib/preferences";
-import type { ClassInfo } from "@/types";
+import type { Activity, ClassInfo } from "@/types";
 
 export const hiddenClassesStorage = storage.defineItem<number[]>(
   "local:hiddenClasses",
@@ -77,6 +77,12 @@ export const userIdStorage = storage.defineItem<string | null>("local:userId", {
 
 export const classInfoStorage = storage.defineItem<ClassInfo[]>(
   "local:classInfo",
+  {
+    fallback: [],
+  }
+);
+export const cachedAssignmentsStorage = storage.defineItem<Activity[]>(
+  "local:cachedAssignments",
   {
     fallback: [],
   }
