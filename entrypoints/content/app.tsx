@@ -38,7 +38,10 @@ import {
 } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
-import { visibleAssignments } from "@/lib/visible-assignments";
+import {
+  getPendingClasses,
+  visibleAssignments,
+} from "@/lib/visible-assignments";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -156,12 +159,11 @@ function App() {
     if (allClassInfo.length === 0) {
       return <NoClasses />;
     }
-
-    const hiddenClassSet = new Set(hiddenClasses);
-    const pendingClasses = allClassInfo.filter(
-      (cls, index) =>
-        !hiddenClassSet.has(cls.id) && assignments.results[index]?.isPending
-    );
+    const pendingClasses = getPendingClasses({
+      allClassInfo,
+      hiddenClasses,
+      results: assignments.results,
+    });
 
     if (listItems.length === 0 && pendingClasses.length === 0) {
       return <NoAssignments />;
@@ -171,38 +173,29 @@ function App() {
       <ClassSkeleton key={cls.id} />
     ));
 
-    if (groupState.groupBy === "class") {
-      const classGroups = groupByClass(listItems, sortState).map((group) => (
-        <Class
-          assignments={group.assignments}
-          classInfo={group.classInfo}
-          key={group.classInfo.id}
-        />
-      ));
-
-      return (
-        <>
-          {classGroups}
-          {skeletons}
-        </>
-      );
-    }
-
     const classInfoMap = new Map(allClassInfo.map((c) => [c.id, c]));
-    const dateGroups = groupByDueDate(listItems, sortState).map(
-      ({ date, assignments: due }) => (
-        <DateGroup
-          assignments={due}
-          classInfoMap={classInfoMap}
-          date={date}
-          key={date}
-        />
-      )
-    );
-
+    const groups =
+      groupState.groupBy === "class"
+        ? groupByClass(listItems, sortState).map((group) => (
+            <Class
+              assignments={group.assignments}
+              classInfo={group.classInfo}
+              key={group.classInfo.id}
+            />
+          ))
+        : groupByDueDate(listItems, sortState).map(
+            ({ date, assignments: due }) => (
+              <DateGroup
+                assignments={due}
+                classInfoMap={classInfoMap}
+                date={date}
+                key={date}
+              />
+            )
+          );
     return (
       <>
-        {dateGroups}
+        {groups}
         {skeletons}
       </>
     );

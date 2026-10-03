@@ -30,10 +30,10 @@ export async function paceRequest(): Promise<void> {
   }
 }
 
-export function resetPacingQueue(): void {
+export const resetPacingQueue = (): void => {
   lastRequestTime = 0;
   queueTail = Promise.resolve();
-}
+};
 
 export async function fetchAssignments(
   classId: number,
