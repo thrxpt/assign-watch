@@ -143,7 +143,7 @@ function App() {
   useEffect(() => {
     const isAllDone =
       assignments.results.length > 0 &&
-      assignments.results.every((result) => !result.isPending);
+      assignments.results.every((result) => result.isSuccess);
 
     if (!isAllDone) {
       return;
