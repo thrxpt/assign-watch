@@ -13,6 +13,7 @@ describe("api logic", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
   });
 
@@ -44,7 +45,6 @@ describe("api logic", () => {
       expect(order).toEqual([1, 2, 3]);
 
       await Promise.all([p1, p2, p3]);
-      vi.useRealTimers();
     });
   });
 

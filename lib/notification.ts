@@ -47,18 +47,23 @@ export const reviewAssignment = (
     return;
   }
 
+  const dueWithinHour = dueDate.getTime() - now.getTime() <= HOUR_IN_MS;
   const dueWithinDay = dueDate.getTime() - now.getTime() <= DAY_IN_MS;
-  if (dueWithinDay && !state.idsDay.has(assignment.id)) {
+
+  if (dueWithinHour) {
+    if (!state.idsHour.has(assignment.id)) {
+      notify(assignment, "1h");
+      state.idsHour.add(assignment.id);
+      state.changedHour = true;
+    }
+    if (!state.idsDay.has(assignment.id)) {
+      state.idsDay.add(assignment.id);
+      state.changedDay = true;
+    }
+  } else if (dueWithinDay && !state.idsDay.has(assignment.id)) {
     notify(assignment, "24h");
     state.idsDay.add(assignment.id);
     state.changedDay = true;
-  }
-
-  const dueWithinHour = dueDate.getTime() - now.getTime() <= HOUR_IN_MS;
-  if (dueWithinHour && !state.idsHour.has(assignment.id)) {
-    notify(assignment, "1h");
-    state.idsHour.add(assignment.id);
-    state.changedHour = true;
   }
 };
 

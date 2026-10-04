@@ -87,6 +87,29 @@ describe("notification logic", () => {
     expect(state.idsHour.has(42)).toBe(true);
     expect(state.changedHour).toBe(true);
   });
+  it("notifies only 1h and suppresses 24h when discovered within 1h threshold", () => {
+    const notify = vi.fn();
+    const assignment = createMockActivity({
+      due_date: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
+      id: 42,
+    });
+
+    const state = {
+      changedDay: false,
+      changedHour: false,
+      idsDay: new Set<number>(),
+      idsHour: new Set<number>(),
+    };
+
+    reviewAssignment(assignment, state, baseNow, notify);
+
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenCalledWith(assignment, "1h");
+    expect(state.idsHour.has(42)).toBe(true);
+    expect(state.idsDay.has(42)).toBe(true);
+    expect(state.changedHour).toBe(true);
+    expect(state.changedDay).toBe(true);
+  });
 
   it("does not re-notify if already notified in timeframe", () => {
     const notify = vi.fn();

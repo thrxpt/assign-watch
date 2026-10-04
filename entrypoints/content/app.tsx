@@ -141,17 +141,19 @@ function App() {
   });
 
   useEffect(() => {
-    const flatAssignments = assignments.data
-      .filter((items): items is Activity[] => Boolean(items))
-      .flat();
-
     const isAllDone =
       assignments.results.length > 0 &&
       assignments.results.every((result) => !result.isPending);
 
-    if (flatAssignments.length > 0 || isAllDone) {
-      void cachedAssignmentsStorage.setValue(flatAssignments);
+    if (!isAllDone) {
+      return;
     }
+
+    const flatAssignments = assignments.data
+      .filter((items): items is Activity[] => Boolean(items))
+      .flat();
+
+    void cachedAssignmentsStorage.setValue(flatAssignments);
   }, [assignments.data, assignments.results]);
 
   const visibility = {

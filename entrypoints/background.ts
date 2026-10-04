@@ -51,6 +51,12 @@ const checkCachedAssignments = async () => {
     ]);
 
     if (!assignments || assignments.length === 0) {
+      if (notifiedDay && notifiedDay.length > 0) {
+        await notifiedAssignmentsStorage.setValue([]);
+      }
+      if (notifiedHour && notifiedHour.length > 0) {
+        await notifiedAssignments1hStorage.setValue([]);
+      }
       return;
     }
 
