@@ -49,6 +49,29 @@ interface VisibleAssignmentsParams {
   /** The list drops settled work; the calendar keeps it as history. */
   includeSettled: boolean;
 }
+export interface PendingQueryResult {
+  isPending: boolean;
+}
+
+export interface PendingClassesParams {
+  allClassInfo: ClassInfo[];
+  hiddenClasses: number[];
+  results: PendingQueryResult[];
+}
+
+/**
+ * Returns classes that are currently pending fetch and not hidden by the user.
+ */
+export const getPendingClasses = ({
+  allClassInfo,
+  hiddenClasses,
+  results,
+}: PendingClassesParams): ClassInfo[] => {
+  const hiddenClassIds = new Set(hiddenClasses);
+  return allClassInfo.filter(
+    (cls, index) => !hiddenClassIds.has(cls.id) && results[index]?.isPending
+  );
+};
 
 /**
  * Every rule that can remove an assignment from view. Both the list and the

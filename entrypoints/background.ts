@@ -1,38 +1,24 @@
 import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 
-import { fetchAssignments } from "@/lib/api";
-import { getAssignmentUrl, isSubmitted } from "@/lib/assignment";
+import { getAssignmentUrl } from "@/lib/assignment";
+import { DUE_SOON_MESSAGES, reviewAssignments } from "@/lib/notification";
+import type { Timeframe } from "@/lib/notification";
 import {
-  classInfoStorage,
+  cachedAssignmentsStorage,
+  hiddenAssignmentsStorage,
+  hiddenClassesStorage,
   notifiedAssignments1hStorage,
   notifiedAssignmentsStorage,
-  userIdStorage,
 } from "@/lib/storage";
 import type { Activity } from "@/types";
 
-const DUE_SOON_MESSAGES = {
-  "1h": "is due in less than 1 hour.",
-  "24h": "is due in less than 24 hours.",
-} as const;
+const ALARM_NAME = "reviewCachedAssignments";
+const CHECK_INTERVAL_MINUTES = 10;
 
-const HOUR_IN_MS = 60 * 60 * 1000;
-const DAY_IN_MS = 24 * HOUR_IN_MS;
-
-/**
- * Ids already notified per timeframe, plus dirty flags so we only write back
- * to storage when something actually changed.
- */
-interface NotifiedState {
-  changedDay: boolean;
-  changedHour: boolean;
-  idsDay: Set<number>;
-  idsHour: Set<number>;
-}
-
-function notifyDueSoon(assignment: Activity, timeframe: "24h" | "1h") {
+const notifyDueSoon = (assignment: Activity, timeframe: Timeframe) => {
   const idSuffix = timeframe === "1h" ? "-1h" : "";
-  browser.notifications.create(
+  void browser.notifications.create(
     `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}${idSuffix}`,
     {
       buttons: [
@@ -46,95 +32,57 @@ function notifyDueSoon(assignment: Activity, timeframe: "24h" | "1h") {
       type: "basic",
     }
   );
-}
+};
 
-function reviewAssignment(
-  assignment: Activity,
-  state: NotifiedState,
-  now: Date
-) {
-  if (isSubmitted(assignment)) {
-    state.changedDay = state.idsDay.delete(assignment.id) || state.changedDay;
-    state.changedHour =
-      state.idsHour.delete(assignment.id) || state.changedHour;
-    return;
-  }
-
-  if (!assignment.due_date) {
-    return;
-  }
-
-  const dueDate = new Date(assignment.due_date);
-  if (dueDate <= now) {
-    state.changedDay = state.idsDay.delete(assignment.id) || state.changedDay;
-    state.changedHour =
-      state.idsHour.delete(assignment.id) || state.changedHour;
-    return;
-  }
-
-  const dueWithinDay = dueDate.getTime() - now.getTime() <= DAY_IN_MS;
-  if (dueWithinDay && !state.idsDay.has(assignment.id)) {
-    notifyDueSoon(assignment, "24h");
-    state.idsDay.add(assignment.id);
-    state.changedDay = true;
-  }
-
-  const dueWithinHour = dueDate.getTime() - now.getTime() <= HOUR_IN_MS;
-  if (dueWithinHour && !state.idsHour.has(assignment.id)) {
-    notifyDueSoon(assignment, "1h");
-    state.idsHour.add(assignment.id);
-    state.changedHour = true;
-  }
-}
-
-async function reviewClass(
-  classId: number,
-  userId: string,
-  state: NotifiedState
-) {
+const checkCachedAssignments = async () => {
   try {
-    const assignments = await fetchAssignments(classId, userId);
-    const now = new Date();
-    for (const assignment of assignments) {
-      reviewAssignment(assignment, state, now);
+    const [
+      assignments,
+      hiddenClasses,
+      hiddenAssignments,
+      notifiedDay,
+      notifiedHour,
+    ] = await Promise.all([
+      cachedAssignmentsStorage.getValue(),
+      hiddenClassesStorage.getValue(),
+      hiddenAssignmentsStorage.getValue(),
+      notifiedAssignmentsStorage.getValue(),
+      notifiedAssignments1hStorage.getValue(),
+    ]);
+
+    if (!assignments || assignments.length === 0) {
+      if (notifiedDay && notifiedDay.length > 0) {
+        await notifiedAssignmentsStorage.setValue([]);
+      }
+      if (notifiedHour && notifiedHour.length > 0) {
+        await notifiedAssignments1hStorage.setValue([]);
+      }
+      return;
+    }
+
+    const result = reviewAssignments({
+      assignments,
+      hiddenAssignments,
+      hiddenClasses,
+      notifiedDay,
+      notifiedHour,
+      notify: notifyDueSoon,
+      now: new Date(),
+    });
+
+    if (result.changedDay) {
+      await notifiedAssignmentsStorage.setValue(result.nextNotifiedDay);
+    }
+    if (result.changedHour) {
+      await notifiedAssignments1hStorage.setValue(result.nextNotifiedHour);
     }
   } catch (error) {
-    const detail = error instanceof Error ? error.message : error;
-    console.error(`Failed to check assignments for class ${classId}:`, detail);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to check cached assignments:", message);
   }
-}
+};
 
-async function checkAssignments() {
-  const [userId, classInfo, notifiedDay, notifiedHour] = await Promise.all([
-    userIdStorage.getValue(),
-    classInfoStorage.getValue(),
-    notifiedAssignmentsStorage.getValue(),
-    notifiedAssignments1hStorage.getValue(),
-  ]);
-
-  if (!(userId && classInfo)) {
-    return;
-  }
-
-  const state: NotifiedState = {
-    changedDay: false,
-    changedHour: false,
-    idsDay: new Set(notifiedDay),
-    idsHour: new Set(notifiedHour),
-  };
-
-  await Promise.all(classInfo.map((cls) => reviewClass(cls.id, userId, state)));
-
-  if (state.changedDay) {
-    await notifiedAssignmentsStorage.setValue([...state.idsDay]);
-  }
-
-  if (state.changedHour) {
-    await notifiedAssignments1hStorage.setValue([...state.idsHour]);
-  }
-}
-
-function openNotificationAssignment(notificationId: string) {
+const openNotificationAssignment = (notificationId: string) => {
   if (notificationId.startsWith("assignwatch-")) {
     const [type, classId, assignmentId] = notificationId.split("-").slice(1);
     void browser.tabs.create({
@@ -146,23 +94,49 @@ function openNotificationAssignment(notificationId: string) {
     });
     void browser.notifications.clear(notificationId);
   }
-}
+};
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener((details) => {
-    if (details.reason === "install") {
-      browser.tabs.create({
-        url: browser.runtime.getURL("/onboarding.html"),
+  const setupAlarm = async () => {
+    try {
+      await browser.alarms.clear(ALARM_NAME);
+      await browser.alarms.create(ALARM_NAME, {
+        periodInMinutes: CHECK_INTERVAL_MINUTES,
       });
+    } catch (error) {
+      console.error("Failed to setup notification alarm:", error);
+    }
+  };
+
+  browser.runtime.onStartup.addListener(async () => {
+    await setupAlarm();
+    await checkCachedAssignments();
+  });
+
+  browser.runtime.onInstalled.addListener(async (details) => {
+    await browser.alarms.clear("checkAssignments");
+    await setupAlarm();
+    await checkCachedAssignments();
+
+    if (details.reason === "install") {
+      try {
+        await browser.tabs.create({
+          url: browser.runtime.getURL("/onboarding.html"),
+        });
+      } catch {
+        // Ignore onboarding tab creation failure
+      }
     }
   });
 
-  browser.alarms.create("checkAssignments", { periodInMinutes: 1 });
-
   browser.alarms.onAlarm.addListener(async (alarm) => {
-    if (alarm.name === "checkAssignments") {
-      await checkAssignments();
+    if (alarm.name === ALARM_NAME) {
+      await checkCachedAssignments();
     }
+  });
+
+  cachedAssignmentsStorage.watch(() => {
+    void checkCachedAssignments();
   });
 
   browser.notifications.onButtonClicked.addListener((notificationId) => {

@@ -45,4 +45,15 @@ These live in `lib/`, not in the menus that edit them, so that storage and the a
 
 ## Notification
 
-A due-soon alert raised by the background worker (`entrypoints/background.ts`) at two thresholds: 24 hours and 1 hour before the due date. Each assignment is notified at most once per threshold; the sent IDs are remembered in storage and cleared once the work is submitted or the due date passes.
+A due-soon alert evaluated completely **offline** from `cachedAssignmentsStorage` (`lib/storage.ts`) without making network requests to LEB2.
+
+Alerts trigger at two thresholds: **24 hours** and **1 hour** before the due date. The sent IDs are tracked in `notifiedAssignmentsStorage` and `notifiedAssignments1hStorage`, and are cleared once the work is submitted or the due date passes.
+
+Evaluations run reactively via `cachedAssignmentsStorage.watch()` whenever new assignments are viewed, on browser startup/install, and periodically via a local 10-minute alarm (`reviewCachedAssignments`). Assignments in hidden classes or hidden assignments are ignored.
+
+## Background Service Worker (MV3)
+
+- Manifest V3 service workers are ephemeral: top-level code executes on every worker activation or message wake-up.
+- One-time browser startup listeners must be registered via `browser.runtime.onStartup.addListener(...)`.
+- Extension install, update, and migration tasks must be registered via `browser.runtime.onInstalled.addListener(...)`.
+- Background workers must never initiate unprompted, recurring network requests against external educational platforms; all background checks must read strictly from local extension storage.

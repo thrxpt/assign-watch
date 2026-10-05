@@ -28,6 +28,7 @@ import { fetchAssignments } from "@/lib/api";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
 import {
+  cachedAssignmentsStorage,
   classInfoStorage,
   filtersStorage,
   groupStorage,
@@ -38,7 +39,11 @@ import {
 } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
-import { visibleAssignments } from "@/lib/visible-assignments";
+import {
+  getPendingClasses,
+  visibleAssignments,
+} from "@/lib/visible-assignments";
+import type { Activity } from "@/types";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -126,13 +131,30 @@ function App() {
   const assignments = useQueries({
     combine: (results) => ({
       data: results.map((result) => result.data),
-      pending: results.some((result) => result.isPending),
+      results,
     }),
     queries: allClassInfo.map((classInfo) => ({
+      enabled: isModalOpen,
       queryFn: () => fetchAssignments(classInfo.id, userId),
       queryKey: ["assignments", classInfo.id, userId],
     })),
   });
+
+  useEffect(() => {
+    const isAllDone =
+      assignments.results.length > 0 &&
+      assignments.results.every((result) => result.isSuccess);
+
+    if (!isAllDone) {
+      return;
+    }
+
+    const flatAssignments = assignments.data
+      .filter((items): items is Activity[] => Boolean(items))
+      .flat();
+
+    void cachedAssignmentsStorage.setValue(flatAssignments);
+  }, [assignments.data, assignments.results]);
 
   const visibility = {
     allClassInfo,
@@ -155,37 +177,45 @@ function App() {
     if (allClassInfo.length === 0) {
       return <NoClasses />;
     }
+    const pendingClasses = getPendingClasses({
+      allClassInfo,
+      hiddenClasses,
+      results: assignments.results,
+    });
 
-    if (assignments.pending) {
-      return Array.from({ length: 4 }).map((_, index) => (
-        <ClassSkeleton key={index} />
-      ));
-    }
-
-    if (listItems.length === 0) {
+    if (listItems.length === 0 && pendingClasses.length === 0) {
       return <NoAssignments />;
     }
 
-    if (groupState.groupBy === "class") {
-      return groupByClass(listItems, sortState).map((group) => (
-        <Class
-          assignments={group.assignments}
-          classInfo={group.classInfo}
-          key={group.classInfo.id}
-        />
-      ));
-    }
+    const skeletons = pendingClasses.map((cls) => (
+      <ClassSkeleton key={cls.id} />
+    ));
 
     const classInfoMap = new Map(allClassInfo.map((c) => [c.id, c]));
-    return groupByDueDate(listItems, sortState).map(
-      ({ date, assignments: due }) => (
-        <DateGroup
-          assignments={due}
-          classInfoMap={classInfoMap}
-          date={date}
-          key={date}
-        />
-      )
+    const groups =
+      groupState.groupBy === "class"
+        ? groupByClass(listItems, sortState).map((group) => (
+            <Class
+              assignments={group.assignments}
+              classInfo={group.classInfo}
+              key={group.classInfo.id}
+            />
+          ))
+        : groupByDueDate(listItems, sortState).map(
+            ({ date, assignments: due }) => (
+              <DateGroup
+                assignments={due}
+                classInfoMap={classInfoMap}
+                date={date}
+                key={date}
+              />
+            )
+          );
+    return (
+      <>
+        {groups}
+        {skeletons}
+      </>
     );
   };
 

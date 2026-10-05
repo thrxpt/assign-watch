@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_FILTERS } from "@/lib/preferences";
 import type { FilterState } from "@/lib/preferences";
 import {
+  getPendingClasses,
   isSettled,
   passesFilters,
   visibleAssignments,
@@ -275,6 +276,56 @@ describe("visible-assignments logic", () => {
 
       expect(result).toHaveLength(1);
       expect(result[0].assignment.id).toBe(401);
+    });
+  });
+
+  describe("getPendingClasses", () => {
+    it("returns classes that are pending and not hidden", () => {
+      const classes = [
+        createMockClass({ id: 1 }),
+        createMockClass({ id: 2 }),
+        createMockClass({ id: 3 }),
+      ];
+      const hiddenClasses = [2];
+      const results = [
+        { isPending: true },
+        { isPending: true },
+        { isPending: false },
+      ];
+
+      const pending = getPendingClasses({
+        allClassInfo: classes,
+        hiddenClasses,
+        results,
+      });
+      expect(pending).toHaveLength(1);
+      expect(pending[0].id).toBe(1);
+    });
+
+    it("filters out hidden classes even if pending", () => {
+      const classes = [createMockClass({ id: 1 })];
+      const hiddenClasses = [1];
+      const results = [{ isPending: true }];
+
+      const pending = getPendingClasses({
+        allClassInfo: classes,
+        hiddenClasses,
+        results,
+      });
+      expect(pending).toHaveLength(0);
+    });
+
+    it("filters out classes that are not pending", () => {
+      const classes = [createMockClass({ id: 1 })];
+      const hiddenClasses: number[] = [];
+      const results = [{ isPending: false }];
+
+      const pending = getPendingClasses({
+        allClassInfo: classes,
+        hiddenClasses,
+        results,
+      });
+      expect(pending).toHaveLength(0);
     });
   });
 });

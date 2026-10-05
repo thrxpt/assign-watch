@@ -2,7 +2,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function ClassSkeleton() {
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 animate-in fade-in-0 duration-200">
       <Skeleton className="w-48 rounded-lg" />
       <div className="flex w-full flex-col gap-3">
         {Array.from({ length: 2 }).map((_, index) => (
