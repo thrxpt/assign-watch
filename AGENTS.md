@@ -124,3 +124,17 @@ Oxlint + Oxfmt's linter will catch most issues automatically. Focus your attenti
 ---
 
 Most formatting and common issues are automatically fixed by Oxlint + Oxfmt. Run `pnpm dlx ultracite fix` before committing to ensure compliance.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live in GitHub Issues; use `gh`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default triage label names: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo with a root `GLOSSARY.md` and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
