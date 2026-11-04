@@ -5,6 +5,7 @@ import {
   DEFAULT_GROUP,
   DEFAULT_LANGUAGE,
   DEFAULT_SHOW_CALENDAR_BY,
+  DEFAULT_SHOW_UNDATED_ASSIGNMENTS,
   DEFAULT_SORT,
   DEFAULT_TIME_FORMAT,
 } from "@/lib/preferences";
@@ -43,6 +44,13 @@ export const sortStorage = storage.defineItem<SortState>(
   "local:assignmentSort",
   {
     fallback: DEFAULT_SORT,
+  }
+);
+
+export const showUndatedAssignmentsStorage = storage.defineItem<boolean>(
+  "local:showUndatedAssignments",
+  {
+    fallback: DEFAULT_SHOW_UNDATED_ASSIGNMENTS,
   }
 );
 

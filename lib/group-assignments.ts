@@ -11,7 +11,7 @@ export interface ClassGroup {
 
 export interface DateGroupEntry {
   assignments: Activity[];
-  date: string;
+  date: string | null;
 }
 
 export interface DayEntry {
@@ -22,8 +22,15 @@ export interface DayEntry {
 export function sortAssignments(assignments: Activity[], sortState: SortState) {
   const field = sortState.sortBy === "postedDate" ? "start_date" : "due_date";
   return assignments.toSorted((a, b) => {
-    const comparison =
-      new Date(a[field]).getTime() - new Date(b[field]).getTime();
+    const dateA = a[field];
+    const dateB = b[field];
+    if (!dateA) {
+      return dateB ? 1 : 0;
+    }
+    if (!dateB) {
+      return -1;
+    }
+    const comparison = new Date(dateA).getTime() - new Date(dateB).getTime();
     return sortState.direction === "asc" ? comparison : -comparison;
   });
 }
@@ -58,9 +65,11 @@ export function groupByDueDate(
     sortState
   );
 
-  const groups = new Map<string, Activity[]>();
+  const groups = new Map<string | null, Activity[]>();
   for (const assignment of sorted) {
-    const dateKey = format(new Date(assignment.due_date), "yyyy-MM-dd");
+    const dateKey = assignment.due_date
+      ? format(new Date(assignment.due_date), "yyyy-MM-dd")
+      : null;
     const bucket = groups.get(dateKey);
     if (bucket) {
       bucket.push(assignment);
@@ -71,6 +80,12 @@ export function groupByDueDate(
 
   return [...groups.entries()]
     .toSorted(([a], [b]) => {
+      if (a === null) {
+        return b === null ? 0 : 1;
+      }
+      if (b === null) {
+        return -1;
+      }
       const comparison =
         parse(a, "yyyy-MM-dd", new Date()).getTime() -
         parse(b, "yyyy-MM-dd", new Date()).getTime();
@@ -86,6 +101,9 @@ export function groupByDay(
   const buckets = new Map<number, Activity[]>(days.map((day) => [+day, []]));
 
   for (const { assignment } of items) {
+    if (!assignment.due_date) {
+      continue;
+    }
     const dueDate = new Date(assignment.due_date);
     const day = days.find((candidate) => isSameDay(dueDate, candidate));
     if (day) {

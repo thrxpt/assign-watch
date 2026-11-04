@@ -3,6 +3,7 @@ calendar: ปฏิทิน
 list_view: มุมมองรายการ
 calendar_view: มุมมองปฏิทิน
 filter: ตัวกรอง
+undated_assignments_description: แสดงงานเหล่านี้ในรายการสิ่งที่ต้องทำ
 submission_status: สถานะการส่ง
 submitted: ส่งแล้ว
 not_submitted: ยังไม่ได้ส่ง
@@ -13,6 +14,8 @@ group_type: ประเภทกลุ่ม
 individual: งานเดี่ยว
 group: งานกลุ่ม
 due_date: วันที่กำหนดส่ง
+no_due_date: ไม่มีกำหนดส่ง
+show_undated_assignments: แสดงงานที่ไม่มีกำหนดส่ง
 posted_date: วันที่สั่ง
 sort: เรียงลำดับ
 sort_by: เรียงตาม

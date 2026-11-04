@@ -70,12 +70,17 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
   const { formatTime } = useTimeFormat();
-  const relativeDue = formatDateRelative(new Date(assignment.due_date));
+  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null;
+  const relativeDue = dueDate ? formatDateRelative(dueDate) : null;
 
   const dueTime = (
     <span className="flex items-center gap-1 text-muted-foreground">
-      <Clock className="size-3.5 stroke-muted-foreground" />
-      {formatTime(new Date(assignment.due_date))}
+      {dueDate ? (
+        <Clock className="size-3.5 stroke-muted-foreground" />
+      ) : (
+        <Calendar className="size-3.5 stroke-muted-foreground" />
+      )}
+      {dueDate ? formatTime(dueDate) : t("no_due_date")}
     </span>
   );
 
@@ -113,16 +118,15 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
                   <div className="flex gap-2">
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <Calendar className="size-3.5 stroke-muted-foreground" />
-                      {formatDate(
-                        new Date(assignment.due_date),
-                        "eeee, d MMM yyyy"
-                      )}
+                      {dueDate
+                        ? formatDate(dueDate, "eeee, d MMM yyyy")
+                        : t("no_due_date")}
                     </span>
-                    {dueTime}
+                    {dueDate && dueTime}
                   </div>
                 )}
               </div>
-              {!classInfo && (
+              {!classInfo && relativeDue && (
                 <StatusBadge
                   className={getRelativeStatusColor(relativeDue.status)}
                 >

@@ -35,9 +35,12 @@ export function passesFilters(assignment: Activity, filters: FilterState) {
   return true;
 }
 
-/** Past its due date and already handed in — nothing left to do. */
+/** Submitted work with no remaining deadline to track. */
 export function isSettled(assignment: Activity) {
-  return assignment.due_date_exceed && isSubmitted(assignment);
+  return (
+    (!assignment.due_date || assignment.due_date_exceed) &&
+    isSubmitted(assignment)
+  );
 }
 
 interface VisibleAssignmentsParams {
@@ -48,6 +51,8 @@ interface VisibleAssignmentsParams {
   hiddenClasses: number[];
   /** The list drops settled work; the calendar keeps it as history. */
   includeSettled: boolean;
+  /** Only the list can opt in; the calendar requires a due date. */
+  includeUndated?: boolean;
 }
 export interface PendingQueryResult {
   isPending: boolean;
@@ -84,6 +89,7 @@ export function visibleAssignments({
   hiddenAssignments,
   filters,
   includeSettled,
+  includeUndated = false,
 }: VisibleAssignmentsParams): VisibleAssignment[] {
   const visible: VisibleAssignment[] = [];
   const hiddenClassIds = new Set(hiddenClasses);
@@ -96,6 +102,9 @@ export function visibleAssignments({
     }
 
     for (const assignment of query) {
+      if (!assignment.due_date && !includeUndated) {
+        continue;
+      }
       if (hiddenAssignmentIds.has(assignment.id)) {
         continue;
       }

@@ -10,28 +10,35 @@ import type { Activity, ClassInfo } from "@/types";
 interface DateGroupProps {
   assignments: Activity[];
   classInfoMap: Map<number, ClassInfo>;
-  date: string;
+  date: string | null;
 }
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
-  const dateObj = parse(date, "yyyy-MM-dd", new Date());
+  const dateObj = date ? parse(date, "yyyy-MM-dd", new Date()) : null;
 
   let earliestDueDate: Date | null = null;
   for (const curr of assignments) {
+    if (!curr.due_date) {
+      continue;
+    }
     const current = new Date(curr.due_date);
     if (!earliestDueDate || current.getTime() < earliestDueDate.getTime()) {
       earliestDueDate = current;
     }
   }
 
-  const relative = formatDateRelative(earliestDueDate ?? dateObj);
+  const relativeDate = earliestDueDate ?? dateObj;
+  const relative = relativeDate ? formatDateRelative(relativeDate) : null;
 
-  let dateLabel = formatDate(dateObj, "d MMMM yyyy");
-  if (isToday(dateObj)) {
-    dateLabel = t("today");
-  } else if (isTomorrow(dateObj)) {
-    dateLabel = t("tomorrow");
+  let dateLabel = t("no_due_date");
+  if (dateObj) {
+    dateLabel = formatDate(dateObj, "d MMMM yyyy");
+    if (isToday(dateObj)) {
+      dateLabel = t("today");
+    } else if (isTomorrow(dateObj)) {
+      dateLabel = t("tomorrow");
+    }
   }
 
   return (
@@ -39,14 +46,16 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
           <div className="font-medium text-lg">{dateLabel}</div>
-          <StatusBadge
-            className={cn(
-              "mt-1 bg-white/50",
-              getRelativeStatusColor(relative.status)
-            )}
-          >
-            {relative.text}
-          </StatusBadge>
+          {relative && (
+            <StatusBadge
+              className={cn(
+                "mt-1 bg-white/50",
+                getRelativeStatusColor(relative.status)
+              )}
+            >
+              {relative.text}
+            </StatusBadge>
+          )}
         </div>
       </div>
       <div className="flex w-full flex-col gap-3">

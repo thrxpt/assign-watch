@@ -16,12 +16,18 @@ A single piece of work: an assignment (`type: "ASM"`) or a quiz (`type: "QUZ"`).
 
 The LEB2 API calls this an **Activity**, and `types.ts` keeps that name for the wire shape so it stays recognisable against the API response. Everywhere else — module names, function names, UI copy — the term is _assignment_. Treat `Activity` as "the API's word for an Assignment".
 
+## Undated Assignment
+
+An assignment with no specified due date. It may have a posted date, which does not imply a submission deadline.
+
+_Avoid_: Overdue assignment (a deadline has passed), unscheduled assignment (a posted date may exist).
+
 ## Submission Status
 
 Where an assignment stands, as one of five values (`Status` in `lib/assignment.ts`): `in_progress`, `not_submitted`, `submitted`, `submitted_late`, `quiz_not_submitted`.
 
 - **Submitted** (`isSubmitted`) means handed in, on time or late. It deliberately excludes `quiz_not_submitted` — that quiz was answered but never finalised, so there is still something to do.
-- **Settled** (`isSettled`) means past due _and_ submitted: finished work with nothing left to act on.
+- **Settled** means submitted work with no remaining deadline to track: its due date has passed, or it is an undated assignment.
 
 ## Visible Assignments
 
@@ -29,7 +35,7 @@ The answer to "which assignments should the user see right now?" (`lib/visible-a
 
 This is the single place that decides what is on screen. It applies hidden classes, hidden assignments, the settled rule, and the user's filters. Both the list view and the calendar view go through it, so a new rule is added once.
 
-The two views differ on exactly one declared parameter, `includeSettled`: the list is a to-do list and drops finished work; the calendar is a record of the term and keeps it. That is why only the calendar palette defines a `submitted_late` colour.
+The list is a to-do list and drops settled work; the calendar is a record of the term and keeps it. Undated assignments can appear in the list when the student chooses to show them, but have no deadline to place on the calendar.
 
 ## Hidden Items
 
@@ -39,7 +45,7 @@ Hiding is a user preference, not a filter — it survives across sessions and is
 
 ## Preferences
 
-The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, group type), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), how the calendar is shown (month or week), and **Language** (`auto`, `en`, `th`).
+The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, group type), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), how the calendar is shown (month or week), whether undated assignments appear in the to-do list, and **Language** (`auto`, `en`, `th`).
 
 These live in `lib/`, not in the menus that edit them, so that storage and the assignment pipeline can depend on the model without depending on the UI. `lib/` must never import from `components/`.
 

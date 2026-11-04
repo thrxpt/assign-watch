@@ -23,7 +23,7 @@ export interface Activity {
   count_group_member: number;
   created_at: string;
   description: string;
-  due_date: string;
+  due_date: string | null;
   due_date_exceed: boolean;
   edit_group_mode: string;
   fileactivities: number[];

@@ -156,10 +156,10 @@ describe("notification logic", () => {
     expect(state.changedHour).toBe(true);
   });
 
-  it("skips assignments without due_date", () => {
+  it.each([null, ""])("skips assignments without due_date (%j)", (dueDate) => {
     const notify = vi.fn();
     const assignment = createMockActivity({
-      due_date: "",
+      due_date: dueDate,
       id: 42,
     });
 

@@ -49,7 +49,7 @@ describe("api logic", () => {
   });
 
   describe("fetchAssignments", () => {
-    it("filters out activities with null due_date", async () => {
+    it("retains assignments without a due date for visibility filtering", async () => {
       const mockActivities = [
         { due_date: "2026-10-10T12:00:00Z", id: 1, title: "Activity 1" },
         { due_date: null, id: 2, title: "Activity 2" },
@@ -62,8 +62,7 @@ describe("api logic", () => {
       } as Response);
 
       const result = await fetchAssignments(101, "student-1");
-      expect(result).toHaveLength(2);
-      expect(result.map((a) => a.id)).toEqual([1, 3]);
+      expect(result).toEqual(mockActivities);
     });
 
     it("throws an error when response is not ok", async () => {

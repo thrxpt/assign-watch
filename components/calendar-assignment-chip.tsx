@@ -29,6 +29,10 @@ export function CalendarAssignmentChip({
   const { formatTime } = useTimeFormat();
   const isCompact = size === "compact";
 
+  if (!assignment.due_date) {
+    return null;
+  }
+
   return (
     <ContextMenu>
       <ContextMenuTrigger

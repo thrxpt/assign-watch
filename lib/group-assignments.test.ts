@@ -75,6 +75,38 @@ describe("group-assignments logic", () => {
       start_date: "2026-09-05T12:00:00Z",
     });
 
+    it.each(["asc", "desc"] as const)(
+      "puts undated assignments last when sorting due dates %s",
+      (direction) => {
+        const undated = createMockActivity({ due_date: null, id: 4 });
+        const anotherUndated = createMockActivity({ due_date: null, id: 5 });
+        const items = [undated, itemA, anotherUndated, itemB];
+        const result = sortAssignments(items, { direction, sortBy: "dueDate" });
+        expect(result.map(({ id }) => id)).toEqual(
+          direction === "asc" ? [1, 2, 4, 5] : [2, 1, 4, 5]
+        );
+        expect(items[0]).toBe(undated);
+      }
+    );
+
+    it.each(["asc", "desc"] as const)(
+      "sorts undated assignments normally by posted date %s",
+      (direction) => {
+        const undated = createMockActivity({
+          due_date: null,
+          id: 4,
+          start_date: "2026-09-02T12:00:00Z",
+        });
+        const result = sortAssignments([itemA, undated, itemB], {
+          direction,
+          sortBy: "postedDate",
+        });
+        expect(result.map(({ id }) => id)).toEqual(
+          direction === "asc" ? [2, 4, 1] : [1, 4, 2]
+        );
+      }
+    );
+
     it("sorts ascending by dueDate", () => {
       const sortState: SortState = { direction: "asc", sortBy: "dueDate" };
       const result = sortAssignments([itemB, itemA, itemC], sortState);
@@ -164,6 +196,44 @@ describe("group-assignments logic", () => {
       { assignment: item2, classInfo },
       { assignment: item3, classInfo },
     ];
+
+    it.each([
+      { direction: "asc", sortBy: "dueDate" },
+      { direction: "desc", sortBy: "dueDate" },
+      { direction: "asc", sortBy: "postedDate" },
+      { direction: "desc", sortBy: "postedDate" },
+    ] as const)("keeps one undated bucket last with %j", (sortState) => {
+      const undated = createMockActivity({ due_date: null, id: 4 });
+      const anotherUndated = createMockActivity({ due_date: null, id: 5 });
+      const groups = groupByDueDate(
+        [
+          { assignment: undated, classInfo },
+          ...visibleItems,
+          { assignment: anotherUndated, classInfo },
+        ],
+        sortState
+      );
+      expect(groups).toHaveLength(3);
+      expect(groups.at(-1)).toEqual({
+        assignments: [undated, anotherUndated],
+        date: null,
+      });
+      expect(groups.slice(0, -1).map(({ date }) => date)).toEqual(
+        sortState.direction === "asc"
+          ? ["2026-09-10", "2026-09-15"]
+          : ["2026-09-15", "2026-09-10"]
+      );
+    });
+
+    it("groups a list containing only undated assignments", () => {
+      const undated = createMockActivity({ due_date: null });
+      expect(
+        groupByDueDate([{ assignment: undated, classInfo }], {
+          direction: "asc",
+          sortBy: "dueDate",
+        })
+      ).toEqual([{ assignments: [undated], date: null }]);
+    });
 
     it("groups assignments by date and sorts date buckets ascending", () => {
       const sortState: SortState = { direction: "asc", sortBy: "dueDate" };
@@ -275,6 +345,24 @@ describe("group-assignments logic", () => {
       { assignment: item3, classInfo },
       { assignment: itemOutside, classInfo },
     ];
+
+    it("excludes undated assignments even from the Unix epoch day", () => {
+      const epoch = new Date(0);
+      const undated = createMockActivity({ due_date: null });
+      const dated = createMockActivity({
+        due_date: epoch.toISOString(),
+        id: 2,
+      });
+      expect(
+        groupByDay(
+          [
+            { assignment: undated, classInfo },
+            { assignment: dated, classInfo },
+          ],
+          [epoch]
+        )
+      ).toEqual([{ assignments: [dated], day: epoch }]);
+    });
 
     it("distributes assignments into matching date buckets using isSameDay", () => {
       const result = groupByDay(visibleItems, [day1, day2, day3]);

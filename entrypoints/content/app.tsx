@@ -34,6 +34,7 @@ import {
   groupStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
+  showUndatedAssignmentsStorage,
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
@@ -72,6 +73,9 @@ function App() {
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
   const [filters, setFilters] = useStorageState(filtersStorage);
+  const [showUndatedAssignments] = useStorageState(
+    showUndatedAssignmentsStorage
+  );
   const [sortState, setSortState] = useStorageState(sortStorage);
   const [groupState, setGroupState] = useStorageState(groupStorage);
 
@@ -167,10 +171,12 @@ function App() {
   const listItems = visibleAssignments({
     ...visibility,
     includeSettled: false,
+    includeUndated: showUndatedAssignments,
   });
   const calendarItems = visibleAssignments({
     ...visibility,
     includeSettled: true,
+    includeUndated: false,
   });
 
   const renderList = () => {
@@ -207,7 +213,7 @@ function App() {
                 assignments={due}
                 classInfoMap={classInfoMap}
                 date={date}
-                key={date}
+                key={date ?? "undated"}
               />
             )
           );

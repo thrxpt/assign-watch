@@ -52,5 +52,5 @@ export async function fetchAssignments(
     );
   }
   const data = (await res.json()) as RootResponse;
-  return data.activities.filter((activity) => activity.due_date !== null);
+  return data.activities;
 }

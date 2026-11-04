@@ -3,6 +3,7 @@ calendar: Calendar
 list_view: List View
 calendar_view: Calendar View
 filter: Filter
+undated_assignments_description: Include these assignments in your to-do list.
 submission_status: Submission Status
 submitted: Submitted
 not_submitted: Not Submitted
@@ -13,6 +14,8 @@ group_type: Group Type
 individual: Individual
 group: Group
 due_date: Due Date
+no_due_date: No due date
+show_undated_assignments: Show assignments without a due date
 posted_date: Posted Date
 sort: Sort
 sort_by: Sort By

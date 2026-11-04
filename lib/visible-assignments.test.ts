@@ -124,6 +124,27 @@ describe("visible-assignments logic", () => {
   });
 
   describe("isSettled", () => {
+    it("settles submitted undated assignments without waiting for a deadline", () => {
+      expect(
+        isSettled(
+          createMockActivity({ activity_submission_id: 10, due_date: null })
+        )
+      ).toBe(true);
+    });
+
+    it("keeps an undated quiz actionable until submission is finalised", () => {
+      expect(
+        isSettled(
+          createMockActivity({
+            activity_submission_id: 10,
+            due_date: null,
+            quiz_submission_is_submitted: 0,
+            type: "QUZ",
+          })
+        )
+      ).toBe(false);
+    });
+
     it("returns true when assignment is submitted and due date has passed", () => {
       const settled = createMockActivity({
         activity_submission_id: 10,
@@ -150,6 +171,81 @@ describe("visible-assignments logic", () => {
   });
 
   describe("visibleAssignments", () => {
+    const undated = createMockActivity({
+      due_date: null,
+      group_type: "STU",
+      start_date: "2020-01-01T00:00:00Z",
+    });
+    const undatedVisibility = {
+      allClassInfo: [createMockClass()],
+      data: [[undated]],
+      filters: DEFAULT_FILTERS,
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      includeSettled: false,
+    };
+
+    it("hides undated assignments by default", () => {
+      expect(visibleAssignments(undatedVisibility)).toEqual([]);
+    });
+
+    it("shows old undated group assignments when enabled without an age cutoff", () => {
+      expect(
+        visibleAssignments({ ...undatedVisibility, includeUndated: true }).map(
+          ({ assignment }) => assignment.id
+        )
+      ).toEqual([undated.id]);
+    });
+
+    it("keeps undated assignments out of the calendar", () => {
+      expect(
+        visibleAssignments({
+          ...undatedVisibility,
+          includeSettled: true,
+          includeUndated: false,
+        })
+      ).toEqual([]);
+    });
+
+    it("removes submitted undated assignments from the list", () => {
+      expect(
+        visibleAssignments({
+          ...undatedVisibility,
+          data: [[{ ...undated, activity_submission_id: 10 }]],
+          includeUndated: true,
+        })
+      ).toEqual([]);
+    });
+
+    it.each([
+      { hiddenAssignments: [undated.id], hiddenClasses: [] },
+      { hiddenAssignments: [], hiddenClasses: [undated.class_id] },
+    ])(
+      "respects hidden items with undated visibility enabled: %j",
+      (hidden) => {
+        expect(
+          visibleAssignments({
+            ...undatedVisibility,
+            ...hidden,
+            includeUndated: true,
+          })
+        ).toEqual([]);
+      }
+    );
+
+    it("applies other filters to undated assignments", () => {
+      expect(
+        visibleAssignments({
+          ...undatedVisibility,
+          filters: {
+            ...DEFAULT_FILTERS,
+            groupType: { group: false, individual: true },
+          },
+          includeUndated: true,
+        })
+      ).toEqual([]);
+    });
+
     const class1 = createMockClass({ id: 1, title: "Class 1" });
     const class2 = createMockClass({ id: 2, title: "Class 2" });
 
