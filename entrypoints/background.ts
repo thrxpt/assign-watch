@@ -2,6 +2,7 @@ import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 
 import { getAssignmentUrl } from "@/lib/assignment";
+import { isCacheClassAssignmentsMessage } from "@/lib/assignment-cache";
 import { isManualDueDateMessage } from "@/lib/manual-due-date-storage";
 import {
   getAssignmentKey,
@@ -184,6 +185,31 @@ export default defineBackground(() => {
   });
 
   browser.runtime.onMessage.addListener(async (message) => {
+    if (isCacheClassAssignmentsMessage(message)) {
+      try {
+        return await enqueue(async () => {
+          const cached = readAssignmentSnapshot(
+            await cachedAssignmentsStorage.getValue()
+          );
+          const enrolledClassIds = new Set(message.classIds);
+          const retained =
+            cached.userId === message.userId
+              ? cached.assignments.filter(
+                  (assignment) =>
+                    assignment.class_id !== message.classId &&
+                    enrolledClassIds.has(assignment.class_id)
+                )
+              : [];
+          await cachedAssignmentsStorage.setValue({
+            assignments: [...retained, ...message.assignments],
+            userId: message.userId,
+          });
+          return { ok: true };
+        });
+      } catch {
+        return { ok: false };
+      }
+    }
     if (isManualDueDateMessage(message)) {
       try {
         return await enqueue(async () => {

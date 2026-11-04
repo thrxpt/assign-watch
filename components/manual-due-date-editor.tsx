@@ -1,8 +1,8 @@
 import { endOfDay } from "date-fns";
 import {
   createContext,
+  use,
   useCallback,
-  useContext,
   useId,
   useMemo,
   useState,
@@ -39,7 +39,7 @@ interface ManualDueDateActions {
 const ManualDueDateContext = createContext<ManualDueDateActions | null>(null);
 
 export function useManualDueDateEditor(): ManualDueDateActions {
-  const context = useContext(ManualDueDateContext);
+  const context = use(ManualDueDateContext);
   if (!context) {
     throw new Error("Manual due date actions require a ManualDueDateProvider");
   }
@@ -123,7 +123,10 @@ function ManualDueDateDialog({
           </p>
           {hasOfficialDate && <output>{t("manual_due_date_official")}</output>}
           <FieldGroup>
-            <Field data-invalid={Boolean(error)}>
+            <Field
+              data-disabled={saving || hasOfficialDate}
+              data-invalid={Boolean(error)}
+            >
               <FieldLabel htmlFor={dateId}>{t("due_date_and_time")}</FieldLabel>
               <Input
                 aria-describedby={`${timezoneId}${error ? ` ${errorId}` : ""}`}

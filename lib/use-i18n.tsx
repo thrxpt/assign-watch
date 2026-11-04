@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-} from "react";
+import { createContext, use, useCallback, useEffect, useMemo } from "react";
 import type { ReactNode } from "react";
 
 import {
@@ -75,7 +69,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 }
 
 export function useI18n(): I18nContextValue {
-  const context = useContext(I18nContext);
+  const context = use(I18nContext);
   if (!context) {
     throw new Error("useI18n must be used within an I18nProvider");
   }

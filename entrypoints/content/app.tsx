@@ -26,11 +26,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchAssignments } from "@/lib/api";
+import { cacheClassAssignments } from "@/lib/assignment-cache";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
-  cachedAssignmentsStorage,
   classInfoStorage,
   filtersStorage,
   groupStorage,
@@ -47,7 +47,6 @@ import {
   getPendingClasses,
   visibleAssignments,
 } from "@/lib/visible-assignments";
-import type { Activity } from "@/types";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -144,29 +143,19 @@ function App() {
     }),
     queries: allClassInfo.map((classInfo) => ({
       enabled: isModalOpen,
-      queryFn: () => fetchAssignments(classInfo.id, userId),
+      queryFn: async () => {
+        const data = await fetchAssignments(classInfo.id, userId);
+        await cacheClassAssignments(
+          userId,
+          classInfo.id,
+          data,
+          allClassInfo.map((item) => item.id)
+        );
+        return data;
+      },
       queryKey: ["assignments", classInfo.id, userId],
     })),
   });
-
-  useEffect(() => {
-    const isAllDone =
-      assignments.results.length > 0 &&
-      assignments.results.every((result) => result.isSuccess);
-
-    if (!isAllDone) {
-      return;
-    }
-
-    const flatAssignments = assignments.data
-      .filter((items): items is Activity[] => Boolean(items))
-      .flat();
-
-    void cachedAssignmentsStorage.setValue({
-      assignments: flatAssignments,
-      userId,
-    });
-  }, [assignments.data, assignments.results, userId]);
 
   const resolvedData = assignments.data.map((items) =>
     items?.map((assignment) =>
