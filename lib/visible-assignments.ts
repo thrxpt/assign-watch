@@ -1,13 +1,17 @@
 import { isSubmitted } from "@/lib/assignment";
+import { getEffectiveDueDate } from "@/lib/manual-due-dates";
 import type { FilterState } from "@/lib/preferences";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 export interface VisibleAssignment {
-  assignment: Activity;
+  assignment: AssignmentData;
   classInfo: ClassInfo;
 }
 
-export function passesFilters(assignment: Activity, filters: FilterState) {
+export function passesFilters(
+  assignment: AssignmentData,
+  filters: FilterState
+) {
   const submitted = isSubmitted(assignment);
   if (submitted && !filters.submissionStatus.submitted) {
     return false;
@@ -35,19 +39,24 @@ export function passesFilters(assignment: Activity, filters: FilterState) {
   return true;
 }
 
-/** Past its due date and already handed in — nothing left to do. */
-export function isSettled(assignment: Activity) {
-  return assignment.due_date_exceed && isSubmitted(assignment);
+/** Submitted work with no remaining deadline to track. */
+export function isSettled(assignment: AssignmentData) {
+  return (
+    (!assignment.due_date || assignment.due_date_exceed) &&
+    isSubmitted(assignment)
+  );
 }
 
 interface VisibleAssignmentsParams {
   allClassInfo: ClassInfo[];
-  data: (Activity[] | undefined)[];
+  data: (AssignmentData[] | undefined)[];
   filters: FilterState;
   hiddenAssignments: number[];
   hiddenClasses: number[];
   /** The list drops settled work; the calendar keeps it as history. */
   includeSettled: boolean;
+  /** Only the list can opt in; the calendar requires a due date. */
+  includeUndated?: boolean;
 }
 export interface PendingQueryResult {
   isPending: boolean;
@@ -84,6 +93,7 @@ export function visibleAssignments({
   hiddenAssignments,
   filters,
   includeSettled,
+  includeUndated = false,
 }: VisibleAssignmentsParams): VisibleAssignment[] {
   const visible: VisibleAssignment[] = [];
   const hiddenClassIds = new Set(hiddenClasses);
@@ -96,6 +106,9 @@ export function visibleAssignments({
     }
 
     for (const assignment of query) {
+      if (!getEffectiveDueDate(assignment) && !includeUndated) {
+        continue;
+      }
       if (hiddenAssignmentIds.has(assignment.id)) {
         continue;
       }

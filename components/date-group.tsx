@@ -3,35 +3,44 @@ import { isToday, isTomorrow, parse } from "date-fns";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";
+import { getEffectiveDueDate } from "@/lib/manual-due-dates";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 interface DateGroupProps {
-  assignments: Activity[];
+  assignments: AssignmentData[];
   classInfoMap: Map<number, ClassInfo>;
-  date: string;
+  date: string | null;
 }
 
 export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
-  const dateObj = parse(date, "yyyy-MM-dd", new Date());
+  const dateObj = date ? parse(date, "yyyy-MM-dd", new Date()) : null;
 
   let earliestDueDate: Date | null = null;
   for (const curr of assignments) {
-    const current = new Date(curr.due_date);
+    const dueDate = getEffectiveDueDate(curr);
+    if (!dueDate) {
+      continue;
+    }
+    const current = new Date(dueDate);
     if (!earliestDueDate || current.getTime() < earliestDueDate.getTime()) {
       earliestDueDate = current;
     }
   }
 
-  const relative = formatDateRelative(earliestDueDate ?? dateObj);
+  const relativeDate = earliestDueDate ?? dateObj;
+  const relative = relativeDate ? formatDateRelative(relativeDate) : null;
 
-  let dateLabel = formatDate(dateObj, "d MMMM yyyy");
-  if (isToday(dateObj)) {
-    dateLabel = t("today");
-  } else if (isTomorrow(dateObj)) {
-    dateLabel = t("tomorrow");
+  let dateLabel = t("no_due_date");
+  if (dateObj) {
+    dateLabel = formatDate(dateObj, "d MMMM yyyy");
+    if (isToday(dateObj)) {
+      dateLabel = t("today");
+    } else if (isTomorrow(dateObj)) {
+      dateLabel = t("tomorrow");
+    }
   }
 
   return (
@@ -39,14 +48,16 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
           <div className="font-medium text-lg">{dateLabel}</div>
-          <StatusBadge
-            className={cn(
-              "mt-1 bg-white/50",
-              getRelativeStatusColor(relative.status)
-            )}
-          >
-            {relative.text}
-          </StatusBadge>
+          {relative && (
+            <StatusBadge
+              className={cn(
+                "mt-1 bg-white/50",
+                getRelativeStatusColor(relative.status)
+              )}
+            >
+              {relative.text}
+            </StatusBadge>
+          )}
         </div>
       </div>
       <div className="flex w-full flex-col gap-3">

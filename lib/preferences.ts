@@ -42,6 +42,8 @@ export const DEFAULT_FILTERS: FilterState = {
   },
 };
 
+export const DEFAULT_SHOW_UNDATED_ASSIGNMENTS = false;
+
 export type SortOption = "postedDate" | "dueDate";
 
 export type SortDirection = "asc" | "desc";

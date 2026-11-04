@@ -43,7 +43,9 @@ function ContextMenuContent({
     withBackdrop?: boolean;
   }) {
   return (
-    <ContextMenuPrimitive.Portal>
+    <ContextMenuPrimitive.Portal
+      container={document.querySelector("assign-watch-ui")?.shadowRoot}
+    >
       {withBackdrop && (
         <ContextMenuPrimitive.Backdrop
           className="fixed inset-0 z-2000"

@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { ManualDueDateMenu } from "@/components/manual-due-date-menu";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ContextMenu,
@@ -26,18 +27,19 @@ import {
   getStatusBarColor,
   getSubmissionStatus,
 } from "@/lib/assignment";
+import { getEffectiveDueDate, hasManualDueDate } from "@/lib/manual-due-dates";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { useTimeFormat } from "@/lib/use-time-format";
 import { cn } from "@/lib/utils";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 interface AssignmentProps {
-  assignment: Activity;
+  assignment: AssignmentData;
   classInfo?: ClassInfo;
 }
 
-function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
+function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
   const { t } = useI18n();
   const status = getSubmissionStatus(assignment);
 
@@ -70,12 +72,21 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
   const { formatTime } = useTimeFormat();
-  const relativeDue = formatDateRelative(new Date(assignment.due_date));
+  const dueDateValue = getEffectiveDueDate(assignment);
+  const dueDate = dueDateValue ? new Date(dueDateValue) : null;
+  const relativeDue = dueDate ? formatDateRelative(dueDate) : null;
 
   const dueTime = (
     <span className="flex items-center gap-1 text-muted-foreground">
-      <Clock className="size-3.5 stroke-muted-foreground" />
-      {formatTime(new Date(assignment.due_date))}
+      {dueDate ? (
+        <Clock className="size-3.5 stroke-muted-foreground" />
+      ) : (
+        <Calendar className="size-3.5 stroke-muted-foreground" />
+      )}
+      {dueDate ? formatTime(dueDate) : t("no_due_date")}
+      {hasManualDueDate(assignment) && (
+        <StatusBadge className="ml-1">{t("manually_set")}</StatusBadge>
+      )}
     </span>
   );
 
@@ -113,16 +124,15 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
                   <div className="flex gap-2">
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <Calendar className="size-3.5 stroke-muted-foreground" />
-                      {formatDate(
-                        new Date(assignment.due_date),
-                        "eeee, d MMM yyyy"
-                      )}
+                      {dueDate
+                        ? formatDate(dueDate, "eeee, d MMM yyyy")
+                        : t("no_due_date")}
                     </span>
-                    {dueTime}
+                    {dueDate && dueTime}
                   </div>
                 )}
               </div>
-              {!classInfo && (
+              {!classInfo && relativeDue && (
                 <StatusBadge
                   className={getRelativeStatusColor(relativeDue.status)}
                 >
@@ -149,6 +159,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
         }
       />
       <ContextMenuContent>
+        <ManualDueDateMenu assignment={assignment} />
         <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
           {t("hide_assignment")}

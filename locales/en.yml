@@ -3,6 +3,7 @@ calendar: Calendar
 list_view: List View
 calendar_view: Calendar View
 filter: Filter
+undated_assignments_description: Include these assignments in your to-do list.
 submission_status: Submission Status
 submitted: Submitted
 not_submitted: Not Submitted
@@ -13,6 +14,8 @@ group_type: Group Type
 individual: Individual
 group: Group
 due_date: Due Date
+no_due_date: No due date
+show_undated_assignments: Show assignments without a due date
 posted_date: Posted Date
 sort: Sort
 sort_by: Sort By
@@ -69,3 +72,16 @@ shortcut: Shortcut
 hidden_items_desc: Restore all classes and assignments hidden on LEB2.
 cleared: Cleared!
 sponsor: Sponsor
+set_due_date: "Set due date"
+edit_due_date: "Edit due date"
+remove_manual_due_date: "Remove manually set due date"
+manually_set: "Manually set"
+manual_due_date_description: "Record the assignment deadline missing from LEB2. This is saved only in Assign Watch; a date set on LEB2 takes precedence."
+manual_due_date_official: "LEB2 now has a due date for this assignment. Your manually set date is kept as a fallback."
+due_date_and_time: "Due date and time"
+due_date_timezone: "Time zone: {timezone}"
+manual_due_date_invalid: "Enter a valid local date and time."
+manual_due_date_save_error: "Could not save the due date. Your previous date is unchanged. Please try again."
+save_due_date: "Save due date"
+cancel: "Cancel"
+saving: "Saving…"

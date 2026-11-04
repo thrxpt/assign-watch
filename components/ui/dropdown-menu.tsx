@@ -34,7 +34,9 @@ function DropdownMenuContent({
     withBackdrop?: boolean;
   }) {
   return (
-    <MenuPrimitive.Portal>
+    <MenuPrimitive.Portal
+      container={document.querySelector("assign-watch-ui")?.shadowRoot}
+    >
       {withBackdrop && (
         <MenuPrimitive.Backdrop
           className="fixed inset-0 z-2000"

@@ -1,5 +1,6 @@
 import { EyeOff } from "lucide-react";
 
+import { ManualDueDateMenu } from "@/components/manual-due-date-menu";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -7,14 +8,15 @@ import {
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { getAssignmentUrl, getStatusCalendarColor } from "@/lib/assignment";
+import { getEffectiveDueDate, hasManualDueDate } from "@/lib/manual-due-dates";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { useTimeFormat } from "@/lib/use-time-format";
 import { cn } from "@/lib/utils";
-import type { Activity } from "@/types";
+import type { Assignment as AssignmentData } from "@/types";
 
 interface CalendarAssignmentChipProps {
-  assignment: Activity;
+  assignment: AssignmentData;
   classTitle?: string;
   /** "full" adds the due time below the title; "compact" is a single line. */
   size: "compact" | "full";
@@ -28,6 +30,11 @@ export function CalendarAssignmentChip({
   const { t } = useI18n();
   const { formatTime } = useTimeFormat();
   const isCompact = size === "compact";
+
+  const dueDate = getEffectiveDueDate(assignment);
+  if (!dueDate) {
+    return null;
+  }
 
   return (
     <ContextMenu>
@@ -47,13 +54,17 @@ export function CalendarAssignmentChip({
             ) : (
               <>
                 <div className="truncate font-medium">{assignment.title}</div>
-                <div>{formatTime(new Date(assignment.due_date))}</div>
+                <div>{formatTime(new Date(dueDate))}</div>
               </>
+            )}
+            {hasManualDueDate(assignment) && (
+              <span className="ml-1 text-[10px]">({t("manually_set")})</span>
             )}
           </a>
         }
       />
       <ContextMenuContent>
+        <ManualDueDateMenu assignment={assignment} />
         <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
           {t("hide_assignment")}

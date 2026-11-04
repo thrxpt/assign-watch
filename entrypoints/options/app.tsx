@@ -1,5 +1,6 @@
 import {
   BrushCleaning,
+  CalendarOff,
   Clock,
   Heart,
   Keyboard,
@@ -7,15 +8,27 @@ import {
   Link,
   Settings,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useId, useState, useEffect } from "react";
 
 import { browser } from "#imports";
 import { ShortcutKbd } from "@/components/shortcut-kbd";
 import { Button } from "@/components/ui/button";
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Language, TimeFormat } from "@/lib/preferences";
-import { clearAllHiddenItems } from "@/lib/storage";
+import {
+  clearAllHiddenItems,
+  showUndatedAssignmentsStorage,
+} from "@/lib/storage";
 import { I18nProvider, useI18n } from "@/lib/use-i18n";
+import { useStorageState } from "@/lib/use-storage-state";
 import { useTimeFormat } from "@/lib/use-time-format";
 
 function isLanguage(val: string): val is Language {
@@ -29,6 +42,11 @@ function isTimeFormat(val: string): val is TimeFormat {
 function OptionsContent() {
   const { language, locale, setLanguage, t } = useI18n();
   const { timeFormat, setTimeFormat } = useTimeFormat();
+  const [showUndatedAssignments, setShowUndatedAssignments] = useStorageState(
+    showUndatedAssignmentsStorage
+  );
+  const undatedId = useId();
+  const undatedDescriptionId = useId();
   const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
@@ -138,6 +156,29 @@ function OptionsContent() {
                 </TabsList>
               </Tabs>
             </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <FieldGroup>
+              <Field className="gap-4" orientation="horizontal">
+                <FieldContent className="min-w-0">
+                  <FieldLabel htmlFor={undatedId}>
+                    <CalendarOff className="size-4 shrink-0 text-muted-foreground" />
+                    <span>{t("show_undated_assignments")}</span>
+                  </FieldLabel>
+                  <FieldDescription id={undatedDescriptionId}>
+                    {t("undated_assignments_description")}
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  aria-describedby={undatedDescriptionId}
+                  checked={showUndatedAssignments}
+                  className="self-center"
+                  id={undatedId}
+                  onCheckedChange={setShowUndatedAssignments}
+                />
+              </Field>
+            </FieldGroup>
           </div>
 
           <div className="rounded-lg border bg-card p-4">

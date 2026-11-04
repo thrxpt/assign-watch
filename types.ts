@@ -11,6 +11,15 @@ export interface RootResponse {
   user: User[];
 }
 
+export interface Assignment extends Activity {
+  manualDueDate?: string;
+}
+
+export interface AssignmentSnapshot {
+  assignments: Activity[];
+  userId: string | null;
+}
+
 export interface Activity {
   activity_group_id: null;
   activity_group_name: null;
@@ -23,7 +32,7 @@ export interface Activity {
   count_group_member: number;
   created_at: string;
   description: string;
-  due_date: string;
+  due_date: string | null;
   due_date_exceed: boolean;
   edit_group_mode: string;
   fileactivities: number[];
