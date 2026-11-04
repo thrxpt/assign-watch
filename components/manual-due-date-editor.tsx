@@ -7,7 +7,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { FormEvent, ReactNode } from "react";
+import type { ReactNode, SubmitEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -80,7 +80,7 @@ function ManualDueDateDialog({
   );
   const hasOfficialDate = Boolean(assignment.due_date);
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
+  const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const dueDate = parseLocalDateTime(value);
     if (!dueDate || hasOfficialDate) {
