@@ -29,6 +29,13 @@ class: ชั้นเรียน
 section: กลุ่มที่
 no_assignments: ไม่มีการบ้าน
 no_assignments_desc: ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ
+assignments_rate_limited: ส่งคำขอไปยัง LEB2 เกินขีดจำกัด
+assignments_rate_limited_desc: LEB2 จำกัดการร้องขอชั่วคราว จึงไม่สามารถโหลดการบ้านบางส่วนได้ โปรดรอสักครู่ก่อนลองอีกครั้ง
+assignments_load_error: ไม่สามารถโหลดการบ้านได้
+assignments_load_error_desc: ไม่สามารถโหลดการบ้านบางส่วนได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
+assignments_stale_warning: ยังคงแสดงการบ้านที่โหลดไว้ก่อนหน้านี้ ซึ่งอาจไม่ใช่ข้อมูลล่าสุด
+try_again: ลองอีกครั้ง
+retrying: กำลังลองอีกครั้ง…
 no_classes: ไม่พบชั้นเรียน
 no_classes_desc: ไปที่หน้ารวมชั้นเรียนบน LEB2 เพื่อซิงค์วิชาที่คุณลงทะเบียน
 go_to_classes: ไปที่ชั้นเรียน
