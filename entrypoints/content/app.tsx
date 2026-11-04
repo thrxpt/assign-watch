@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { browser } from "#imports";
 import { AssignmentFilters } from "@/components/assignment-filters";
 import { AssignmentGroup } from "@/components/assignment-group";
+import { AssignmentLoadError } from "@/components/assignment-load-error";
 import { AssignmentSort } from "@/components/assignment-sort";
 import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
@@ -25,7 +26,11 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { fetchAssignments } from "@/lib/api";
+import {
+  fetchAssignments,
+  isRateLimitError,
+  shouldRetryAssignments,
+} from "@/lib/api";
 import { cacheClassAssignments } from "@/lib/assignment-cache";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
@@ -142,7 +147,9 @@ function App() {
       results,
     }),
     queries: allClassInfo.map((classInfo) => ({
-      enabled: isModalOpen,
+      // A 429 stays manual-only, including when the dialog is reopened.
+      enabled: (query: { state: { error: unknown } }) =>
+        isModalOpen && !isRateLimitError(query.state.error),
       queryFn: async () => {
         const data = await fetchAssignments(classInfo.id, userId);
         await cacheClassAssignments(
@@ -154,8 +161,32 @@ function App() {
         return data;
       },
       queryKey: ["assignments", classInfo.id, userId],
+      retry: shouldRetryAssignments,
     })),
   });
+
+  const hiddenClassIds = new Set(hiddenClasses);
+  const failedQueries = assignments.results.filter(
+    (result, index) =>
+      result.isError && !hiddenClassIds.has(allClassInfo[index].id)
+  );
+  const retryFailedQueries = async () => {
+    const refreshes: Promise<unknown>[] = [];
+    for (const result of failedQueries) {
+      if (!result.isFetching) {
+        refreshes.push(result.refetch());
+      }
+    }
+    await Promise.all(refreshes);
+  };
+  const loadErrorProps = {
+    hasStaleData: failedQueries.some((result) => Boolean(result.data?.length)),
+    isRateLimited: failedQueries.some((result) =>
+      isRateLimitError(result.error)
+    ),
+    isRetrying: failedQueries.some((result) => result.isFetching),
+    onRetry: retryFailedQueries,
+  };
 
   const resolvedData = assignments.data.map((items) =>
     items?.map((assignment) =>
@@ -193,7 +224,7 @@ function App() {
     });
 
     if (listItems.length === 0 && pendingClasses.length === 0) {
-      return <NoAssignments />;
+      return failedQueries.length > 0 ? null : <NoAssignments />;
     }
 
     const skeletons = pendingClasses.map((cls) => (
@@ -297,17 +328,28 @@ function App() {
               </DialogHeader>
               <TabsContent value="list">
                 <ScrollArea className="rounded-lg">
-                  <div className="max-h-[75dvh] space-y-4 pr-4">
+                  <div className="flex max-h-[75dvh] flex-col gap-4 pr-4">
+                    {failedQueries.length > 0 && (
+                      <AssignmentLoadError {...loadErrorProps} />
+                    )}
                     {renderList()}
                   </div>
                 </ScrollArea>
               </TabsContent>
               <TabsContent value="calendar">
-                <div className="h-[75dvh]">
+                <div className="flex h-[75dvh] flex-col gap-4">
+                  {failedQueries.length > 0 && (
+                    <AssignmentLoadError
+                      {...loadErrorProps}
+                      presentation="inline"
+                    />
+                  )}
                   {allClassInfo.length === 0 ? (
                     <NoClasses />
                   ) : (
-                    <CalendarView assignments={calendarItems} />
+                    <div className="min-h-0 flex-1">
+                      <CalendarView assignments={calendarItems} />
+                    </div>
                   )}
                 </div>
               </TabsContent>

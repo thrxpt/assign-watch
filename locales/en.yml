@@ -29,6 +29,13 @@ class: Class
 section: Section
 no_assignments: No Assignments
 no_assignments_desc: Congratulations! You have no assignments to do.
+assignments_rate_limited: LEB2 request limit reached
+assignments_rate_limited_desc: LEB2 is temporarily limiting requests. Some assignments could not be loaded. Please wait before trying again.
+assignments_load_error: Unable to load assignments
+assignments_load_error_desc: Some assignments could not be loaded. Check your connection and try again.
+assignments_stale_warning: Previously loaded assignments are still shown and may be outdated.
+try_again: Try again
+retrying: Trying again…
 no_classes: No Classes Found
 no_classes_desc: Go to the classes page on LEB2 to sync your enrolled courses.
 go_to_classes: Go to Classes
