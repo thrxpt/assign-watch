@@ -5,6 +5,19 @@ import thMessages from "@/locales/th.yml";
 export type Locale = "en" | "th";
 
 export type TranslationKey =
+  | "set_due_date"
+  | "edit_due_date"
+  | "remove_manual_due_date"
+  | "manually_set"
+  | "manual_due_date_description"
+  | "manual_due_date_official"
+  | "due_date_and_time"
+  | "due_date_timezone"
+  | "manual_due_date_invalid"
+  | "manual_due_date_save_error"
+  | "save_due_date"
+  | "cancel"
+  | "saving"
   | "todo"
   | "calendar"
   | "list_view"

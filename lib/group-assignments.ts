@@ -1,29 +1,34 @@
 import { format, isSameDay, parse } from "date-fns";
 
+import { getEffectiveDueDate } from "@/lib/manual-due-dates";
 import type { SortState } from "@/lib/preferences";
 import type { VisibleAssignment } from "@/lib/visible-assignments";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 export interface ClassGroup {
-  assignments: Activity[];
+  assignments: AssignmentData[];
   classInfo: ClassInfo;
 }
 
 export interface DateGroupEntry {
-  assignments: Activity[];
+  assignments: AssignmentData[];
   date: string | null;
 }
 
 export interface DayEntry {
-  assignments: Activity[];
+  assignments: AssignmentData[];
   day: Date;
 }
 
-export function sortAssignments(assignments: Activity[], sortState: SortState) {
-  const field = sortState.sortBy === "postedDate" ? "start_date" : "due_date";
+export function sortAssignments(
+  assignments: AssignmentData[],
+  sortState: SortState
+) {
   return assignments.toSorted((a, b) => {
-    const dateA = a[field];
-    const dateB = b[field];
+    const dateA =
+      sortState.sortBy === "postedDate" ? a.start_date : getEffectiveDueDate(a);
+    const dateB =
+      sortState.sortBy === "postedDate" ? b.start_date : getEffectiveDueDate(b);
     if (!dateA) {
       return dateB ? 1 : 0;
     }
@@ -65,11 +70,10 @@ export function groupByDueDate(
     sortState
   );
 
-  const groups = new Map<string | null, Activity[]>();
+  const groups = new Map<string | null, AssignmentData[]>();
   for (const assignment of sorted) {
-    const dateKey = assignment.due_date
-      ? format(new Date(assignment.due_date), "yyyy-MM-dd")
-      : null;
+    const dueDate = getEffectiveDueDate(assignment);
+    const dateKey = dueDate ? format(new Date(dueDate), "yyyy-MM-dd") : null;
     const bucket = groups.get(dateKey);
     if (bucket) {
       bucket.push(assignment);
@@ -98,13 +102,16 @@ export function groupByDay(
   items: VisibleAssignment[],
   days: Date[]
 ): DayEntry[] {
-  const buckets = new Map<number, Activity[]>(days.map((day) => [+day, []]));
+  const buckets = new Map<number, AssignmentData[]>(
+    days.map((day) => [+day, []])
+  );
 
   for (const { assignment } of items) {
-    if (!assignment.due_date) {
+    const dueDateValue = getEffectiveDueDate(assignment);
+    if (!dueDateValue) {
       continue;
     }
-    const dueDate = new Date(assignment.due_date);
+    const dueDate = new Date(dueDateValue);
     const day = days.find((candidate) => isSameDay(dueDate, candidate));
     if (day) {
       buckets.get(+day)?.push(assignment);

@@ -18,16 +18,26 @@ The LEB2 API calls this an **Activity**, and `types.ts` keeps that name for the 
 
 ## Undated Assignment
 
-An assignment with no specified due date. It may have a posted date, which does not imply a submission deadline.
+An assignment with neither a LEB2 due date nor a manual due date. It may have a posted date, which does not imply a submission deadline.
 
 _Avoid_: Overdue assignment (a deadline has passed), unscheduled assignment (a posted date may exist).
+
+## Manual Due Date
+
+A deadline the student records for an assignment whose due date is missing from LEB2, such as a deadline communicated by the instructor. It does not change the assignment's due date on LEB2.
+
+_Avoid_: Personal target (may imply an optional goal), official due date (a deadline set on LEB2).
+
+## Effective Due Date
+
+The deadline used to schedule and track an assignment: its LEB2 due date when present, otherwise its manual due date. A manual date remains an inactive fallback while LEB2 supplies a date.
 
 ## Submission Status
 
 Where an assignment stands, as one of five values (`Status` in `lib/assignment.ts`): `in_progress`, `not_submitted`, `submitted`, `submitted_late`, `quiz_not_submitted`.
 
 - **Submitted** (`isSubmitted`) means handed in, on time or late. It deliberately excludes `quiz_not_submitted` — that quiz was answered but never finalised, so there is still something to do.
-- **Settled** means submitted work with no remaining deadline to track: its due date has passed, or it is an undated assignment.
+- **Settled** means submitted work with no remaining LEB2 deadline to track: its LEB2 due date has passed, or LEB2 supplies no due date, even if the student has entered a manual date.
 
 ## Visible Assignments
 
@@ -51,11 +61,11 @@ These live in `lib/`, not in the menus that edit them, so that storage and the a
 
 ## Notification
 
-A due-soon alert evaluated completely **offline** from `cachedAssignmentsStorage` (`lib/storage.ts`) without making network requests to LEB2.
+A due-soon alert for an assignment’s effective due date, evaluated completely **offline** from cached assignments and the current student’s manual dates.
 
 Alerts trigger at two thresholds: **24 hours** and **1 hour** before the due date. The sent IDs are tracked in `notifiedAssignmentsStorage` and `notifiedAssignments1hStorage`, and are cleared once the work is submitted or the due date passes.
 
-Evaluations run reactively via `cachedAssignmentsStorage.watch()` whenever new assignments are viewed, on browser startup/install, and periodically via a local 10-minute alarm (`reviewCachedAssignments`). Assignments in hidden classes or hidden assignments are ignored.
+Evaluations run reactively whenever cached assignments or manual dates change, on browser startup/install, and periodically via a local 10-minute alarm (`reviewCachedAssignments`). Assignments in hidden classes or hidden assignments are ignored.
 
 ## Background Service Worker (MV3)
 

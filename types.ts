@@ -11,6 +11,15 @@ export interface RootResponse {
   user: User[];
 }
 
+export interface Assignment extends Activity {
+  manualDueDate?: string;
+}
+
+export interface AssignmentSnapshot {
+  assignments: Activity[];
+  userId: string | null;
+}
+
 export interface Activity {
   activity_group_id: null;
   activity_group_name: null;

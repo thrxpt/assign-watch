@@ -12,6 +12,7 @@ import { ClassSkeleton } from "@/components/class-skeleton";
 import { DateGroup } from "@/components/date-group";
 import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
+import { ManualDueDateProvider } from "@/components/manual-due-date-editor";
 import { NoAssignments } from "@/components/no-assignments";
 import { NoClasses } from "@/components/no-classes";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { fetchAssignments } from "@/lib/api";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
+import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
   cachedAssignmentsStorage,
   classInfoStorage,
@@ -34,6 +36,7 @@ import {
   groupStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
+  manualDueDatesStorage,
   showUndatedAssignmentsStorage,
   sortStorage,
   userIdStorage,
@@ -69,7 +72,8 @@ function App() {
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
 
   const [allClassInfo] = useStorageState(classInfoStorage);
-  const [userId] = useStorageState(userIdStorage);
+  const [userId, setUserId] = useState(() => scrapeUserId() ?? null);
+  const [manualDueDates] = useStorageState(manualDueDatesStorage);
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
   const [filters, setFilters] = useStorageState(filtersStorage);
@@ -83,6 +87,7 @@ function App() {
     const syncInfo = async () => {
       const userIdFromDom = scrapeUserId();
       if (userIdFromDom) {
+        setUserId(userIdFromDom);
         await userIdStorage.setValue(userIdFromDom);
       }
 
@@ -157,12 +162,21 @@ function App() {
       .filter((items): items is Activity[] => Boolean(items))
       .flat();
 
-    void cachedAssignmentsStorage.setValue(flatAssignments);
-  }, [assignments.data, assignments.results]);
+    void cachedAssignmentsStorage.setValue({
+      assignments: flatAssignments,
+      userId,
+    });
+  }, [assignments.data, assignments.results, userId]);
+
+  const resolvedData = assignments.data.map((items) =>
+    items?.map((assignment) =>
+      resolveAssignment(assignment, userId, manualDueDates)
+    )
+  );
 
   const visibility = {
     allClassInfo,
-    data: assignments.data,
+    data: resolvedData,
     filters,
     hiddenAssignments,
     hiddenClasses,
@@ -233,80 +247,86 @@ function App() {
           initialFocus={false}
           showCloseButton={false}
         >
-          <Tabs
-            className="gap-4"
-            defaultValue="list"
-            onValueChange={(value) =>
-              setActiveTab(value as "list" | "calendar")
-            }
-            value={activeTab}
+          <ManualDueDateProvider
+            assignments={resolvedData.flatMap((items) => items ?? [])}
+            key={userId ?? "unknown"}
+            userId={userId}
           >
-            <DialogHeader className="flex-row items-center justify-between">
-              <DialogTitle className="text-xl">
-                {activeTab === "list" ? t("todo") : t("calendar")}
-              </DialogTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={openOptionsPage}
-                  size="icon"
-                  title={t("settings")}
-                  variant="secondary"
-                >
-                  <Settings />
-                  <span className="sr-only">{t("settings")}</span>
-                </Button>
-                <HiddenItemsManager
-                  allAssignments={assignments.data}
-                  allClassInfo={allClassInfo}
-                  hiddenAssignments={hiddenAssignments}
-                  hiddenClasses={hiddenClasses}
-                />
-                <AssignmentSort
-                  onSortChange={setSortState}
-                  sortState={sortState}
-                />
-                <AssignmentFilters
-                  filters={filters}
-                  onFiltersChange={setFilters}
-                />
-                {activeTab === "list" && (
-                  <AssignmentGroup
-                    groupState={groupState}
-                    onGroupChange={setGroupState}
+            <Tabs
+              className="gap-4"
+              defaultValue="list"
+              onValueChange={(value) =>
+                setActiveTab(value as "list" | "calendar")
+              }
+              value={activeTab}
+            >
+              <DialogHeader className="flex-row items-center justify-between">
+                <DialogTitle className="text-xl">
+                  {activeTab === "list" ? t("todo") : t("calendar")}
+                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={openOptionsPage}
+                    size="icon"
+                    title={t("settings")}
+                    variant="secondary"
+                  >
+                    <Settings />
+                    <span className="sr-only">{t("settings")}</span>
+                  </Button>
+                  <HiddenItemsManager
+                    allAssignments={assignments.data}
+                    allClassInfo={allClassInfo}
+                    hiddenAssignments={hiddenAssignments}
+                    hiddenClasses={hiddenClasses}
                   />
-                )}
-                <TabsList className="h-8">
-                  <TabsTrigger value="list">
-                    <LayoutList />
-                    <span className="sr-only">{t("list_view")}</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="calendar">
-                    <Calendar />
-                    <span className="sr-only">{t("calendar_view")}</span>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            </DialogHeader>
-            <TabsContent value="list">
-              <ScrollArea className="rounded-lg">
-                <div className="max-h-[75dvh] space-y-4 pr-4">
-                  {renderList()}
+                  <AssignmentSort
+                    onSortChange={setSortState}
+                    sortState={sortState}
+                  />
+                  <AssignmentFilters
+                    filters={filters}
+                    onFiltersChange={setFilters}
+                  />
+                  {activeTab === "list" && (
+                    <AssignmentGroup
+                      groupState={groupState}
+                      onGroupChange={setGroupState}
+                    />
+                  )}
+                  <TabsList className="h-8">
+                    <TabsTrigger value="list">
+                      <LayoutList />
+                      <span className="sr-only">{t("list_view")}</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="calendar">
+                      <Calendar />
+                      <span className="sr-only">{t("calendar_view")}</span>
+                    </TabsTrigger>
+                  </TabsList>
                 </div>
-              </ScrollArea>
-            </TabsContent>
-            <TabsContent value="calendar">
-              <div className="h-[75dvh]">
-                {allClassInfo.length === 0 ? (
-                  <NoClasses />
-                ) : (
-                  <CalendarView assignments={calendarItems} />
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
-          <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
-            <DialogTips />
-          </DialogFooter>
+              </DialogHeader>
+              <TabsContent value="list">
+                <ScrollArea className="rounded-lg">
+                  <div className="max-h-[75dvh] space-y-4 pr-4">
+                    {renderList()}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="calendar">
+                <div className="h-[75dvh]">
+                  {allClassInfo.length === 0 ? (
+                    <NoClasses />
+                  ) : (
+                    <CalendarView assignments={calendarItems} />
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
+              <DialogTips />
+            </DialogFooter>
+          </ManualDueDateProvider>
         </DialogContent>
       </Dialog>
     </div>

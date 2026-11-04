@@ -3,12 +3,13 @@ import { isToday, isTomorrow, parse } from "date-fns";
 import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";
+import { getEffectiveDueDate } from "@/lib/manual-due-dates";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 interface DateGroupProps {
-  assignments: Activity[];
+  assignments: AssignmentData[];
   classInfoMap: Map<number, ClassInfo>;
   date: string | null;
 }
@@ -19,10 +20,11 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
 
   let earliestDueDate: Date | null = null;
   for (const curr of assignments) {
-    if (!curr.due_date) {
+    const dueDate = getEffectiveDueDate(curr);
+    if (!dueDate) {
       continue;
     }
-    const current = new Date(curr.due_date);
+    const current = new Date(dueDate);
     if (!earliestDueDate || current.getTime() < earliestDueDate.getTime()) {
       earliestDueDate = current;
     }

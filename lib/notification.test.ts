@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 
+import { getAssignmentKey } from "@/lib/manual-due-dates";
 import {
   HOUR_IN_MS,
   reviewAssignment,
   reviewAssignments,
+  reviewDeadlineNotifications,
 } from "@/lib/notification";
 import type { Activity } from "@/types";
 
@@ -45,6 +47,152 @@ function createMockActivity(overrides: Partial<Activity> = {}): Activity {
 
 describe("notification logic", () => {
   const baseNow = new Date("2026-10-10T12:00:00Z");
+
+  it("rearms changed manual deadlines and suppresses unchanged deadlines across sources", () => {
+    const notify = vi.fn();
+    const manual = {
+      ...createMockActivity({ due_date: null }),
+      manualDueDate: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
+    };
+    const params = {
+      assignments: [manual],
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      history: null,
+      legacyNotifiedDay: [],
+      legacyNotifiedHour: [],
+      notify,
+      now: baseNow,
+      userId: "a",
+    };
+    const first = reviewDeadlineNotifications(params);
+    expect(notify).toHaveBeenCalledTimes(1);
+    expect(notify).toHaveBeenLastCalledWith(manual, "1h");
+    const repeated = reviewDeadlineNotifications({
+      ...params,
+      history: first.history,
+    });
+    expect(repeated.changed).toBe(false);
+    expect(notify).toHaveBeenCalledTimes(1);
+    const official = { ...manual, due_date: manual.manualDueDate };
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [official],
+      history: first.history,
+    });
+    expect(notify).toHaveBeenCalledTimes(1);
+    const later = {
+      ...manual,
+      manualDueDate: new Date(
+        baseNow.getTime() + 12 * HOUR_IN_MS
+      ).toISOString(),
+    };
+    const edited = reviewDeadlineNotifications({
+      ...params,
+      assignments: [later],
+      history: first.history,
+    });
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(notify).toHaveBeenLastCalledWith(later, "24h");
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [later],
+      history: edited.history,
+    });
+    expect(notify).toHaveBeenCalledTimes(2);
+    const removed = reviewDeadlineNotifications({
+      ...params,
+      assignments: [{ ...manual, manualDueDate: undefined }],
+      history: edited.history,
+    });
+    expect(removed.history).not.toHaveProperty(getAssignmentKey("a", manual));
+    reviewDeadlineNotifications({ ...params, history: removed.history });
+    expect(notify).toHaveBeenCalledTimes(3);
+  });
+
+  it("scopes reminder history by student and retains each student's sent state", () => {
+    const notify = vi.fn();
+    const assignment = {
+      ...createMockActivity({ due_date: null }),
+      manualDueDate: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
+    };
+    const params = {
+      assignments: [assignment],
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      history: null,
+      legacyNotifiedDay: [],
+      legacyNotifiedHour: [],
+      notify,
+      now: baseNow,
+      userId: "a",
+    };
+    const first = reviewDeadlineNotifications(params);
+    const second = reviewDeadlineNotifications({
+      ...params,
+      history: first.history,
+      userId: "b",
+    });
+    reviewDeadlineNotifications({ ...params, history: second.history });
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(Object.keys(second.history)).toHaveLength(2);
+  });
+
+  it("preserves existing LEB2 reminder history on first evaluation", () => {
+    const notify = vi.fn();
+    const assignment = createMockActivity({
+      due_date: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
+    });
+    reviewDeadlineNotifications({
+      assignments: [assignment],
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      history: null,
+      legacyNotifiedDay: [assignment.id],
+      legacyNotifiedHour: [assignment.id],
+      notify,
+      now: baseNow,
+      userId: null,
+    });
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("does not notify past, submitted, or hidden manual deadlines", () => {
+    const notify = vi.fn();
+    const assignment = {
+      ...createMockActivity({ due_date: null }),
+      manualDueDate: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
+    };
+    const params = {
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      history: null,
+      legacyNotifiedDay: [],
+      legacyNotifiedHour: [],
+      notify,
+      now: baseNow,
+      userId: "a",
+    };
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [{ ...assignment, manualDueDate: baseNow.toISOString() }],
+    });
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [{ ...assignment, activity_submission_id: 10 }],
+    });
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [assignment],
+      hiddenAssignments: [assignment.id],
+    });
+    reviewDeadlineNotifications({
+      ...params,
+      assignments: [assignment],
+      hiddenClasses: [assignment.class_id],
+    });
+    expect(notify).not.toHaveBeenCalled();
+  });
 
   it("notifies 24h before due date", () => {
     const notify = vi.fn();

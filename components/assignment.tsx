@@ -12,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 
+import { ManualDueDateMenu } from "@/components/manual-due-date-menu";
 import { StatusBadge } from "@/components/status-badge";
 import {
   ContextMenu,
@@ -26,18 +27,19 @@ import {
   getStatusBarColor,
   getSubmissionStatus,
 } from "@/lib/assignment";
+import { getEffectiveDueDate, hasManualDueDate } from "@/lib/manual-due-dates";
 import { hideAssignment } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { useTimeFormat } from "@/lib/use-time-format";
 import { cn } from "@/lib/utils";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 interface AssignmentProps {
-  assignment: Activity;
+  assignment: AssignmentData;
   classInfo?: ClassInfo;
 }
 
-function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
+function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
   const { t } = useI18n();
   const status = getSubmissionStatus(assignment);
 
@@ -70,7 +72,8 @@ function SubmissionStatusBadge({ assignment }: { assignment: Activity }) {
 export function Assignment({ assignment, classInfo }: AssignmentProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
   const { formatTime } = useTimeFormat();
-  const dueDate = assignment.due_date ? new Date(assignment.due_date) : null;
+  const dueDateValue = getEffectiveDueDate(assignment);
+  const dueDate = dueDateValue ? new Date(dueDateValue) : null;
   const relativeDue = dueDate ? formatDateRelative(dueDate) : null;
 
   const dueTime = (
@@ -81,6 +84,9 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
         <Calendar className="size-3.5 stroke-muted-foreground" />
       )}
       {dueDate ? formatTime(dueDate) : t("no_due_date")}
+      {hasManualDueDate(assignment) && (
+        <StatusBadge className="ml-1">{t("manually_set")}</StatusBadge>
+      )}
     </span>
   );
 
@@ -153,6 +159,7 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
         }
       />
       <ContextMenuContent>
+        <ManualDueDateMenu assignment={assignment} />
         <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
           <EyeOff />
           {t("hide_assignment")}

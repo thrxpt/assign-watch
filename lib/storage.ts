@@ -1,5 +1,7 @@
 import { storage } from "wxt/utils/storage";
 
+import type { ManualDueDates } from "@/lib/manual-due-dates";
+import type { DeadlineNotificationHistory } from "@/lib/notification";
 import {
   DEFAULT_FILTERS,
   DEFAULT_GROUP,
@@ -17,7 +19,7 @@ import type {
   SortState,
   TimeFormat,
 } from "@/lib/preferences";
-import type { Activity, ClassInfo } from "@/types";
+import type { Activity, AssignmentSnapshot, ClassInfo } from "@/types";
 
 export const hiddenClassesStorage = storage.defineItem<number[]>(
   "local:hiddenClasses",
@@ -89,12 +91,22 @@ export const classInfoStorage = storage.defineItem<ClassInfo[]>(
     fallback: [],
   }
 );
-export const cachedAssignmentsStorage = storage.defineItem<Activity[]>(
-  "local:cachedAssignments",
-  {
-    fallback: [],
-  }
+export const cachedAssignmentsStorage = storage.defineItem<
+  Activity[] | AssignmentSnapshot
+>("local:cachedAssignments", {
+  fallback: [],
+});
+
+export const manualDueDatesStorage = storage.defineItem<ManualDueDates>(
+  "local:manualDueDates",
+  { fallback: {} }
 );
+
+export const deadlineNotificationHistoryStorage =
+  storage.defineItem<DeadlineNotificationHistory | null>(
+    "local:deadlineNotificationHistory",
+    { fallback: null }
+  );
 
 export const notifiedAssignmentsStorage = storage.defineItem<number[]>(
   "local:notifiedAssignments",

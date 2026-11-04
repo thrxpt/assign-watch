@@ -58,6 +58,34 @@ function createMockActivity(overrides: Partial<Activity> = {}): Activity {
 }
 
 describe("group-assignments logic", () => {
+  it("uses manual dates consistently for sorting, date groups, and the calendar", () => {
+    const classInfo = createMockClass();
+    const day = new Date("2026-11-10T00:00:00");
+    const manual = {
+      ...createMockActivity({ due_date: null }),
+      manualDueDate: day.toISOString(),
+    };
+    const dated = createMockActivity({
+      due_date: "2026-11-12T00:00:00",
+      id: 2,
+    });
+    const items = [dated, manual].map((assignment) => ({
+      assignment,
+      classInfo,
+    }));
+    expect(
+      sortAssignments([dated, manual], {
+        direction: "asc",
+        sortBy: "dueDate",
+      }).map(({ id }) => id)
+    ).toEqual([1, 2]);
+    expect(
+      groupByDueDate(items, { direction: "asc", sortBy: "dueDate" }).map(
+        ({ date }) => date
+      )
+    ).toEqual(["2026-11-10", "2026-11-12"]);
+    expect(groupByDay(items, [day])[0].assignments).toEqual([manual]);
+  });
   describe("sortAssignments", () => {
     const itemA = createMockActivity({
       due_date: "2026-09-10T12:00:00Z",

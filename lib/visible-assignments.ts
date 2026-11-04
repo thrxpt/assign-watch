@@ -1,13 +1,17 @@
 import { isSubmitted } from "@/lib/assignment";
+import { getEffectiveDueDate } from "@/lib/manual-due-dates";
 import type { FilterState } from "@/lib/preferences";
-import type { Activity, ClassInfo } from "@/types";
+import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 
 export interface VisibleAssignment {
-  assignment: Activity;
+  assignment: AssignmentData;
   classInfo: ClassInfo;
 }
 
-export function passesFilters(assignment: Activity, filters: FilterState) {
+export function passesFilters(
+  assignment: AssignmentData,
+  filters: FilterState
+) {
   const submitted = isSubmitted(assignment);
   if (submitted && !filters.submissionStatus.submitted) {
     return false;
@@ -36,7 +40,7 @@ export function passesFilters(assignment: Activity, filters: FilterState) {
 }
 
 /** Submitted work with no remaining deadline to track. */
-export function isSettled(assignment: Activity) {
+export function isSettled(assignment: AssignmentData) {
   return (
     (!assignment.due_date || assignment.due_date_exceed) &&
     isSubmitted(assignment)
@@ -45,7 +49,7 @@ export function isSettled(assignment: Activity) {
 
 interface VisibleAssignmentsParams {
   allClassInfo: ClassInfo[];
-  data: (Activity[] | undefined)[];
+  data: (AssignmentData[] | undefined)[];
   filters: FilterState;
   hiddenAssignments: number[];
   hiddenClasses: number[];
@@ -102,7 +106,7 @@ export function visibleAssignments({
     }
 
     for (const assignment of query) {
-      if (!assignment.due_date && !includeUndated) {
+      if (!getEffectiveDueDate(assignment) && !includeUndated) {
         continue;
       }
       if (hiddenAssignmentIds.has(assignment.id)) {

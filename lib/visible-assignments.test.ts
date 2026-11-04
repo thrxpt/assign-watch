@@ -171,6 +171,39 @@ describe("visible-assignments logic", () => {
   });
 
   describe("visibleAssignments", () => {
+    it("shows manual deadlines with undated visibility off and settles them immediately on submission", () => {
+      const assignment = {
+        ...createMockActivity({ due_date: null }),
+        manualDueDate: "2026-12-01T00:00:00Z",
+      };
+      const params = {
+        allClassInfo: [createMockClass()],
+        data: [[assignment]],
+        filters: DEFAULT_FILTERS,
+        hiddenAssignments: [],
+        hiddenClasses: [],
+        includeSettled: false,
+        includeUndated: false,
+      };
+      expect(visibleAssignments(params)).toHaveLength(1);
+      const submitted = { ...assignment, activity_submission_id: 10 };
+      expect(visibleAssignments({ ...params, data: [[submitted]] })).toEqual(
+        []
+      );
+      expect(
+        visibleAssignments({
+          ...params,
+          data: [[submitted]],
+          includeSettled: true,
+        })
+      ).toHaveLength(1);
+      expect(
+        visibleAssignments({
+          ...params,
+          data: [[{ ...assignment, manualDueDate: undefined }]],
+        })
+      ).toEqual([]);
+    });
     const undated = createMockActivity({
       due_date: null,
       group_type: "STU",
