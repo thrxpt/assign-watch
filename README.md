@@ -155,7 +155,7 @@ git push origin feat/your-amazing-feature
 
 ### Reporting Issues
 
-Found a bug or have a feature request? Please [open an issue](https://github.com/thrxpt/assign-watch/issues/new) with as much detail as possible.
+Found a bug or have a feature request? Please [open an issue](https://github.com/thrxpt/assign-watch/issues/new/choose) with as much detail as possible.
 
 ## License
 
