@@ -53,10 +53,7 @@ export function AssignmentLoadError({
       }
     };
 
-    timeoutId = setTimeout(
-      updateCountdown,
-      Math.max(0, Math.min(1000, retryAt - Date.now()))
-    );
+    timeoutId = setTimeout(updateCountdown, 0);
     return () => {
       if (timeoutId !== undefined) {
         clearTimeout(timeoutId);
@@ -130,11 +127,11 @@ export function AssignmentStaleWarning() {
   const { t } = useI18n();
 
   return (
-    <div className="flex h-6 w-full items-center gap-1.5 text-muted-foreground text-xs">
+    <output className="flex h-6 w-full items-center gap-1.5 text-muted-foreground text-xs">
       <CircleAlert className="size-3.5 shrink-0" />
       <p className="min-w-0 flex-1 leading-tight">
         {t("assignments_stale_warning")}
       </p>
-    </div>
+    </output>
   );
 }

@@ -226,6 +226,16 @@ function result(overrides: Partial<QueryResult> = {}): QueryResult {
   };
 }
 
+function mountApp() {
+  const navigation = document.createElement("div");
+  navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
+  const container = document.createElement("div");
+  document.body.append(navigation, container);
+  mountedRoot = createRoot(container);
+  act(() => mountedRoot?.render(<App />));
+  return { container, navigation };
+}
+
 async function requestError(status = 429): Promise<Error> {
   vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
     new Response(null, { status, statusText: "Request failed" })
@@ -243,6 +253,7 @@ async function requestError(status = 429): Promise<Error> {
 describe("assignment dialog load failures", () => {
   beforeEach(() => {
     resetPacingQueue();
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     document.body.replaceChildren();
     state.classes = [
       {
@@ -269,6 +280,8 @@ describe("assignment dialog load failures", () => {
       mountedRoot = null;
     }
     document.body.replaceChildren();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -300,6 +313,49 @@ describe("assignment dialog load failures", () => {
     expect(html).toMatch(
       /<button[^>]*disabled=""[^>]*>Try again in 120s<\/button>/u
     );
+  });
+
+  it("ticks down and uses the current time when a new 429 deadline arrives", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-17T00:00:00Z"));
+    state.results = [
+      result({
+        error: new AssignmentRequestError(
+          429,
+          "Too Many Requests",
+          Date.now() + 120_000
+        ),
+        isError: true,
+      }),
+    ];
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+    const { container } = mountApp();
+
+    expect(container.textContent).toContain("Try again in 120s");
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
+    expect(container.textContent).toContain("Try again in 119s");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+    state.results = [
+      result({
+        error: new AssignmentRequestError(
+          429,
+          "Too Many Requests",
+          Date.now() + 120_000
+        ),
+        isError: true,
+      }),
+    ];
+    act(() => mountedRoot?.render(<App />));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(container.textContent).toContain("Try again in 120s");
   });
 
   it("allows retry after the Retry-After deadline passes", () => {
@@ -348,6 +404,35 @@ describe("assignment dialog load failures", () => {
     expect(html).not.toContain("Unable to load assignments");
   });
 
+  it("clears the stale-data warning after a successful class refresh", () => {
+    const assignment = {
+      activity_submission_id: 0,
+      class_id: 1,
+      due_date: "2099-12-31T12:00:00Z",
+      due_date_exceed: false,
+      group_type: "IND",
+      id: 101,
+      start_date: "2026-09-01T00:00:00Z",
+      title: "Restored homework",
+      type: "ASM",
+    } as Activity;
+    state.results = [
+      result({ data: [assignment], dataUpdatedAt: 0, isFetching: true }),
+    ];
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+    const { container } = mountApp();
+
+    expect(container.querySelector("output")?.textContent).toContain(
+      "may be outdated"
+    );
+
+    state.results = [result({ data: [assignment], dataUpdatedAt: Date.now() })];
+    act(() => mountedRoot?.render(<App />));
+
+    expect(container.querySelector("output")).toBeNull();
+    expect(container.textContent).toContain("Dialog tips");
+  });
+
   it("waits for the snapshot read before enabling queries and shows restored rows", async () => {
     state.useQueryCache = true;
     const assignment = {
@@ -370,12 +455,7 @@ describe("assignment dialog load failures", () => {
     );
     vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
 
-    const navigation = document.createElement("div");
-    navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
-    const container = document.createElement("div");
-    document.body.append(navigation, container);
-    mountedRoot = createRoot(container);
-    act(() => mountedRoot?.render(<App />));
+    const { container, navigation } = mountApp();
 
     const openButton = navigation.querySelector<HTMLButtonElement>(
       "button.nav-link.header-link"
@@ -414,12 +494,7 @@ describe("assignment dialog load failures", () => {
     );
     vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
 
-    const navigation = document.createElement("div");
-    navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
-    const container = document.createElement("div");
-    document.body.append(navigation, container);
-    mountedRoot = createRoot(container);
-    act(() => mountedRoot?.render(<App />));
+    const { container, navigation } = mountApp();
     const openButton = navigation.querySelector<HTMLButtonElement>(
       "button.nav-link.header-link"
     );
@@ -521,6 +596,76 @@ describe("assignment dialog load failures", () => {
     expect(failed.refetch).toHaveBeenCalledOnce();
     expect(successful.refetch).not.toHaveBeenCalled();
     expect(hidden.refetch).not.toHaveBeenCalled();
+  });
+
+  it("retries a rate-limited batch once for every enrolled class", async () => {
+    state.classes.push({ ...state.classes[0], id: 2 });
+    state.hiddenClasses = [2];
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+    const fetch = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(null, { status: 429 }))
+      .mockResolvedValueOnce(new Response(null, { status: 429 }));
+    const { container } = mountApp();
+    const initialQuery = state.queryConfigs[0]?.queryFn as
+      | (() => Promise<unknown>)
+      | undefined;
+    let batchError: unknown;
+
+    await act(async () => {
+      try {
+        await initialQuery?.();
+      } catch (error) {
+        batchError = error;
+      }
+    });
+
+    expect(batchError).toBeInstanceOf(AssignmentRequestError);
+    const refetch = (index: number) =>
+      vi.fn(async () => {
+        const query = state.queryConfigs[index]?.queryFn as
+          | (() => Promise<unknown>)
+          | undefined;
+        try {
+          await query?.();
+        } catch {
+          // React Query resolves refetch with its result, even when the query fails.
+        }
+      });
+    const visibleRefetch = refetch(0);
+    const hiddenRefetch = refetch(1);
+    state.results = [
+      result({
+        error: batchError as Error,
+        isError: true,
+        refetch: visibleRefetch,
+      }),
+      result({
+        error: batchError as Error,
+        isError: true,
+        refetch: hiddenRefetch,
+      }),
+    ];
+    act(() => mountedRoot?.render(<App />));
+
+    expect(container.textContent).toContain("Try again");
+    await act(async () => {
+      await state.retry?.();
+    });
+
+    expect(visibleRefetch).toHaveBeenCalledOnce();
+    expect(hiddenRefetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(
+      fetch.mock.calls.map(([input]) =>
+        new URL(String(input)).searchParams.getAll(
+          "filter_groups[0][filters][0][value][]"
+        )
+      )
+    ).toEqual([
+      ["1", "2"],
+      ["1", "2"],
+    ]);
   });
 
   it("disables retry while a failed refresh is in flight", async () => {
