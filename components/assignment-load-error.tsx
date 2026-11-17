@@ -19,7 +19,6 @@ import {
 import { useI18n } from "@/lib/use-i18n";
 
 interface AssignmentLoadErrorProps {
-  hasStaleData: boolean;
   isRateLimited: boolean;
   isRetrying: boolean;
   onRetry: () => Promise<void>;
@@ -28,7 +27,6 @@ interface AssignmentLoadErrorProps {
 }
 
 export function AssignmentLoadError({
-  hasStaleData,
   isRateLimited,
   isRetrying,
   onRetry,
@@ -106,10 +104,7 @@ export function AssignmentLoadError({
       >
         {isRateLimited ? <Timer /> : <CircleAlert />}
         <AlertTitle>{title}</AlertTitle>
-        <AlertDescription className="text-xs">
-          {description}
-          {hasStaleData && <> {t("assignments_stale_warning")}</>}
-        </AlertDescription>
+        <AlertDescription className="text-xs">{description}</AlertDescription>
         <AlertAction className="static col-start-2 mt-2 justify-self-start sm:absolute sm:mt-0">
           {retryButton}
         </AlertAction>
@@ -125,11 +120,21 @@ export function AssignmentLoadError({
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
-        {hasStaleData && (
-          <EmptyDescription>{t("assignments_stale_warning")}</EmptyDescription>
-        )}
       </EmptyHeader>
       <EmptyContent>{retryButton}</EmptyContent>
     </Empty>
+  );
+}
+
+export function AssignmentStaleWarning() {
+  const { t } = useI18n();
+
+  return (
+    <div className="flex h-6 w-full items-center gap-1.5 text-muted-foreground text-xs">
+      <CircleAlert className="size-3.5 shrink-0" />
+      <p className="min-w-0 flex-1 leading-tight">
+        {t("assignments_stale_warning")}
+      </p>
+    </div>
   );
 }

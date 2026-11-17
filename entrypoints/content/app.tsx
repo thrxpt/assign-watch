@@ -1,4 +1,4 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { browser } from "#imports";
@@ -10,9 +10,16 @@ import {
   shouldRetryAssignments,
 } from "@/lib/api";
 import { cacheClassAssignments } from "@/lib/assignment-cache";
+import type { AssignmentHydrationState } from "@/lib/assignment-query-cache";
+import {
+  assignmentQueryKey,
+  getUnhydratedAssignmentClassIds,
+  restoreAssignmentSnapshotWhenCurrent,
+} from "@/lib/assignment-query-cache";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
+  cachedAssignmentsStorage,
   classInfoStorage,
   filtersStorage,
   groupStorage,
@@ -48,6 +55,9 @@ async function openOptionsPage() {
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [hydration, setHydration] = useState<AssignmentHydrationState | null>(
+    null
+  );
 
   const [allClassInfo] = useStorageState(classInfoStorage);
   const [userId, setUserId] = useState(() => scrapeUserId() ?? null);
@@ -65,10 +75,61 @@ function App() {
     () => allClassInfo.map((classInfo) => classInfo.id),
     [allClassInfo]
   );
+  const queryClient = useQueryClient();
+  const classIdsToHydrate = useMemo(
+    () => getUnhydratedAssignmentClassIds(classIds, userId, hydration),
+    [classIds, hydration, userId]
+  );
+  const isHydratedForCurrentClasses = !userId || classIdsToHydrate.length === 0;
   const batchAssignmentsRequest = useMemo(
     () => createAssignmentsBatchRequest(classIds, userId),
     [classIds, userId]
   );
+
+  useEffect(() => {
+    if (!isModalOpen || !userId?.trim() || classIdsToHydrate.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    const hydrateAssignments = async () => {
+      try {
+        const restoredClassIds = await restoreAssignmentSnapshotWhenCurrent(
+          queryClient,
+          cachedAssignmentsStorage.getValue(),
+          userId,
+          classIds,
+          () => !cancelled && scrapeUserId() === userId
+        );
+        if (restoredClassIds === null) {
+          return;
+        }
+      } catch {
+        // Loading from the persistent cache must not block the live request.
+        if (cancelled || scrapeUserId() !== userId) {
+          return;
+        }
+      }
+
+      if (cancelled) {
+        return;
+      }
+
+      setHydration((current) => {
+        const hydratedClassIds =
+          current?.userId === userId ? current.classIds : [];
+        return {
+          classIds: [...new Set([...hydratedClassIds, ...classIds])],
+          userId,
+        };
+      });
+    };
+
+    void hydrateAssignments();
+    return () => {
+      cancelled = true;
+    };
+  }, [classIds, classIdsToHydrate, isModalOpen, queryClient, userId]);
 
   useEffect(() => {
     const syncInfo = async () => {
@@ -142,7 +203,9 @@ function App() {
     queries: allClassInfo.map((classInfo) => ({
       // A 429 stays manual-only, including when the dialog is reopened.
       enabled: (query: { state: { error: unknown } }) =>
-        isModalOpen && !isRateLimitError(query.state.error),
+        isModalOpen &&
+        isHydratedForCurrentClasses &&
+        !isRateLimitError(query.state.error),
       queryFn: async () => {
         const data = await fetchClassAssignments(
           classInfo.id,
@@ -152,7 +215,7 @@ function App() {
         await cacheClassAssignments(userId, classInfo.id, data, classIds);
         return data;
       },
-      queryKey: ["assignments", classInfo.id, userId],
+      queryKey: assignmentQueryKey(classInfo.id, userId),
       retry: shouldRetryAssignments,
     })),
   });
@@ -162,6 +225,15 @@ function App() {
     (result, index) =>
       result.isError && !hiddenClassIds.has(allClassInfo[index].id)
   );
+  const hasStaleData = assignments.results.some((result, index) => {
+    const classInfo = allClassInfo[index];
+    return (
+      classInfo !== undefined &&
+      !hiddenClassIds.has(classInfo.id) &&
+      Boolean(result.data?.length) &&
+      (result.dataUpdatedAt === 0 || result.isError)
+    );
+  });
   const isBatchRateLimited = failedQueries.some(
     (result) =>
       isRateLimitError(result.error) &&
@@ -198,7 +270,6 @@ function App() {
   }
 
   const loadErrorProps = {
-    hasStaleData: failedQueries.some((result) => Boolean(result.data?.length)),
     isRateLimited: failedQueries.some((result) =>
       isRateLimitError(result.error)
     ),
@@ -253,6 +324,7 @@ function App() {
       filters={filters}
       groupState={groupState}
       hasFailures={failedQueries.length > 0}
+      hasStaleData={hasStaleData}
       hiddenAssignments={hiddenAssignments}
       hiddenClasses={hiddenClasses}
       isOpen={isModalOpen}

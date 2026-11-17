@@ -1,8 +1,16 @@
+// @vitest-environment happy-dom
+
 import type { ComponentProps, ReactNode } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AssignmentLoadError } from "@/components/assignment-load-error";
+import type {
+  AssignmentLoadError,
+  AssignmentStaleWarning,
+} from "@/components/assignment-load-error";
 import App from "@/entrypoints/content/app";
 import {
   AssignmentRequestError,
@@ -11,11 +19,17 @@ import {
 } from "@/lib/api";
 import { translate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
-import { classInfoStorage, hiddenClassesStorage } from "@/lib/storage";
+import {
+  cachedAssignmentsStorage,
+  classInfoStorage,
+  hiddenClassesStorage,
+  userIdStorage,
+} from "@/lib/storage";
 import type { Activity, ClassInfo } from "@/types";
 
 interface QueryResult {
   data: Activity[] | undefined;
+  dataUpdatedAt: number;
   error: Error | null;
   isError: boolean;
   isFetching: boolean;
@@ -27,13 +41,49 @@ const state = vi.hoisted(() => ({
   classes: [] as ClassInfo[],
   hiddenClasses: [] as number[],
   locale: "en" as Locale,
+  queryCache: new Map<
+    string,
+    {
+      data: unknown;
+      dataUpdatedAt: number;
+      error: unknown;
+      fetchStatus: string;
+    }
+  >(),
+  queryConfigs: [] as {
+    enabled: unknown;
+    queryFn: unknown;
+    queryKey: unknown[];
+  }[],
   results: [] as QueryResult[],
   retry: null as (() => Promise<void>) | null,
+  scrapedUserId: "student-1" as string | null,
+  useQueryCache: false,
 }));
+
+const queryClient = {
+  getQueryState: (queryKey: readonly unknown[]) =>
+    state.queryCache.get(JSON.stringify(queryKey)),
+  setQueryData: (
+    queryKey: readonly unknown[],
+    data: unknown,
+    options?: { updatedAt?: number }
+  ) => {
+    state.queryCache.set(JSON.stringify(queryKey), {
+      data,
+      dataUpdatedAt: options?.updatedAt ?? Date.now(),
+      error: null,
+      fetchStatus: "idle",
+    });
+    return data;
+  },
+};
+let mountedRoot: Root | null = null;
 
 vi.mock("@/components/assignment-load-error", async (importOriginal) => {
   const actual = await importOriginal<{
     AssignmentLoadError: typeof AssignmentLoadError;
+    AssignmentStaleWarning: typeof AssignmentStaleWarning;
   }>();
   return {
     AssignmentLoadError: (
@@ -42,15 +92,52 @@ vi.mock("@/components/assignment-load-error", async (importOriginal) => {
       state.retry = props.onRetry;
       return <actual.AssignmentLoadError {...props} />;
     },
+    AssignmentStaleWarning: actual.AssignmentStaleWarning,
   };
 });
 
 vi.mock("@tanstack/react-query", () => ({
-  useQueries: ({ combine }: { combine: (results: QueryResult[]) => unknown }) =>
-    combine(state.results),
+  useQueries: ({
+    combine,
+    queries,
+  }: {
+    combine: (results: QueryResult[]) => unknown;
+    queries: {
+      enabled: unknown;
+      queryFn: unknown;
+      queryKey: readonly unknown[];
+    }[];
+  }) => {
+    state.queryConfigs = queries.map((query) => ({
+      enabled: query.enabled,
+      queryFn: query.queryFn,
+      queryKey: [...query.queryKey],
+    }));
+    const results = state.useQueryCache
+      ? queries.map((query) => {
+          const cached = state.queryCache.get(JSON.stringify(query.queryKey));
+          return {
+            data: cached?.data as Activity[] | undefined,
+            dataUpdatedAt: cached?.dataUpdatedAt ?? 0,
+            error: (cached?.error as Error | null) ?? null,
+            isError: Boolean(cached?.error),
+            isFetching: cached?.fetchStatus === "fetching",
+            isPending:
+              cached?.data === undefined &&
+              (cached?.error === null || cached?.error === undefined),
+            refetch: vi.fn(async () => {}),
+          };
+        })
+      : state.results;
+    return combine(results);
+  },
+  useQueryClient: () => queryClient,
 }));
 
-vi.mock("@/lib/dom", () => ({ scrapeUserId: () => "student-1" }));
+vi.mock("@/lib/dom", () => ({
+  scrapeClassCards: () => [],
+  scrapeUserId: () => state.scrapedUserId,
+}));
 vi.mock("@/lib/use-storage-state", () => ({
   useStorageState: (item: { fallback: unknown }) => {
     if (item === classInfoStorage) {
@@ -100,7 +187,9 @@ vi.mock("@/components/assignment-group", () => ({
 vi.mock("@/components/hidden-items-manager", () => ({
   HiddenItemsManager: () => null,
 }));
-vi.mock("@/components/dialog-tips", () => ({ DialogTips: () => null }));
+vi.mock("@/components/dialog-tips", () => ({
+  DialogTips: () => <span>Dialog tips</span>,
+}));
 vi.mock("@/components/class", () => ({
   Class: ({ assignments }: { assignments: Activity[] }) => (
     <div>
@@ -127,6 +216,7 @@ vi.mock("@/components/calendar-view", () => ({
 function result(overrides: Partial<QueryResult> = {}): QueryResult {
   return {
     data: undefined,
+    dataUpdatedAt: 1,
     error: null,
     isError: false,
     isFetching: false,
@@ -153,6 +243,7 @@ async function requestError(status = 429): Promise<Error> {
 describe("assignment dialog load failures", () => {
   beforeEach(() => {
     resetPacingQueue();
+    document.body.replaceChildren();
     state.classes = [
       {
         description: "",
@@ -166,9 +257,18 @@ describe("assignment dialog load failures", () => {
     state.locale = "en";
     state.results = [];
     state.retry = null;
+    state.queryCache.clear();
+    state.queryConfigs = [];
+    state.scrapedUserId = "student-1";
+    state.useQueryCache = false;
   });
 
   afterEach(() => {
+    if (mountedRoot) {
+      act(() => mountedRoot?.unmount());
+      mountedRoot = null;
+    }
+    document.body.replaceChildren();
     vi.restoreAllMocks();
   });
 
@@ -224,6 +324,131 @@ describe("assignment dialog load failures", () => {
     );
   });
 
+  it("shows the stale-data warning while restored assignments refresh", () => {
+    const assignment = {
+      activity_submission_id: 0,
+      class_id: 1,
+      due_date: "2099-12-31T12:00:00Z",
+      due_date_exceed: false,
+      group_type: "IND",
+      id: 101,
+      start_date: "2026-09-01T00:00:00Z",
+      title: "Restored homework",
+      type: "ASM",
+    } as Activity;
+    state.results = [
+      result({ data: [assignment], dataUpdatedAt: 0, isFetching: true }),
+    ];
+
+    const html = renderToStaticMarkup(<App />);
+
+    expect(html).toContain("may be outdated");
+    expect(html.split("may be outdated")).toHaveLength(2);
+    expect(html).not.toContain("Dialog tips");
+    expect(html).not.toContain("Unable to load assignments");
+  });
+
+  it("waits for the snapshot read before enabling queries and shows restored rows", async () => {
+    state.useQueryCache = true;
+    const assignment = {
+      activity_submission_id: 0,
+      class_id: 1,
+      due_date: "2099-12-31T12:00:00Z",
+      due_date_exceed: false,
+      group_type: "IND",
+      id: 101,
+      start_date: "2026-09-01T00:00:00Z",
+      title: "Restored homework",
+      type: "ASM",
+    } as Activity;
+    const { promise: snapshotPromise, resolve } =
+      Promise.withResolvers<
+        Awaited<ReturnType<typeof cachedAssignmentsStorage.getValue>>
+      >();
+    vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
+      snapshotPromise
+    );
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+
+    const navigation = document.createElement("div");
+    navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
+    const container = document.createElement("div");
+    document.body.append(navigation, container);
+    mountedRoot = createRoot(container);
+    act(() => mountedRoot?.render(<App />));
+
+    const openButton = navigation.querySelector<HTMLButtonElement>(
+      "button.nav-link.header-link"
+    );
+    expect(openButton).not.toBeNull();
+    act(() => openButton?.click());
+
+    const isEnabledBeforeRead = state.queryConfigs[0]?.enabled as (query: {
+      state: { error: unknown };
+    }) => boolean;
+    expect(isEnabledBeforeRead({ state: { error: null } })).toBe(false);
+    expect(state.queryCache.size).toBe(0);
+
+    await act(async () => {
+      resolve({ assignments: [assignment], userId: "student-1" });
+      await snapshotPromise;
+    });
+
+    const isEnabledAfterRead = state.queryConfigs[0]?.enabled as (query: {
+      state: { error: unknown };
+    }) => boolean;
+    expect(isEnabledAfterRead({ state: { error: null } })).toBe(true);
+    expect(container.textContent).toContain(assignment.title);
+    expect(container.textContent).toContain("may be outdated");
+    expect(container.textContent).not.toContain("Dialog tips");
+  });
+
+  it("ignores a snapshot when the DOM no longer identifies the captured student", async () => {
+    state.useQueryCache = true;
+    const { promise: snapshotPromise, resolve } =
+      Promise.withResolvers<
+        Awaited<ReturnType<typeof cachedAssignmentsStorage.getValue>>
+      >();
+    vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
+      snapshotPromise
+    );
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+
+    const navigation = document.createElement("div");
+    navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
+    const container = document.createElement("div");
+    document.body.append(navigation, container);
+    mountedRoot = createRoot(container);
+    act(() => mountedRoot?.render(<App />));
+    const openButton = navigation.querySelector<HTMLButtonElement>(
+      "button.nav-link.header-link"
+    );
+    act(() => openButton?.click());
+
+    state.scrapedUserId = null;
+    await act(async () => {
+      resolve({
+        assignments: [
+          {
+            ...({} as Activity),
+            class_id: 1,
+            id: 101,
+            title: "Other student's assignment",
+          },
+        ],
+        userId: "student-1",
+      });
+      await snapshotPromise;
+    });
+
+    expect(state.queryCache.size).toBe(0);
+    expect(container.textContent).not.toContain("Other student's assignment");
+    const isEnabledAfterRead = state.queryConfigs[0]?.enabled as (query: {
+      state: { error: unknown };
+    }) => boolean;
+    expect(isEnabledAfterRead({ state: { error: null } })).toBe(false);
+  });
+
   it("keeps previously loaded assignments in both views with a stale-data warning", async () => {
     const assignment = {
       activity_submission_id: 0,
@@ -259,7 +484,9 @@ describe("assignment dialog load failures", () => {
 
   it("keeps the genuine successful empty state", () => {
     state.results = [result({ data: [] })];
-    expect(renderToStaticMarkup(<App />)).toContain("Congratulations!");
+    const html = renderToStaticMarkup(<App />);
+    expect(html).toContain("Congratulations!");
+    expect(html).toContain("Dialog tips");
   });
 
   it("distinguishes other failures from rate limiting", async () => {

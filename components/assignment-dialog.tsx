@@ -4,7 +4,10 @@ import type { ComponentProps } from "react";
 
 import { AssignmentFilters } from "@/components/assignment-filters";
 import { AssignmentGroup } from "@/components/assignment-group";
-import { AssignmentLoadError } from "@/components/assignment-load-error";
+import {
+  AssignmentLoadError,
+  AssignmentStaleWarning,
+} from "@/components/assignment-load-error";
 import { AssignmentSort } from "@/components/assignment-sort";
 import { CalendarView } from "@/components/calendar-view";
 import { Class } from "@/components/class";
@@ -43,6 +46,7 @@ interface AssignmentDialogProps {
   filters: FilterState;
   groupState: GroupState;
   hasFailures: boolean;
+  hasStaleData: boolean;
   hiddenAssignments: number[];
   hiddenClasses: number[];
   isOpen: boolean;
@@ -66,6 +70,7 @@ export function AssignmentDialog({
   filters,
   groupState,
   hasFailures,
+  hasStaleData,
   hiddenAssignments,
   hiddenClasses,
   isOpen,
@@ -219,7 +224,7 @@ export function AssignmentDialog({
               </TabsContent>
             </Tabs>
             <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
-              <DialogTips />
+              {hasStaleData ? <AssignmentStaleWarning /> : <DialogTips />}
             </DialogFooter>
           </ManualDueDateProvider>
         </DialogContent>
