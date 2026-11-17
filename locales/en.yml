@@ -35,6 +35,7 @@ assignments_load_error: Unable to load assignments
 assignments_load_error_desc: Some assignments could not be loaded. Check your connection and try again.
 assignments_stale_warning: Previously loaded assignments are still shown and may be outdated.
 try_again: Try again
+retry_after: Try again in {seconds}s
 retrying: Trying again…
 no_classes: No Classes Found
 no_classes_desc: Go to the classes page on LEB2 to sync your enrolled courses.

@@ -55,6 +55,7 @@ export type TranslationKey =
   | "assignments_load_error_desc"
   | "assignments_stale_warning"
   | "try_again"
+  | "retry_after"
   | "retrying"
   | "no_classes"
   | "no_classes_desc"

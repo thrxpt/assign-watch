@@ -1,39 +1,16 @@
 import { useQueries } from "@tanstack/react-query";
-import { Calendar, LayoutList, Settings } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { browser } from "#imports";
-import { AssignmentFilters } from "@/components/assignment-filters";
-import { AssignmentGroup } from "@/components/assignment-group";
-import { AssignmentLoadError } from "@/components/assignment-load-error";
-import { AssignmentSort } from "@/components/assignment-sort";
-import { CalendarView } from "@/components/calendar-view";
-import { Class } from "@/components/class";
-import { ClassSkeleton } from "@/components/class-skeleton";
-import { DateGroup } from "@/components/date-group";
-import { DialogTips } from "@/components/dialog-tips";
-import { HiddenItemsManager } from "@/components/hidden-items-manager";
-import { ManualDueDateProvider } from "@/components/manual-due-date-editor";
-import { NoAssignments } from "@/components/no-assignments";
-import { NoClasses } from "@/components/no-classes";
-import { Button } from "@/components/ui/button";
+import { AssignmentDialog } from "@/components/assignment-dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  fetchAssignments,
+  createAssignmentsBatchRequest,
+  fetchClassAssignments,
   isRateLimitError,
   shouldRetryAssignments,
 } from "@/lib/api";
 import { cacheClassAssignments } from "@/lib/assignment-cache";
 import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
-import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
   classInfoStorage,
@@ -46,7 +23,6 @@ import {
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
-import { useI18n } from "@/lib/use-i18n";
 import { useStorageState } from "@/lib/use-storage-state";
 import {
   getPendingClasses,
@@ -71,9 +47,7 @@ async function openOptionsPage() {
 }
 
 function App() {
-  const { t } = useI18n();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
 
   const [allClassInfo] = useStorageState(classInfoStorage);
   const [userId, setUserId] = useState(() => scrapeUserId() ?? null);
@@ -86,6 +60,15 @@ function App() {
   );
   const [sortState, setSortState] = useStorageState(sortStorage);
   const [groupState, setGroupState] = useStorageState(groupStorage);
+
+  const classIds = useMemo(
+    () => allClassInfo.map((classInfo) => classInfo.id),
+    [allClassInfo]
+  );
+  const batchAssignmentsRequest = useMemo(
+    () => createAssignmentsBatchRequest(classIds, userId),
+    [classIds, userId]
+  );
 
   useEffect(() => {
     const syncInfo = async () => {
@@ -114,7 +97,12 @@ function App() {
     button.style.background = "transparent";
 
     const handleClick = () => {
-      setIsModalOpen(true);
+      setIsModalOpen((prev) => {
+        if (!prev) {
+          batchAssignmentsRequest.reset();
+        }
+        return true;
+      });
     };
     button.addEventListener("click", handleClick);
 
@@ -126,20 +114,25 @@ function App() {
       button.removeEventListener("click", handleClick);
       button.remove();
     };
-  }, []);
+  }, [batchAssignmentsRequest]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && e.code === "KeyA") {
         e.preventDefault();
-        setIsModalOpen((prev) => !prev);
+        setIsModalOpen((prev) => {
+          if (!prev) {
+            batchAssignmentsRequest.reset();
+          }
+          return !prev;
+        });
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, []);
+  }, [batchAssignmentsRequest]);
 
   const assignments = useQueries({
     combine: (results) => ({
@@ -151,13 +144,12 @@ function App() {
       enabled: (query: { state: { error: unknown } }) =>
         isModalOpen && !isRateLimitError(query.state.error),
       queryFn: async () => {
-        const data = await fetchAssignments(classInfo.id, userId);
-        await cacheClassAssignments(
-          userId,
+        const data = await fetchClassAssignments(
           classInfo.id,
-          data,
-          allClassInfo.map((item) => item.id)
+          userId,
+          batchAssignmentsRequest.fetch()
         );
+        await cacheClassAssignments(userId, classInfo.id, data, classIds);
         return data;
       },
       queryKey: ["assignments", classInfo.id, userId],
@@ -170,15 +162,41 @@ function App() {
     (result, index) =>
       result.isError && !hiddenClassIds.has(allClassInfo[index].id)
   );
+  const isBatchRateLimited = failedQueries.some(
+    (result) =>
+      isRateLimitError(result.error) &&
+      batchAssignmentsRequest.isError(result.error)
+  );
   const retryFailedQueries = async () => {
     const refreshes: Promise<unknown>[] = [];
-    for (const result of failedQueries) {
+    if (isBatchRateLimited) {
+      batchAssignmentsRequest.reset();
+    }
+    const retryTargets = isBatchRateLimited
+      ? assignments.results
+      : failedQueries;
+    for (const result of retryTargets) {
       if (!result.isFetching) {
         refreshes.push(result.refetch());
       }
     }
     await Promise.all(refreshes);
   };
+  let retryAt: number | null = null;
+  for (const result of failedQueries) {
+    if (!isRateLimitError(result.error)) {
+      continue;
+    }
+
+    const rateLimitRetryAt = result.error.retryAt;
+    if (rateLimitRetryAt === null) {
+      continue;
+    }
+
+    retryAt =
+      retryAt === null ? rateLimitRetryAt : Math.max(retryAt, rateLimitRetryAt);
+  }
+
   const loadErrorProps = {
     hasStaleData: failedQueries.some((result) => Boolean(result.data?.length)),
     isRateLimited: failedQueries.some((result) =>
@@ -186,6 +204,7 @@ function App() {
     ),
     isRetrying: failedQueries.some((result) => result.isFetching),
     onRetry: retryFailedQueries,
+    retryAt,
   };
 
   const resolvedData = assignments.data.map((items) =>
@@ -213,154 +232,42 @@ function App() {
     includeUndated: false,
   });
 
-  const renderList = () => {
-    if (allClassInfo.length === 0) {
-      return <NoClasses />;
+  const pendingClasses = getPendingClasses({
+    allClassInfo,
+    hiddenClasses,
+    results: assignments.results,
+  });
+  const resolvedAssignments = resolvedData.flatMap((items) => items ?? []);
+  const handleDialogOpenChange = (open: boolean) => {
+    if (open && !isModalOpen) {
+      batchAssignmentsRequest.reset();
     }
-    const pendingClasses = getPendingClasses({
-      allClassInfo,
-      hiddenClasses,
-      results: assignments.results,
-    });
-
-    if (listItems.length === 0 && pendingClasses.length === 0) {
-      return failedQueries.length > 0 ? null : <NoAssignments />;
-    }
-
-    const skeletons = pendingClasses.map((cls) => (
-      <ClassSkeleton key={cls.id} />
-    ));
-
-    const classInfoMap = new Map(allClassInfo.map((c) => [c.id, c]));
-    const groups =
-      groupState.groupBy === "class"
-        ? groupByClass(listItems, sortState).map((group) => (
-            <Class
-              assignments={group.assignments}
-              classInfo={group.classInfo}
-              key={group.classInfo.id}
-            />
-          ))
-        : groupByDueDate(listItems, sortState).map(
-            ({ date, assignments: due }) => (
-              <DateGroup
-                assignments={due}
-                classInfoMap={classInfoMap}
-                date={date}
-                key={date ?? "undated"}
-              />
-            )
-          );
-    return (
-      <>
-        {groups}
-        {skeletons}
-      </>
-    );
+    setIsModalOpen(open);
   };
 
   return (
-    <div>
-      <Dialog onOpenChange={setIsModalOpen} open={isModalOpen}>
-        <DialogContent
-          className="p-6 sm:max-w-3xl"
-          initialFocus={false}
-          showCloseButton={false}
-        >
-          <ManualDueDateProvider
-            assignments={resolvedData.flatMap((items) => items ?? [])}
-            key={userId ?? "unknown"}
-            userId={userId}
-          >
-            <Tabs
-              className="gap-4"
-              defaultValue="list"
-              onValueChange={(value) =>
-                setActiveTab(value as "list" | "calendar")
-              }
-              value={activeTab}
-            >
-              <DialogHeader className="flex-row items-center justify-between">
-                <DialogTitle className="text-xl">
-                  {activeTab === "list" ? t("todo") : t("calendar")}
-                </DialogTitle>
-                <div className="flex items-center gap-2">
-                  <Button
-                    onClick={openOptionsPage}
-                    size="icon"
-                    title={t("settings")}
-                    variant="secondary"
-                  >
-                    <Settings />
-                    <span className="sr-only">{t("settings")}</span>
-                  </Button>
-                  <HiddenItemsManager
-                    allAssignments={assignments.data}
-                    allClassInfo={allClassInfo}
-                    hiddenAssignments={hiddenAssignments}
-                    hiddenClasses={hiddenClasses}
-                  />
-                  <AssignmentSort
-                    onSortChange={setSortState}
-                    sortState={sortState}
-                  />
-                  <AssignmentFilters
-                    filters={filters}
-                    onFiltersChange={setFilters}
-                  />
-                  {activeTab === "list" && (
-                    <AssignmentGroup
-                      groupState={groupState}
-                      onGroupChange={setGroupState}
-                    />
-                  )}
-                  <TabsList className="h-8">
-                    <TabsTrigger value="list">
-                      <LayoutList />
-                      <span className="sr-only">{t("list_view")}</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="calendar">
-                      <Calendar />
-                      <span className="sr-only">{t("calendar_view")}</span>
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-              </DialogHeader>
-              <TabsContent value="list">
-                <ScrollArea className="rounded-lg">
-                  <div className="flex max-h-[75dvh] flex-col gap-4 pr-4">
-                    {failedQueries.length > 0 && (
-                      <AssignmentLoadError {...loadErrorProps} />
-                    )}
-                    {renderList()}
-                  </div>
-                </ScrollArea>
-              </TabsContent>
-              <TabsContent value="calendar">
-                <div className="flex h-[75dvh] flex-col gap-4">
-                  {failedQueries.length > 0 && (
-                    <AssignmentLoadError
-                      {...loadErrorProps}
-                      presentation="inline"
-                    />
-                  )}
-                  {allClassInfo.length === 0 ? (
-                    <NoClasses />
-                  ) : (
-                    <div className="min-h-0 flex-1">
-                      <CalendarView assignments={calendarItems} />
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-            <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
-              <DialogTips />
-            </DialogFooter>
-          </ManualDueDateProvider>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <AssignmentDialog
+      allAssignments={assignments.data}
+      allClassInfo={allClassInfo}
+      calendarItems={calendarItems}
+      filters={filters}
+      groupState={groupState}
+      hasFailures={failedQueries.length > 0}
+      hiddenAssignments={hiddenAssignments}
+      hiddenClasses={hiddenClasses}
+      isOpen={isModalOpen}
+      listItems={listItems}
+      loadErrorProps={loadErrorProps}
+      onFiltersChange={setFilters}
+      onGroupChange={setGroupState}
+      onOpenChange={handleDialogOpenChange}
+      onOpenOptions={openOptionsPage}
+      onSortChange={setSortState}
+      pendingClasses={pendingClasses}
+      resolvedAssignments={resolvedAssignments}
+      sortState={sortState}
+      userId={userId}
+    />
   );
 }
 

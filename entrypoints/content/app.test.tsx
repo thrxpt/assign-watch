@@ -4,7 +4,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AssignmentLoadError } from "@/components/assignment-load-error";
 import App from "@/entrypoints/content/app";
-import { fetchAssignments, resetPacingQueue } from "@/lib/api";
+import {
+  AssignmentRequestError,
+  fetchAssignments,
+  resetPacingQueue,
+} from "@/lib/api";
 import { translate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import { classInfoStorage, hiddenClassesStorage } from "@/lib/storage";
@@ -59,7 +63,10 @@ vi.mock("@/lib/use-storage-state", () => ({
   },
 }));
 vi.mock("@/lib/use-i18n", () => ({
-  useI18n: () => ({ t: (key: string) => translate(key, state.locale) }),
+  useI18n: () => ({
+    t: (key: string, substitutions?: Record<string, string | number>) =>
+      translate(key, state.locale, substitutions),
+  }),
 }));
 
 function Slot({ children }: { children: ReactNode }) {
@@ -134,7 +141,7 @@ async function requestError(status = 429): Promise<Error> {
     new Response(null, { status, statusText: "Request failed" })
   );
   try {
-    await fetchAssignments(1, "student-1");
+    await fetchAssignments([1], "student-1");
   } catch (error) {
     if (error instanceof Error) {
       return error;
@@ -171,6 +178,50 @@ describe("assignment dialog load failures", () => {
     expect(html).toContain("LEB2 is temporarily limiting requests");
     expect(html).toContain("Try again");
     expect(html).not.toContain("Congratulations!");
+  });
+
+  it("shows the Retry-After countdown and disables retry until it expires", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-17T00:00:00Z"));
+    state.results = [
+      result({
+        error: new AssignmentRequestError(
+          429,
+          "Too Many Requests",
+          Date.now() + 120_000
+        ),
+        isError: true,
+      }),
+    ];
+
+    const html = renderToStaticMarkup(<App />);
+
+    expect(html).toContain("Try again in 120s");
+    expect(html).toMatch(
+      /<button[^>]*disabled=""[^>]*>Try again in 120s<\/button>/u
+    );
+  });
+
+  it("allows retry after the Retry-After deadline passes", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-17T00:00:00Z"));
+    state.results = [
+      result({
+        error: new AssignmentRequestError(
+          429,
+          "Too Many Requests",
+          Date.now() - 1
+        ),
+        isError: true,
+      }),
+    ];
+
+    const html = renderToStaticMarkup(<App />);
+
+    expect(html).toMatch(/<button[^>]*>Try again<\/button>/u);
+    expect(html).not.toMatch(
+      /<button[^>]*disabled=""[^>]*>Try again<\/button>/u
+    );
   });
 
   it("keeps previously loaded assignments in both views with a stale-data warning", async () => {

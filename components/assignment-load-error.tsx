@@ -1,4 +1,5 @@
 import { CircleAlert, Timer } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import {
   Alert,
@@ -23,6 +24,7 @@ interface AssignmentLoadErrorProps {
   isRetrying: boolean;
   onRetry: () => Promise<void>;
   presentation?: "empty" | "inline";
+  retryAt: number | null;
 }
 
 export function AssignmentLoadError({
@@ -31,8 +33,44 @@ export function AssignmentLoadError({
   isRetrying,
   onRetry,
   presentation = "empty",
+  retryAt,
 }: AssignmentLoadErrorProps) {
   const { t } = useI18n();
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (retryAt === null) {
+      return;
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const updateCountdown = () => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      if (currentTime < retryAt) {
+        timeoutId = setTimeout(
+          updateCountdown,
+          Math.min(1000, retryAt - currentTime)
+        );
+      }
+    };
+
+    timeoutId = setTimeout(
+      updateCountdown,
+      Math.max(0, Math.min(1000, retryAt - Date.now()))
+    );
+    return () => {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [retryAt]);
+
+  const retryWaitSeconds =
+    isRateLimited && retryAt !== null
+      ? Math.max(0, Math.ceil((retryAt - now) / 1000))
+      : 0;
+  const isWaitingForRetry = retryWaitSeconds > 0;
   const title = t(
     isRateLimited ? "assignments_rate_limited" : "assignments_load_error"
   );
@@ -41,9 +79,21 @@ export function AssignmentLoadError({
       ? "assignments_rate_limited_desc"
       : "assignments_load_error_desc"
   );
+  let retryButtonLabel = t("try_again");
+  if (isRetrying) {
+    retryButtonLabel = t("retrying");
+  } else if (isWaitingForRetry) {
+    retryButtonLabel = t("retry_after", { seconds: retryWaitSeconds });
+  }
   const retryButton = (
-    <Button disabled={isRetrying} onClick={onRetry} size="sm" variant="outline">
-      {t(isRetrying ? "retrying" : "try_again")}
+    <Button
+      aria-live={isWaitingForRetry ? "off" : undefined}
+      disabled={isRetrying || isWaitingForRetry}
+      onClick={onRetry}
+      size="sm"
+      variant="outline"
+    >
+      {retryButtonLabel}
     </Button>
   );
 
