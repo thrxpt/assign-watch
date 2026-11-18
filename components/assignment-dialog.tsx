@@ -200,7 +200,14 @@ export function AssignmentDialog({
               <TabsContent value="list">
                 <ScrollArea className="rounded-lg">
                   <div className="flex max-h-[75dvh] flex-col gap-4 pr-4">
-                    {hasFailures && <AssignmentLoadError {...loadErrorProps} />}
+                    {hasFailures && (
+                      <AssignmentLoadError
+                        {...loadErrorProps}
+                        presentation={
+                          loadErrorProps.isRateLimited ? "inline" : "empty"
+                        }
+                      />
+                    )}
                     {renderList()}
                   </div>
                 </ScrollArea>
