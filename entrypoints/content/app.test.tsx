@@ -351,6 +351,7 @@ describe("assignment dialog load failures", () => {
       }),
     ];
     act(() => mountedRoot?.render(<App />));
+    expect(container.textContent).toContain("Try again in 120s");
     await act(async () => {
       await vi.advanceTimersByTimeAsync(0);
     });
@@ -396,12 +397,16 @@ describe("assignment dialog load failures", () => {
       result({ data: [assignment], dataUpdatedAt: 0, isFetching: true }),
     ];
 
-    const html = renderToStaticMarkup(<App />);
+    const { container } = mountApp();
+    const staleWarning = container.querySelector("output");
 
-    expect(html).toContain("may be outdated");
-    expect(html.split("may be outdated")).toHaveLength(2);
-    expect(html).not.toContain("Dialog tips");
-    expect(html).not.toContain("Unable to load assignments");
+    expect(staleWarning?.textContent).toContain("may be outdated");
+    expect(staleWarning?.querySelector("p")).toBeNull();
+    expect(staleWarning?.querySelector("span")?.textContent).toContain(
+      "may be outdated"
+    );
+    expect(container.textContent).not.toContain("Dialog tips");
+    expect(container.textContent).not.toContain("Unable to load assignments");
   });
 
   it("clears the stale-data warning after a successful class refresh", () => {
@@ -483,7 +488,7 @@ describe("assignment dialog load failures", () => {
     expect(container.textContent).not.toContain("Dialog tips");
   });
 
-  it("ignores a snapshot when the DOM no longer identifies the captured student", async () => {
+  it("resumes hydration when the DOM again identifies the captured student", async () => {
     state.useQueryCache = true;
     const { promise: snapshotPromise, resolve } =
       Promise.withResolvers<
@@ -522,6 +527,63 @@ describe("assignment dialog load failures", () => {
       state: { error: unknown };
     }) => boolean;
     expect(isEnabledAfterRead({ state: { error: null } })).toBe(false);
+
+    state.scrapedUserId = "student-1";
+    await act(async () => {
+      document.body.dataset.userid = "student-1";
+      await Promise.resolve();
+    });
+
+    const isEnabledAfterIdentityReturns = state.queryConfigs[0]
+      ?.enabled as (query: { state: { error: unknown } }) => boolean;
+    expect(isEnabledAfterIdentityReturns({ state: { error: null } })).toBe(
+      true
+    );
+    expect(container.textContent).toContain("Other student's assignment");
+  });
+
+  it("switches hydration to the current student after an account change", async () => {
+    state.useQueryCache = true;
+    const { promise: snapshotPromise, resolve } =
+      Promise.withResolvers<
+        Awaited<ReturnType<typeof cachedAssignmentsStorage.getValue>>
+      >();
+    vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
+      snapshotPromise
+    );
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+
+    const { container, navigation } = mountApp();
+    const openButton = navigation.querySelector<HTMLButtonElement>(
+      "button.nav-link.header-link"
+    );
+    act(() => openButton?.click());
+
+    state.scrapedUserId = "student-2";
+    await act(async () => {
+      resolve({
+        assignments: [
+          {
+            ...({} as Activity),
+            class_id: 1,
+            id: 101,
+            title: "Student one's assignment",
+          },
+        ],
+        userId: "student-1",
+      });
+      await snapshotPromise;
+    });
+
+    expect(state.queryConfigs[0]?.queryKey).toEqual([
+      "assignments",
+      1,
+      "student-2",
+    ]);
+    expect(container.textContent).not.toContain("Student one's assignment");
+    const isEnabledForCurrentStudent = state.queryConfigs[0]
+      ?.enabled as (query: { state: { error: unknown } }) => boolean;
+    expect(isEnabledForCurrentStudent({ state: { error: null } })).toBe(true);
   });
 
   it("keeps previously loaded assignments in both views with a stale-data warning", async () => {
