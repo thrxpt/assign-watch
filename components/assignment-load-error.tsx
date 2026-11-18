@@ -98,7 +98,6 @@ export function AssignmentLoadError({
         aria-atomic="true"
         aria-live="polite"
         className="shrink-0 has-data-[slot=alert-action]:pr-3 sm:has-data-[slot=alert-action]:pr-32"
-        variant={isRateLimited ? "destructive" : "default"}
       >
         {isRateLimited ? <Timer /> : <CircleAlert />}
         <AlertTitle>{title}</AlertTitle>
