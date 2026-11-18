@@ -1,4 +1,5 @@
 import { CircleAlert, Timer } from "lucide-react";
+import { useCallback, useSyncExternalStore } from "react";
 
 import {
   Alert,
@@ -17,33 +18,92 @@ import {
 } from "@/components/ui/empty";
 import { useI18n } from "@/lib/use-i18n";
 
+function subscribeToRetryDeadline(notify: () => void, deadline: number | null) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  if (deadline !== null) {
+    const scheduleUpdate = () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        return;
+      }
+
+      timer = setTimeout(
+        () => {
+          notify();
+          scheduleUpdate();
+        },
+        Math.min(1000, remaining)
+      );
+    };
+    scheduleUpdate();
+  }
+
+  return () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  };
+}
+
 interface AssignmentLoadErrorProps {
-  hasStaleData: boolean;
   isRateLimited: boolean;
   isRetrying: boolean;
   onRetry: () => Promise<void>;
   presentation?: "empty" | "inline";
+  retryAt: number | null;
 }
 
 export function AssignmentLoadError({
-  hasStaleData,
   isRateLimited,
   isRetrying,
   onRetry,
   presentation = "empty",
+  retryAt,
 }: AssignmentLoadErrorProps) {
   const { t } = useI18n();
+  const deadline = isRateLimited ? retryAt : null;
+  const readSeconds = useCallback(
+    () =>
+      deadline === null
+        ? 0
+        : Math.max(0, Math.ceil((deadline - Date.now()) / 1000)),
+    [deadline]
+  );
+  const subscribe = useCallback(
+    (notify: () => void) => subscribeToRetryDeadline(notify, deadline),
+    [deadline]
+  );
+  const retryWaitSeconds = useSyncExternalStore(
+    subscribe,
+    readSeconds,
+    readSeconds
+  );
+  const isWaitingForRetry = retryWaitSeconds > 0;
   const title = t(
     isRateLimited ? "assignments_rate_limited" : "assignments_load_error"
   );
+  const rateLimitDescriptionKey =
+    presentation === "inline"
+      ? "assignments_rate_limited_inline_desc"
+      : "assignments_rate_limited_desc";
   const description = t(
-    isRateLimited
-      ? "assignments_rate_limited_desc"
-      : "assignments_load_error_desc"
+    isRateLimited ? rateLimitDescriptionKey : "assignments_load_error_desc"
   );
+  let retryButtonLabel = t("try_again");
+  if (isRetrying) {
+    retryButtonLabel = t("retrying");
+  } else if (isWaitingForRetry) {
+    retryButtonLabel = t("retry_after", { seconds: retryWaitSeconds });
+  }
   const retryButton = (
-    <Button disabled={isRetrying} onClick={onRetry} size="sm" variant="outline">
-      {t(isRetrying ? "retrying" : "try_again")}
+    <Button
+      aria-live={isWaitingForRetry ? "off" : undefined}
+      disabled={isRetrying || isWaitingForRetry}
+      onClick={onRetry}
+      size="sm"
+      variant="outline"
+    >
+      {retryButtonLabel}
     </Button>
   );
 
@@ -56,10 +116,7 @@ export function AssignmentLoadError({
       >
         {isRateLimited ? <Timer /> : <CircleAlert />}
         <AlertTitle>{title}</AlertTitle>
-        <AlertDescription className="text-xs">
-          {description}
-          {hasStaleData && <> {t("assignments_stale_warning")}</>}
-        </AlertDescription>
+        <AlertDescription className="text-xs">{description}</AlertDescription>
         <AlertAction className="static col-start-2 mt-2 justify-self-start sm:absolute sm:mt-0">
           {retryButton}
         </AlertAction>
@@ -75,11 +132,21 @@ export function AssignmentLoadError({
         </EmptyMedia>
         <EmptyTitle>{title}</EmptyTitle>
         <EmptyDescription>{description}</EmptyDescription>
-        {hasStaleData && (
-          <EmptyDescription>{t("assignments_stale_warning")}</EmptyDescription>
-        )}
       </EmptyHeader>
       <EmptyContent>{retryButton}</EmptyContent>
     </Empty>
+  );
+}
+
+export function AssignmentStaleWarning() {
+  const { t } = useI18n();
+
+  return (
+    <output className="flex h-6 w-full items-center gap-1.5 text-muted-foreground text-xs">
+      <CircleAlert className="size-3.5 shrink-0" />
+      <span className="min-w-0 flex-1 leading-tight">
+        {t("assignments_stale_warning")}
+      </span>
+    </output>
   );
 }

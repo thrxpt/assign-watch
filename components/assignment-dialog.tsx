@@ -1,0 +1,241 @@
+import { Calendar, LayoutList, Settings } from "lucide-react";
+import { useState } from "react";
+import type { ComponentProps } from "react";
+
+import { AssignmentFilters } from "@/components/assignment-filters";
+import { AssignmentGroup } from "@/components/assignment-group";
+import {
+  AssignmentLoadError,
+  AssignmentStaleWarning,
+} from "@/components/assignment-load-error";
+import { AssignmentSort } from "@/components/assignment-sort";
+import { CalendarView } from "@/components/calendar-view";
+import { Class } from "@/components/class";
+import { ClassSkeleton } from "@/components/class-skeleton";
+import { DateGroup } from "@/components/date-group";
+import { DialogTips } from "@/components/dialog-tips";
+import { HiddenItemsManager } from "@/components/hidden-items-manager";
+import { ManualDueDateProvider } from "@/components/manual-due-date-editor";
+import { NoAssignments } from "@/components/no-assignments";
+import { NoClasses } from "@/components/no-classes";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
+import type { FilterState, GroupState, SortState } from "@/lib/preferences";
+import { useI18n } from "@/lib/use-i18n";
+import type { VisibleAssignment } from "@/lib/visible-assignments";
+import type { Activity, Assignment, ClassInfo } from "@/types";
+
+type LoadErrorProps = Omit<
+  ComponentProps<typeof AssignmentLoadError>,
+  "presentation"
+>;
+
+interface AssignmentDialogProps {
+  allAssignments: (Activity[] | undefined)[];
+  allClassInfo: ClassInfo[];
+  calendarItems: VisibleAssignment[];
+  filters: FilterState;
+  groupState: GroupState;
+  hasFailures: boolean;
+  hasStaleData: boolean;
+  hiddenAssignments: number[];
+  hiddenClasses: number[];
+  isOpen: boolean;
+  listItems: VisibleAssignment[];
+  loadErrorProps: LoadErrorProps;
+  onFiltersChange: (filters: FilterState) => void;
+  onGroupChange: (state: GroupState) => void;
+  onOpenOptions: () => void;
+  onOpenChange: (open: boolean) => void;
+  onSortChange: (state: SortState) => void;
+  pendingClasses: ClassInfo[];
+  resolvedAssignments: Assignment[];
+  sortState: SortState;
+  userId: string | null;
+}
+
+export function AssignmentDialog({
+  allAssignments,
+  allClassInfo,
+  calendarItems,
+  filters,
+  groupState,
+  hasFailures,
+  hasStaleData,
+  hiddenAssignments,
+  hiddenClasses,
+  isOpen,
+  listItems,
+  loadErrorProps,
+  onFiltersChange,
+  onGroupChange,
+  onOpenOptions,
+  onOpenChange,
+  onSortChange,
+  pendingClasses,
+  resolvedAssignments,
+  sortState,
+  userId,
+}: AssignmentDialogProps) {
+  const { t } = useI18n();
+  const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+
+  const renderList = () => {
+    if (allClassInfo.length === 0) {
+      return <NoClasses />;
+    }
+
+    if (listItems.length === 0 && pendingClasses.length === 0) {
+      return hasFailures ? null : <NoAssignments />;
+    }
+
+    const skeletons = pendingClasses.map((classInfo) => (
+      <ClassSkeleton key={classInfo.id} />
+    ));
+    const classInfoMap = new Map(
+      allClassInfo.map((classInfo) => [classInfo.id, classInfo])
+    );
+    const groups =
+      groupState.groupBy === "class"
+        ? groupByClass(listItems, sortState).map((group) => (
+            <Class
+              assignments={group.assignments}
+              classInfo={group.classInfo}
+              key={group.classInfo.id}
+            />
+          ))
+        : groupByDueDate(listItems, sortState).map(({ date, assignments }) => (
+            <DateGroup
+              assignments={assignments}
+              classInfoMap={classInfoMap}
+              date={date}
+              key={date ?? "undated"}
+            />
+          ));
+
+    return (
+      <>
+        {groups}
+        {skeletons}
+      </>
+    );
+  };
+
+  return (
+    <div>
+      <Dialog onOpenChange={onOpenChange} open={isOpen}>
+        <DialogContent
+          className="p-6 sm:max-w-3xl"
+          initialFocus={false}
+          showCloseButton={false}
+        >
+          <ManualDueDateProvider
+            assignments={resolvedAssignments}
+            key={userId ?? "unknown"}
+            userId={userId}
+          >
+            <Tabs
+              className="gap-4"
+              defaultValue="list"
+              onValueChange={(value) =>
+                setActiveTab(value as "list" | "calendar")
+              }
+              value={activeTab}
+            >
+              <DialogHeader className="flex-row items-center justify-between">
+                <DialogTitle className="text-xl">
+                  {activeTab === "list" ? t("todo") : t("calendar")}
+                </DialogTitle>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={onOpenOptions}
+                    size="icon"
+                    title={t("settings")}
+                    variant="secondary"
+                  >
+                    <Settings />
+                    <span className="sr-only">{t("settings")}</span>
+                  </Button>
+                  <HiddenItemsManager
+                    allAssignments={allAssignments}
+                    allClassInfo={allClassInfo}
+                    hiddenAssignments={hiddenAssignments}
+                    hiddenClasses={hiddenClasses}
+                  />
+                  <AssignmentSort
+                    onSortChange={onSortChange}
+                    sortState={sortState}
+                  />
+                  <AssignmentFilters
+                    filters={filters}
+                    onFiltersChange={onFiltersChange}
+                  />
+                  {activeTab === "list" && (
+                    <AssignmentGroup
+                      groupState={groupState}
+                      onGroupChange={onGroupChange}
+                    />
+                  )}
+                  <TabsList className="h-8">
+                    <TabsTrigger value="list">
+                      <LayoutList />
+                      <span className="sr-only">{t("list_view")}</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="calendar">
+                      <Calendar />
+                      <span className="sr-only">{t("calendar_view")}</span>
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+              </DialogHeader>
+              <TabsContent value="list">
+                <ScrollArea className="rounded-lg">
+                  <div className="flex max-h-[75dvh] flex-col gap-4 pr-4">
+                    {hasFailures && (
+                      <AssignmentLoadError
+                        {...loadErrorProps}
+                        presentation={
+                          loadErrorProps.isRateLimited ? "inline" : "empty"
+                        }
+                      />
+                    )}
+                    {renderList()}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              <TabsContent value="calendar">
+                <div className="flex h-[75dvh] flex-col gap-4">
+                  {hasFailures && (
+                    <AssignmentLoadError
+                      {...loadErrorProps}
+                      presentation="inline"
+                    />
+                  )}
+                  {allClassInfo.length === 0 ? (
+                    <NoClasses />
+                  ) : (
+                    <div className="min-h-0 flex-1">
+                      <CalendarView assignments={calendarItems} />
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
+            <DialogFooter className="-mx-6 -mb-6 flex-row items-center justify-start gap-2 px-4 py-2 sm:justify-start">
+              {hasStaleData ? <AssignmentStaleWarning /> : <DialogTips />}
+            </DialogFooter>
+          </ManualDueDateProvider>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

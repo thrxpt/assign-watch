@@ -5,16 +5,24 @@ import type { RootResponse } from "@/types";
 export const REQUEST_PACING_MS = 100;
 
 export class AssignmentRequestError extends Error {
+  readonly retryAt: number | null;
   readonly status: number;
 
-  constructor(status: number, statusText: string) {
+  constructor(
+    status: number,
+    statusText: string,
+    retryAt: number | null = null
+  ) {
     super(`Failed to fetch assignments: ${status} ${statusText}`);
     this.name = "AssignmentRequestError";
+    this.retryAt = retryAt;
     this.status = status;
   }
 }
 
-export function isRateLimitError(error: unknown): boolean {
+export function isRateLimitError(
+  error: unknown
+): error is AssignmentRequestError {
   return error instanceof AssignmentRequestError && error.status === 429;
 }
 
@@ -56,20 +64,104 @@ export const resetPacingQueue = (): void => {
   queueTail = Promise.resolve();
 };
 
+const ASSIGNMENTS_API_URL =
+  "https://app.leb2.org/api/get/assessment-activities/student";
+
+function retryDeadlineFromSeconds(value: string | null): number | null {
+  if (!value) {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+  if (!/^\d+$/u.test(trimmedValue)) {
+    return null;
+  }
+
+  const delaySeconds = Number(trimmedValue);
+  const retryAt = Date.now() + delaySeconds * 1000;
+  return Number.isSafeInteger(delaySeconds) && Number.isSafeInteger(retryAt)
+    ? retryAt
+    : null;
+}
+
 export async function fetchAssignments(
-  classId: number,
+  classIds: number[],
   userId?: string | null
 ) {
+  if (classIds.length === 0) {
+    return [];
+  }
+
   await paceRequest();
 
   const finalUserId =
     userId ?? scrapeUserId() ?? (await userIdStorage.getValue());
-  const res = await fetch(
-    `https://app.leb2.org/api/get/assessment-activities/student?class_id=${classId}&student_id=${finalUserId}&filter_groups[0][filters][0][key]=class_id&filter_groups[0][filters][0][value]=${classId}&sort[]=sequence&sort[]=id&select[]=activities:id,user_id,class_id,adv_starred,group_type,type,peer_assessment,is_allow_repeat,title,description,start_date,due_date,edit_group_mode,created_at&select[]=user:id,firstname_en,lastname_en,firstname_th,lastname_th&includes[]=user:sideload&includes[]=fileactivities:ids&includes[]=questions:ids`
+  const params = new URLSearchParams({ student_id: String(finalUserId) });
+  params.set("filter_groups[0][filters][0][key]", "class_id");
+  params.set("filter_groups[0][filters][0][operator]", "in");
+  for (const classId of classIds) {
+    params.append("filter_groups[0][filters][0][value][]", String(classId));
+  }
+  params.append("sort[]", "sequence");
+  params.append("sort[]", "id");
+  params.append(
+    "select[]",
+    "activities:id,class_id,type,group_type,title,start_date,due_date"
   );
+
+  const res = await fetch(`${ASSIGNMENTS_API_URL}?${params.toString()}`);
   if (!res.ok) {
-    throw new AssignmentRequestError(res.status, res.statusText);
+    throw new AssignmentRequestError(
+      res.status,
+      res.statusText,
+      retryDeadlineFromSeconds(res.headers.get("Retry-After"))
+    );
   }
   const data = (await res.json()) as RootResponse;
   return data.activities;
+}
+
+export function createAssignmentsBatchRequest(
+  classIds: number[],
+  userId?: string | null
+) {
+  let request: Promise<RootResponse["activities"]> | undefined;
+  let requestError: unknown;
+
+  const fetchBatch = async () => {
+    try {
+      return await fetchAssignments(classIds, userId);
+    } catch (error) {
+      requestError = error;
+      throw error;
+    }
+  };
+
+  return {
+    fetch: () => {
+      request ??= fetchBatch();
+      return request;
+    },
+    isError: (error: unknown) => error === requestError,
+    reset: () => {
+      request = undefined;
+    },
+  };
+}
+
+export async function fetchClassAssignments(
+  classId: number,
+  userId: string | null,
+  batchAssignments: Promise<RootResponse["activities"]>
+) {
+  try {
+    const assignments = await batchAssignments;
+    return assignments.filter((assignment) => assignment.class_id === classId);
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      throw error;
+    }
+
+    return fetchAssignments([classId], userId);
+  }
 }

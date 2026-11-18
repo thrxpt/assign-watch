@@ -16,6 +16,10 @@ A single piece of work: an assignment (`type: "ASM"`) or a quiz (`type: "QUZ"`).
 
 The LEB2 API calls this an **Activity**, and `types.ts` keeps that name for the wire shape so it stays recognisable against the API response. Everywhere else — module names, function names, UI copy — the term is _assignment_. Treat `Activity` as "the API's word for an Assignment".
 
+## Cached Assignments
+
+The last-known assignment records for a student's classes. The set can be partial when some classes have not loaded successfully; missing records do not prove that a class has no assignments.
+
 ## Undated Assignment
 
 An assignment with neither a LEB2 due date nor a manual due date. It may have a posted date, which does not imply a submission deadline.

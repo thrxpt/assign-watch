@@ -2,7 +2,10 @@ import { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+  AssignmentRequestError,
+  createAssignmentsBatchRequest,
   fetchAssignments,
+  fetchClassAssignments,
   paceRequest,
   REQUEST_PACING_MS,
   resetPacingQueue,
@@ -63,18 +66,135 @@ describe("api logic", () => {
         ok: true,
       } as Response);
 
-      const result = await fetchAssignments(101, "student-1");
+      const result = await fetchAssignments([101], "student-1");
       expect(result).toEqual(mockActivities);
+    });
+
+    it("requests all classes with only the fields the app uses", async () => {
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(Response.json({ activities: [], user: [] }));
+
+      await fetchAssignments([101, 202], "student-1");
+
+      expect(fetch).toHaveBeenCalledOnce();
+      const url = new URL(String(fetch.mock.calls[0][0]));
+      const params = url.searchParams;
+      expect(params.get("student_id")).toBe("student-1");
+      expect(params.get("filter_groups[0][filters][0][key]")).toBe("class_id");
+      expect(params.get("filter_groups[0][filters][0][operator]")).toBe("in");
+      expect(params.getAll("filter_groups[0][filters][0][value][]")).toEqual([
+        "101",
+        "202",
+      ]);
+      expect(params.getAll("sort[]")).toEqual(["sequence", "id"]);
+      expect(params.getAll("select[]")).toEqual([
+        "activities:id,class_id,type,group_type,title,start_date,due_date",
+      ]);
+      expect(params.getAll("includes[]")).toEqual([]);
+    });
+
+    it("shares one batch request across class queries", async () => {
+      const fetch = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+        Response.json({
+          activities: [
+            { class_id: 101, id: 1 },
+            { class_id: 202, id: 2 },
+          ],
+          user: [],
+        })
+      );
+      const batchRequest = createAssignmentsBatchRequest(
+        [101, 202],
+        "student-1"
+      );
+
+      const results = await Promise.all([
+        fetchClassAssignments(101, "student-1", batchRequest.fetch()),
+        fetchClassAssignments(202, "student-1", batchRequest.fetch()),
+      ]);
+
+      expect(fetch).toHaveBeenCalledOnce();
+      expect(results).toEqual([
+        [{ class_id: 101, id: 1 }],
+        [{ class_id: 202, id: 2 }],
+      ]);
+    });
+
+    it("can retry a batch request after a manual 429 retry", async () => {
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(new Response(null, { status: 429 }))
+        .mockResolvedValueOnce(Response.json({ activities: [], user: [] }));
+      const batchRequest = createAssignmentsBatchRequest(
+        [101, 202],
+        "student-1"
+      );
+
+      let batchError: unknown;
+      try {
+        await batchRequest.fetch();
+      } catch (error) {
+        batchError = error;
+      }
+      expect(batchError).toMatchObject({ status: 429 });
+      expect(batchRequest.isError(batchError)).toBe(true);
+
+      batchRequest.reset();
+      expect(batchRequest.isError(batchError)).toBe(true);
+      await expect(batchRequest.fetch()).resolves.toEqual([]);
+
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("returns no assignments without making a request when there are no classes", async () => {
+      const fetch = vi.spyOn(globalThis, "fetch");
+
+      await expect(fetchAssignments([], "student-1")).resolves.toEqual([]);
+      expect(fetch).not.toHaveBeenCalled();
+    });
+
+    it("falls back to a single-class request after a non-429 batch failure", async () => {
+      const fetch = vi
+        .spyOn(globalThis, "fetch")
+        .mockResolvedValueOnce(
+          Response.json({ activities: [{ class_id: 101, id: 1 }], user: [] })
+        );
+      const batchAssignments = Promise.reject(
+        new AssignmentRequestError(500, "Internal Server Error")
+      );
+
+      await expect(
+        fetchClassAssignments(101, "student-1", batchAssignments)
+      ).resolves.toEqual([{ class_id: 101, id: 1 }]);
+
+      expect(fetch).toHaveBeenCalledOnce();
+      const url = new URL(String(fetch.mock.calls[0][0]));
+      expect(
+        url.searchParams.getAll("filter_groups[0][filters][0][value][]")
+      ).toEqual(["101"]);
+    });
+
+    it("does not fall back after a 429 batch failure", async () => {
+      const fetch = vi.spyOn(globalThis, "fetch");
+      const batchError = new AssignmentRequestError(429, "Too Many Requests");
+
+      await expect(
+        fetchClassAssignments(101, "student-1", Promise.reject(batchError))
+      ).rejects.toBe(batchError);
+
+      expect(fetch).not.toHaveBeenCalled();
     });
 
     it("throws an error when response is not ok", async () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+        headers: new Headers(),
         ok: false,
         status: 429,
         statusText: "Too Many Requests",
       } as Response);
 
-      await expect(fetchAssignments(101, "student-1")).rejects.toThrow(
+      await expect(fetchAssignments([101], "student-1")).rejects.toThrow(
         "Failed to fetch assignments: 429 Too Many Requests"
       );
     });
@@ -83,8 +203,25 @@ describe("api logic", () => {
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
         new Response(null, { status: 429 })
       );
-      await expect(fetchAssignments(101, "student-1")).rejects.toMatchObject({
+      await expect(fetchAssignments([101], "student-1")).rejects.toMatchObject({
+        retryAt: null,
         status: 429,
+      });
+    });
+
+    it("converts Retry-After seconds into a retry deadline", async () => {
+      const now = new Date("2026-11-17T00:00:00Z");
+      vi.useFakeTimers();
+      vi.setSystemTime(now);
+      vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+        new Response(null, {
+          headers: { "Retry-After": "60" },
+          status: 429,
+        })
+      );
+
+      await expect(fetchAssignments([101], "student-1")).rejects.toMatchObject({
+        retryAt: now.getTime() + 60_000,
       });
     });
   });
@@ -97,7 +234,7 @@ describe("api logic", () => {
         .mockResolvedValueOnce(Response.json({ activities: [] }));
       const client = new QueryClient();
       const options = {
-        queryFn: () => fetchAssignments(101, "student-1"),
+        queryFn: () => fetchAssignments([101], "student-1"),
         queryKey: ["assignments", 101, "student-1"],
         retry: shouldRetryAssignments,
         retryDelay: 0,
@@ -122,7 +259,7 @@ describe("api logic", () => {
       try {
         await expect(
           client.fetchQuery({
-            queryFn: () => fetchAssignments(101, "student-1"),
+            queryFn: () => fetchAssignments([101], "student-1"),
             queryKey: ["assignments", 101, "student-1"],
             retry: shouldRetryAssignments,
             retryDelay: 0,

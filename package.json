@@ -47,6 +47,7 @@
     "@wxt-dev/auto-icons": "^1.1.1",
     "@wxt-dev/module-react": "^1.2.2",
     "bumpp": "^11.1.0",
+    "happy-dom": "^21.0.4",
     "lefthook": "^2.1.10",
     "oxfmt": "^0.59.0",
     "oxlint": "^1.74.0",
