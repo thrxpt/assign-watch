@@ -288,7 +288,7 @@ describe("assignment dialog load failures", () => {
   it("shows rate limiting instead of claiming there are no assignments", async () => {
     state.results = [result({ error: await requestError(), isError: true })];
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("LEB2 is temporarily limiting requests");
+    expect(html).toContain("Some assignments may not have loaded.");
     expect(html).toContain("Try again");
     expect(html).not.toContain("Congratulations!");
   });
@@ -553,7 +553,7 @@ describe("assignment dialog load failures", () => {
     state.hiddenClasses = [1];
     state.results = [result({ error: await requestError(), isError: true })];
     const html = renderToStaticMarkup(<App />);
-    expect(html).not.toContain("LEB2 is temporarily limiting requests");
+    expect(html).not.toContain("Some assignments may not have loaded.");
     expect(html).toContain("Congratulations!");
   });
 
@@ -568,7 +568,7 @@ describe("assignment dialog load failures", () => {
     state.results = [result({ error: await requestError(500), isError: true })];
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Unable to load assignments");
-    expect(html).not.toContain("temporarily limiting requests");
+    expect(html).not.toContain("Some assignments may not have loaded.");
     expect(html).not.toContain("Congratulations!");
   });
 
@@ -576,7 +576,7 @@ describe("assignment dialog load failures", () => {
     state.locale = "th";
     state.results = [result({ error: await requestError(), isError: true })];
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("LEB2 จำกัดการร้องขอชั่วคราว");
+    expect(html).toContain("การบ้านบางรายการอาจโหลดไม่สำเร็จ");
     expect(html).toContain("ลองอีกครั้ง");
   });
 
