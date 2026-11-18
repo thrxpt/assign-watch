@@ -1,5 +1,5 @@
 import { CircleAlert, Timer } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 import {
   Alert,
@@ -18,6 +18,33 @@ import {
 } from "@/components/ui/empty";
 import { useI18n } from "@/lib/use-i18n";
 
+function subscribeToRetryDeadline(notify: () => void, deadline: number | null) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  if (deadline !== null) {
+    const scheduleUpdate = () => {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        return;
+      }
+
+      timer = setTimeout(
+        () => {
+          notify();
+          scheduleUpdate();
+        },
+        Math.min(1000, remaining)
+      );
+    };
+    scheduleUpdate();
+  }
+
+  return () => {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  };
+}
+
 interface AssignmentLoadErrorProps {
   isRateLimited: boolean;
   isRetrying: boolean;
@@ -34,37 +61,23 @@ export function AssignmentLoadError({
   retryAt,
 }: AssignmentLoadErrorProps) {
   const { t } = useI18n();
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (retryAt === null) {
-      return;
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    const updateCountdown = () => {
-      const currentTime = Date.now();
-      setNow(currentTime);
-      if (currentTime < retryAt) {
-        timeoutId = setTimeout(
-          updateCountdown,
-          Math.min(1000, retryAt - currentTime)
-        );
-      }
-    };
-
-    timeoutId = setTimeout(updateCountdown, 0);
-    return () => {
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [retryAt]);
-
-  const retryWaitSeconds =
-    isRateLimited && retryAt !== null
-      ? Math.max(0, Math.ceil((retryAt - now) / 1000))
-      : 0;
+  const deadline = isRateLimited ? retryAt : null;
+  const readSeconds = useCallback(
+    () =>
+      deadline === null
+        ? 0
+        : Math.max(0, Math.ceil((deadline - Date.now()) / 1000)),
+    [deadline]
+  );
+  const subscribe = useCallback(
+    (notify: () => void) => subscribeToRetryDeadline(notify, deadline),
+    [deadline]
+  );
+  const retryWaitSeconds = useSyncExternalStore(
+    subscribe,
+    readSeconds,
+    readSeconds
+  );
   const isWaitingForRetry = retryWaitSeconds > 0;
   const title = t(
     isRateLimited ? "assignments_rate_limited" : "assignments_load_error"
@@ -131,9 +144,9 @@ export function AssignmentStaleWarning() {
   return (
     <output className="flex h-6 w-full items-center gap-1.5 text-muted-foreground text-xs">
       <CircleAlert className="size-3.5 shrink-0" />
-      <p className="min-w-0 flex-1 leading-tight">
+      <span className="min-w-0 flex-1 leading-tight">
         {t("assignments_stale_warning")}
-      </p>
+      </span>
     </output>
   );
 }

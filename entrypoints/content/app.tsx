@@ -1,4 +1,4 @@
-import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useQueries } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
 import { browser } from "#imports";
@@ -10,16 +10,10 @@ import {
   shouldRetryAssignments,
 } from "@/lib/api";
 import { cacheClassAssignments } from "@/lib/assignment-cache";
-import type { AssignmentHydrationState } from "@/lib/assignment-query-cache";
-import {
-  assignmentQueryKey,
-  getUnhydratedAssignmentClassIds,
-  restoreAssignmentSnapshotWhenCurrent,
-} from "@/lib/assignment-query-cache";
-import { scrapeClassCards, scrapeUserId } from "@/lib/dom";
+import { assignmentQueryKey } from "@/lib/assignment-query-cache";
+import { scrapeClassCards } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
-  cachedAssignmentsStorage,
   classInfoStorage,
   filtersStorage,
   groupStorage,
@@ -30,6 +24,7 @@ import {
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
+import { useAssignmentHydration } from "@/lib/use-assignment-hydration";
 import { useStorageState } from "@/lib/use-storage-state";
 import {
   getPendingClasses,
@@ -55,12 +50,8 @@ async function openOptionsPage() {
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [hydration, setHydration] = useState<AssignmentHydrationState | null>(
-    null
-  );
 
   const [allClassInfo] = useStorageState(classInfoStorage);
-  const [userId, setUserId] = useState(() => scrapeUserId() ?? null);
   const [manualDueDates] = useStorageState(manualDueDatesStorage);
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
@@ -75,70 +66,23 @@ function App() {
     () => allClassInfo.map((classInfo) => classInfo.id),
     [allClassInfo]
   );
-  const queryClient = useQueryClient();
-  const classIdsToHydrate = useMemo(
-    () => getUnhydratedAssignmentClassIds(classIds, userId, hydration),
-    [classIds, hydration, userId]
-  );
-  const isHydratedForCurrentClasses = !userId || classIdsToHydrate.length === 0;
+  const { isHydratedForCurrentClasses, userId } = useAssignmentHydration({
+    classIds,
+    isOpen: isModalOpen,
+  });
   const batchAssignmentsRequest = useMemo(
     () => createAssignmentsBatchRequest(classIds, userId),
     [classIds, userId]
   );
 
   useEffect(() => {
-    if (!isModalOpen || !userId?.trim() || classIdsToHydrate.length === 0) {
-      return;
+    if (userId?.trim()) {
+      void userIdStorage.setValue(userId);
     }
-
-    let cancelled = false;
-    const hydrateAssignments = async () => {
-      try {
-        const restoredClassIds = await restoreAssignmentSnapshotWhenCurrent(
-          queryClient,
-          cachedAssignmentsStorage.getValue(),
-          userId,
-          classIds,
-          () => !cancelled && scrapeUserId() === userId
-        );
-        if (restoredClassIds === null) {
-          return;
-        }
-      } catch {
-        // Loading from the persistent cache must not block the live request.
-        if (cancelled || scrapeUserId() !== userId) {
-          return;
-        }
-      }
-
-      if (cancelled) {
-        return;
-      }
-
-      setHydration((current) => {
-        const hydratedClassIds =
-          current?.userId === userId ? current.classIds : [];
-        return {
-          classIds: [...new Set([...hydratedClassIds, ...classIds])],
-          userId,
-        };
-      });
-    };
-
-    void hydrateAssignments();
-    return () => {
-      cancelled = true;
-    };
-  }, [classIds, classIdsToHydrate, isModalOpen, queryClient, userId]);
+  }, [userId]);
 
   useEffect(() => {
     const syncInfo = async () => {
-      const userIdFromDom = scrapeUserId();
-      if (userIdFromDom) {
-        setUserId(userIdFromDom);
-        await userIdStorage.setValue(userIdFromDom);
-      }
-
       if (window.location.pathname === "/class") {
         const scraped = scrapeClassCards();
         if (scraped.length > 0) {

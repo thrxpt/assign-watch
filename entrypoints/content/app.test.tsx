@@ -255,6 +255,7 @@ describe("assignment dialog load failures", () => {
     resetPacingQueue();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     document.body.replaceChildren();
+    document.body.dataset.userid = "student-1";
     state.classes = [
       {
         description: "",
@@ -507,10 +508,21 @@ describe("assignment dialog load failures", () => {
 
     state.scrapedUserId = null;
     await act(async () => {
+      delete document.body.dataset.userid;
+      await Promise.resolve();
+    });
+    await act(async () => {
       resolve({
         assignments: [
           {
-            ...({} as Activity),
+            ...({
+              activity_submission_id: 0,
+              due_date: "2099-12-31T12:00:00Z",
+              due_date_exceed: false,
+              group_type: "IND",
+              start_date: "2026-09-01T00:00:00Z",
+              type: "ASM",
+            } as Activity),
             class_id: 1,
             id: 101,
             title: "Other student's assignment",
@@ -528,8 +540,8 @@ describe("assignment dialog load failures", () => {
     }) => boolean;
     expect(isEnabledAfterRead({ state: { error: null } })).toBe(false);
 
-    state.scrapedUserId = "student-1";
     await act(async () => {
+      state.scrapedUserId = "student-1";
       document.body.dataset.userid = "student-1";
       await Promise.resolve();
     });
@@ -559,7 +571,11 @@ describe("assignment dialog load failures", () => {
     );
     act(() => openButton?.click());
 
-    state.scrapedUserId = "student-2";
+    await act(async () => {
+      state.scrapedUserId = "student-2";
+      document.body.dataset.userid = "student-2";
+      await Promise.resolve();
+    });
     await act(async () => {
       resolve({
         assignments: [
