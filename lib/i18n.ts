@@ -51,6 +51,7 @@ export type TranslationKey =
   | "no_assignments_desc"
   | "assignments_rate_limited"
   | "assignments_rate_limited_desc"
+  | "assignments_rate_limited_inline_desc"
   | "assignments_load_error"
   | "assignments_load_error_desc"
   | "assignments_stale_warning"
