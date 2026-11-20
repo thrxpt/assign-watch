@@ -1,5 +1,9 @@
 import { EyeOff } from "lucide-react";
 
+import {
+  AnimatedCollapse,
+  useExitAction,
+} from "@/components/animated-collapse";
 import { ManualDueDateMenu } from "@/components/manual-due-date-menu";
 import {
   ContextMenu,
@@ -29,6 +33,7 @@ export function CalendarAssignmentChip({
 }: CalendarAssignmentChipProps) {
   const { t } = useI18n();
   const { formatTime } = useTimeFormat();
+  const { exitThen, isExiting } = useExitAction();
   const isCompact = size === "compact";
 
   const dueDate = getEffectiveDueDate(assignment);
@@ -37,39 +42,43 @@ export function CalendarAssignmentChip({
   }
 
   return (
-    <ContextMenu>
-      <ContextMenuTrigger
-        render={
-          <a
-            className={cn(
-              "block rounded-sm border transition-colors",
-              isCompact ? "truncate px-1 py-0.5 text-[10px]" : "p-2 text-xs",
-              getStatusCalendarColor(assignment)
-            )}
-            href={getAssignmentUrl(assignment)}
-            title={`${assignment.title} - ${classTitle}`}
+    <AnimatedCollapse exiting={isExiting}>
+      <ContextMenu>
+        <ContextMenuTrigger
+          render={
+            <a
+              className={cn(
+                "block rounded-sm border transition-colors",
+                isCompact ? "truncate px-1 py-0.5 text-[10px]" : "p-2 text-xs",
+                getStatusCalendarColor(assignment)
+              )}
+              href={getAssignmentUrl(assignment)}
+              title={`${assignment.title} - ${classTitle}`}
+            >
+              {isCompact ? (
+                assignment.title
+              ) : (
+                <>
+                  <div className="truncate font-medium">{assignment.title}</div>
+                  <div>{formatTime(new Date(dueDate))}</div>
+                </>
+              )}
+              {hasManualDueDate(assignment) && (
+                <span className="ml-1 text-[10px]">({t("manually_set")})</span>
+              )}
+            </a>
+          }
+        />
+        <ContextMenuContent>
+          <ManualDueDateMenu assignment={assignment} />
+          <ContextMenuItem
+            onClick={() => exitThen(() => void hideAssignment(assignment.id))}
           >
-            {isCompact ? (
-              assignment.title
-            ) : (
-              <>
-                <div className="truncate font-medium">{assignment.title}</div>
-                <div>{formatTime(new Date(dueDate))}</div>
-              </>
-            )}
-            {hasManualDueDate(assignment) && (
-              <span className="ml-1 text-[10px]">({t("manually_set")})</span>
-            )}
-          </a>
-        }
-      />
-      <ContextMenuContent>
-        <ManualDueDateMenu assignment={assignment} />
-        <ContextMenuItem onClick={() => hideAssignment(assignment.id)}>
-          <EyeOff />
-          {t("hide_assignment")}
-        </ContextMenuItem>
-      </ContextMenuContent>
-    </ContextMenu>
+            <EyeOff />
+            {t("hide_assignment")}
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
+    </AnimatedCollapse>
   );
 }

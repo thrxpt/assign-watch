@@ -6,11 +6,13 @@ import {
   Keyboard,
   Languages,
   Link,
+  PersonStanding,
   Settings,
 } from "lucide-react";
 import { useId, useState, useEffect } from "react";
 
 import { browser } from "#imports";
+import { useMotionPreferences } from "@/components/motion-preferences";
 import { ShortcutKbd } from "@/components/shortcut-kbd";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,12 +43,15 @@ function isTimeFormat(val: string): val is TimeFormat {
 
 function OptionsContent() {
   const { language, locale, setLanguage, t } = useI18n();
+  const { reduceMotion, setReduceMotion } = useMotionPreferences();
   const { timeFormat, setTimeFormat } = useTimeFormat();
   const [showUndatedAssignments, setShowUndatedAssignments] = useStorageState(
     showUndatedAssignmentsStorage
   );
   const undatedId = useId();
   const undatedDescriptionId = useId();
+  const reduceMotionId = useId();
+  const reduceMotionDescriptionId = useId();
   const [cleared, setCleared] = useState(false);
 
   useEffect(() => {
@@ -156,6 +161,29 @@ function OptionsContent() {
                 </TabsList>
               </Tabs>
             </div>
+          </div>
+
+          <div className="rounded-lg border bg-card p-4">
+            <FieldGroup>
+              <Field className="gap-4" orientation="horizontal">
+                <FieldContent className="min-w-0">
+                  <FieldLabel htmlFor={reduceMotionId}>
+                    <PersonStanding className="size-4 shrink-0 text-muted-foreground" />
+                    <span>{t("reduce_motion")}</span>
+                  </FieldLabel>
+                  <FieldDescription id={reduceMotionDescriptionId}>
+                    {t("reduce_motion_desc")}
+                  </FieldDescription>
+                </FieldContent>
+                <Switch
+                  aria-describedby={reduceMotionDescriptionId}
+                  checked={reduceMotion}
+                  className="self-center"
+                  id={reduceMotionId}
+                  onCheckedChange={setReduceMotion}
+                />
+              </Field>
+            </FieldGroup>
           </div>
 
           <div className="rounded-lg border bg-card p-4">

@@ -6,6 +6,7 @@ import {
   DEFAULT_FILTERS,
   DEFAULT_GROUP,
   DEFAULT_LANGUAGE,
+  DEFAULT_REDUCE_MOTION,
   DEFAULT_SHOW_CALENDAR_BY,
   DEFAULT_SHOW_UNDATED_ASSIGNMENTS,
   DEFAULT_SORT,
@@ -78,6 +79,16 @@ export const timeFormatStorage = storage.defineItem<TimeFormat>(
   "local:timeFormat",
   {
     fallback: DEFAULT_TIME_FORMAT,
+  }
+);
+
+export const reduceMotionStorage = storage.defineItem<boolean>(
+  "local:reduceMotion",
+  {
+    fallback: DEFAULT_REDUCE_MOTION,
+    init: async () =>
+      (await storage.getItem<boolean>("local:reduceAnimations")) ??
+      DEFAULT_REDUCE_MOTION,
   }
 );
 
