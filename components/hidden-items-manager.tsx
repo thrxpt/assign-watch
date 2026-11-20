@@ -1,5 +1,6 @@
 import { BrushCleaning, Eye, EyeOff } from "lucide-react";
 
+import { useExitAction } from "@/components/animated-collapse";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,7 +18,63 @@ import {
   unhideClass,
 } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
+import { cn } from "@/lib/utils";
 import type { Activity, ClassInfo } from "@/types";
+
+const MENU_EXIT_TIMEOUT_MS = 220;
+
+function HiddenClassItem({ classInfo }: { classInfo: ClassInfo }) {
+  const { exitThen, isExiting } = useExitAction({
+    timeoutMs: MENU_EXIT_TIMEOUT_MS,
+  });
+
+  return (
+    <DropdownMenuItem
+      className={cn(
+        "transition duration-200 ease-out motion-reduce:transition-none",
+        isExiting && "pointer-events-none translate-x-2 opacity-0"
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        exitThen(() => void unhideClass(classInfo.id));
+      }}
+      title={classInfo.title}
+    >
+      <span className="flex-1 truncate">{classInfo.title}</span>
+      <Eye className="shrink-0" />
+    </DropdownMenuItem>
+  );
+}
+
+function HiddenAssignmentItem({
+  assignment,
+  classTitle,
+}: {
+  assignment: Activity;
+  classTitle?: string;
+}) {
+  const { exitThen, isExiting } = useExitAction({
+    timeoutMs: MENU_EXIT_TIMEOUT_MS,
+  });
+
+  return (
+    <DropdownMenuItem
+      className={cn(
+        "transition duration-200 ease-out motion-reduce:transition-none",
+        isExiting && "pointer-events-none translate-x-2 opacity-0"
+      )}
+      onClick={(event) => {
+        event.preventDefault();
+        exitThen(() => void unhideAssignment(assignment.id));
+      }}
+      title={assignment.title}
+    >
+      <StatusBadge className="px-1 text-xs">{classTitle}</StatusBadge>
+      <span className="flex-1 truncate">{assignment.title}</span>
+      <Eye className="shrink-0" />
+    </DropdownMenuItem>
+  );
+}
 
 interface HiddenItemsManagerProps {
   allAssignments: (Activity[] | undefined)[];
@@ -33,6 +90,9 @@ export function HiddenItemsManager({
   allAssignments,
 }: HiddenItemsManagerProps) {
   const { t } = useI18n();
+  const { exitThen, isExiting: isClearing } = useExitAction({
+    timeoutMs: MENU_EXIT_TIMEOUT_MS,
+  });
   const hiddenClassItems = hiddenClasses
     .map((classId) => allClassInfo.find((c) => c.id === classId))
     .filter((c): c is ClassInfo => c !== undefined);
@@ -65,18 +125,31 @@ export function HiddenItemsManager({
             <EyeOff />
             {t("hidden")}
             {totalHidden > 0 && (
-              <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums">
+              <span
+                className="inline-flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs tabular-nums motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-50 motion-safe:duration-200"
+                key={totalHidden}
+              >
                 {totalHidden}
               </span>
             )}
           </Button>
         }
       />
-      <DropdownMenuContent align="end" className="w-80">
+      <DropdownMenuContent
+        align="end"
+        className={cn(
+          "w-80 transition duration-200 ease-out motion-reduce:transition-none",
+          isClearing && "pointer-events-none translate-y-1 opacity-0"
+        )}
+      >
         <DropdownMenuGroup>
           <div className="flex items-center justify-between">
             <DropdownMenuLabel>{t("hidden_items")}</DropdownMenuLabel>
-            <Button onClick={clearAllHiddenItems} size="xs" variant="outline">
+            <Button
+              onClick={() => exitThen(() => void clearAllHiddenItems())}
+              size="xs"
+              variant="outline"
+            >
               <BrushCleaning />
               {t("clear_all")}
             </Button>
@@ -91,17 +164,7 @@ export function HiddenItemsManager({
               {t("class")}
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
-              <DropdownMenuItem
-                key={classInfo.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  unhideClass(classInfo.id);
-                }}
-                title={classInfo.title}
-              >
-                <span className="flex-1 truncate">{classInfo.title}</span>
-                <Eye className="shrink-0" />
-              </DropdownMenuItem>
+              <HiddenClassItem classInfo={classInfo} key={classInfo.id} />
             ))}
           </DropdownMenuGroup>
         )}
@@ -116,23 +179,14 @@ export function HiddenItemsManager({
               {t("assignment")}
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (
-              <DropdownMenuItem
+              <HiddenAssignmentItem
+                assignment={assignment}
+                classTitle={
+                  allClassInfo.findLast((c) => c.id === assignment.class_id)
+                    ?.title
+                }
                 key={assignment.id}
-                onClick={(e) => {
-                  e.preventDefault();
-                  unhideAssignment(assignment.id);
-                }}
-                title={assignment.title}
-              >
-                <StatusBadge className="px-1 text-xs">
-                  {
-                    allClassInfo.findLast((c) => c.id === assignment.class_id)
-                      ?.title
-                  }
-                </StatusBadge>
-                <span className="flex-1 truncate">{assignment.title}</span>
-                <Eye className="shrink-0" />
-              </DropdownMenuItem>
+              />
             ))}
           </DropdownMenuGroup>
         )}

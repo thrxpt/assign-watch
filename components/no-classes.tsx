@@ -12,11 +12,11 @@ import {
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
-export function NoClasses() {
+export function NoClasses({ className }: { className?: string }) {
   const { t } = useI18n();
 
   return (
-    <Empty>
+    <Empty className={className}>
       <EmptyHeader>
         <EmptyMedia
           className="size-9 [&_svg:not([class*='size-'])]:size-5"

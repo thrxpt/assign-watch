@@ -31,6 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { groupByClass, groupByDueDate } from "@/lib/group-assignments";
 import type { FilterState, GroupState, SortState } from "@/lib/preferences";
 import { useI18n } from "@/lib/use-i18n";
+import { useRemovedIds } from "@/lib/use-removed-ids";
 import type { VisibleAssignment } from "@/lib/visible-assignments";
 import type { Activity, Assignment, ClassInfo } from "@/types";
 
@@ -88,18 +89,44 @@ export function AssignmentDialog({
 }: AssignmentDialogProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"list" | "calendar">("list");
+  const [exitingAssignmentIds, setExitingAssignmentIds] = useState<
+    ReadonlySet<number>
+  >(() => new Set());
+  // IDs that just left the hidden lists were unhidden and should expand back in.
+  const enteringClassIds = useRemovedIds(hiddenClasses);
+  const enteringAssignmentIds = useRemovedIds(hiddenAssignments);
+
+  const markAssignmentsExiting = (assignmentIds: readonly number[]) => {
+    setExitingAssignmentIds((current) => {
+      const next = new Set(current);
+      for (const id of assignmentIds) {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const finishAssignmentsExiting = (assignmentIds: readonly number[]) => {
+    setExitingAssignmentIds((current) => {
+      const next = new Set(current);
+      for (const id of assignmentIds) {
+        next.delete(id);
+      }
+      return next.size === current.size ? current : next;
+    });
+  };
 
   const renderList = () => {
     if (allClassInfo.length === 0) {
-      return <NoClasses />;
+      return <NoClasses className="mt-4" />;
     }
 
     if (listItems.length === 0 && pendingClasses.length === 0) {
-      return hasFailures ? null : <NoAssignments />;
+      return hasFailures ? null : <NoAssignments className="mt-4" />;
     }
 
     const skeletons = pendingClasses.map((classInfo) => (
-      <ClassSkeleton key={classInfo.id} />
+      <ClassSkeleton className="mt-4" key={classInfo.id} />
     ));
     const classInfoMap = new Map(
       allClassInfo.map((classInfo) => [classInfo.id, classInfo])
@@ -110,7 +137,17 @@ export function AssignmentDialog({
             <Class
               assignments={group.assignments}
               classInfo={group.classInfo}
+              entering={
+                enteringClassIds.has(group.classInfo.id) ||
+                group.assignments.every((assignment) =>
+                  enteringAssignmentIds.has(assignment.id)
+                )
+              }
+              enteringAssignmentIds={enteringAssignmentIds}
+              exitingAssignmentIds={exitingAssignmentIds}
               key={group.classInfo.id}
+              onExitEnd={finishAssignmentsExiting}
+              onExitStart={markAssignmentsExiting}
               staggerIndex={index}
             />
           ))
@@ -120,7 +157,14 @@ export function AssignmentDialog({
                 assignments={assignments}
                 classInfoMap={classInfoMap}
                 date={date}
+                entering={assignments.every((assignment) =>
+                  enteringAssignmentIds.has(assignment.id)
+                )}
+                enteringAssignmentIds={enteringAssignmentIds}
+                exitingAssignmentIds={exitingAssignmentIds}
                 key={date ?? "undated"}
+                onExitEnd={finishAssignmentsExiting}
+                onExitStart={markAssignmentsExiting}
                 staggerIndex={index}
               />
             )
@@ -203,16 +247,33 @@ export function AssignmentDialog({
               </DialogHeader>
               <TabsContent value="list">
                 <ScrollArea className="rounded-lg">
-                  <div className="flex max-h-[75dvh] flex-col gap-4 pr-4">
-                    {hasFailures && (
-                      <AssignmentLoadError
-                        {...loadErrorProps}
-                        presentation={
-                          loadErrorProps.isRateLimited ? "inline" : "empty"
-                        }
-                      />
-                    )}
-                    {renderList()}
+                  <div className="grid">
+                    <div className="-mt-4 col-start-1 row-start-1 flex max-h-[75dvh] flex-col pr-4">
+                      {hasFailures && (
+                        <AssignmentLoadError
+                          {...loadErrorProps}
+                          className="mt-4"
+                          presentation={
+                            loadErrorProps.isRateLimited ? "inline" : "empty"
+                          }
+                        />
+                      )}
+                      {renderList()}
+                    </div>
+                    {/* Holds the final empty-state height only while all
+                        visible rows are exiting, avoiding a jump afterward. */}
+                    {!hasFailures &&
+                      listItems.length > 0 &&
+                      listItems.every(({ assignment }) =>
+                        exitingAssignmentIds.has(assignment.id)
+                      ) && (
+                        <div
+                          aria-hidden="true"
+                          className="invisible col-start-1 row-start-1 pr-4"
+                        >
+                          <NoAssignments />
+                        </div>
+                      )}
                   </div>
                 </ScrollArea>
               </TabsContent>

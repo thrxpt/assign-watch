@@ -17,6 +17,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { useI18n } from "@/lib/use-i18n";
+import { cn } from "@/lib/utils";
 
 function subscribeToRetryDeadline(notify: () => void, deadline: number | null) {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,6 +47,7 @@ function subscribeToRetryDeadline(notify: () => void, deadline: number | null) {
 }
 
 interface AssignmentLoadErrorProps {
+  className?: string;
   isRateLimited: boolean;
   isRetrying: boolean;
   onRetry: () => Promise<void>;
@@ -54,6 +56,7 @@ interface AssignmentLoadErrorProps {
 }
 
 export function AssignmentLoadError({
+  className,
   isRateLimited,
   isRetrying,
   onRetry,
@@ -112,7 +115,10 @@ export function AssignmentLoadError({
       <Alert
         aria-atomic="true"
         aria-live="polite"
-        className="shrink-0 has-data-[slot=alert-action]:pr-3 sm:has-data-[slot=alert-action]:pr-32"
+        className={cn(
+          "shrink-0 has-data-[slot=alert-action]:pr-3 sm:has-data-[slot=alert-action]:pr-32",
+          className
+        )}
       >
         {isRateLimited ? <Timer /> : <CircleAlert />}
         <AlertTitle>{title}</AlertTitle>
@@ -125,7 +131,11 @@ export function AssignmentLoadError({
   }
 
   return (
-    <Empty aria-atomic="true" aria-live="polite" className="flex-none">
+    <Empty
+      aria-atomic="true"
+      aria-live="polite"
+      className={cn("flex-none", className)}
+    >
       <EmptyHeader>
         <EmptyMedia variant="icon">
           {isRateLimited ? <Timer /> : <CircleAlert />}

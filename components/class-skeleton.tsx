@@ -1,8 +1,11 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
-export function ClassSkeleton() {
+export function ClassSkeleton({ className }: { className?: string }) {
   return (
-    <div className="flex gap-3 animate-in fade-in-0 duration-200">
+    <div
+      className={cn("flex gap-3 animate-in fade-in-0 duration-200", className)}
+    >
       <Skeleton className="w-48 rounded-lg" />
       <div className="flex w-full flex-col gap-3">
         {Array.from({ length: 2 }).map((_, index) => (

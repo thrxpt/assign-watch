@@ -8,12 +8,13 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty";
 import { useI18n } from "@/lib/use-i18n";
+import { cn } from "@/lib/utils";
 
-export function NoAssignments() {
+export function NoAssignments({ className }: { className?: string }) {
   const { t } = useI18n();
 
   return (
-    <Empty className="animate-in fade-in-0 duration-300">
+    <Empty className={cn("animate-in fade-in-0 duration-300", className)}>
       <EmptyHeader>
         <EmptyMedia
           className="size-9 [&_svg:not([class*='size-'])]:size-5"
