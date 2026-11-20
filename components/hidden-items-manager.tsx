@@ -90,9 +90,6 @@ export function HiddenItemsManager({
   allAssignments,
 }: HiddenItemsManagerProps) {
   const { t } = useI18n();
-  const { exitThen, isExiting: isClearing } = useExitAction({
-    timeoutMs: MENU_EXIT_TIMEOUT_MS,
-  });
   const hiddenClassItems = hiddenClasses
     .map((classId) => allClassInfo.find((c) => c.id === classId))
     .filter((c): c is ClassInfo => c !== undefined);
@@ -137,16 +134,13 @@ export function HiddenItemsManager({
       />
       <DropdownMenuContent
         align="end"
-        className={cn(
-          "w-80 transition duration-200 ease-out motion-reduce:transition-none",
-          isClearing && "pointer-events-none translate-y-1 opacity-0"
-        )}
+        className="w-80 transition duration-200 ease-out motion-reduce:transition-none"
       >
         <DropdownMenuGroup>
           <div className="flex items-center justify-between">
             <DropdownMenuLabel>{t("hidden_items")}</DropdownMenuLabel>
             <Button
-              onClick={() => exitThen(() => void clearAllHiddenItems())}
+              onClick={() => void clearAllHiddenItems()}
               size="xs"
               variant="outline"
             >
