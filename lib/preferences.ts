@@ -79,3 +79,5 @@ export const DEFAULT_LANGUAGE: Language = "auto";
 export type TimeFormat = "12h" | "24h";
 
 export const DEFAULT_TIME_FORMAT: TimeFormat = "12h";
+
+export const DEFAULT_REDUCE_MOTION = false;

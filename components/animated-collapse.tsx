@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
+import { useMotionPreferences } from "@/components/motion-preferences";
 import { cn } from "@/lib/utils";
 
 const EXIT_DURATION_MS = 300;
@@ -83,6 +84,7 @@ export function useExitAction({
   animateExit = true,
   timeoutMs = EXIT_TIMEOUT_MS,
 }: ExitActionOptions = {}) {
+  const { reduceMotion } = useMotionPreferences();
   const [isExiting, setIsExiting] = useState(false);
   const isExitingRef = useRef(false);
 
@@ -97,13 +99,14 @@ export function useExitAction({
         setIsExiting(true);
       }
 
-      const reducedMotion =
+      const systemPrefersReducedMotion =
         typeof window !== "undefined" &&
         window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      const shouldReduceMotion = reduceMotion || systemPrefersReducedMotion;
 
-      window.setTimeout(action, reducedMotion ? 0 : timeoutMs);
+      window.setTimeout(action, shouldReduceMotion ? 0 : timeoutMs);
     },
-    [animateExit, timeoutMs]
+    [animateExit, reduceMotion, timeoutMs]
   );
 
   return { exitThen, isExiting: animateExit && isExiting };

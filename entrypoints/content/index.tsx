@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { createShadowRootUi } from "wxt/utils/content-script-ui/shadow-root";
 import { defineContentScript } from "wxt/utils/define-content-script";
 
+import { MotionPreferencesProvider } from "@/components/motion-preferences";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "@/entrypoints/content/app";
 import { I18nProvider } from "@/lib/use-i18n";
@@ -36,11 +37,13 @@ export default defineContentScript({
         const root = ReactDOM.createRoot(app);
         root.render(
           <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-              <I18nProvider>
-                <App />
-              </I18nProvider>
-            </TooltipProvider>
+            <MotionPreferencesProvider>
+              <TooltipProvider>
+                <I18nProvider>
+                  <App />
+                </I18nProvider>
+              </TooltipProvider>
+            </MotionPreferencesProvider>
           </QueryClientProvider>
         );
         return root;

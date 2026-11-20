@@ -75,6 +75,8 @@ time_format: รูปแบบเวลา
 time_format_desc: เลือกลักษณะการแสดงเวลา
 time_format_12h: 12 ชั่วโมง
 time_format_24h: 24 ชั่วโมง
+reduce_motion: ลดการเคลื่อนไหว
+reduce_motion_desc: ทำให้การเคลื่อนไหวและการเปลี่ยนหน้าจอต่าง ๆ ในอินเทอร์เฟซสั้นลง
 keyboard_shortcut: แป้นพิมพ์ลัด
 keyboard_shortcut_desc: เปิดหรือปิดหน้าต่างการบ้านที่หน้าไหนของ LEB2 ก็ได้
 shortcut: ปุ่มลัด

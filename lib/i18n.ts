@@ -94,6 +94,8 @@ export type TranslationKey =
   | "time_format_desc"
   | "time_format_12h"
   | "time_format_24h"
+  | "reduce_motion"
+  | "reduce_motion_desc"
   | "keyboard_shortcut"
   | "keyboard_shortcut_desc"
   | "shortcut"
