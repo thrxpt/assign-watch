@@ -106,21 +106,25 @@ export function AssignmentDialog({
     );
     const groups =
       groupState.groupBy === "class"
-        ? groupByClass(listItems, sortState).map((group) => (
+        ? groupByClass(listItems, sortState).map((group, index) => (
             <Class
               assignments={group.assignments}
               classInfo={group.classInfo}
               key={group.classInfo.id}
+              staggerIndex={index}
             />
           ))
-        : groupByDueDate(listItems, sortState).map(({ date, assignments }) => (
-            <DateGroup
-              assignments={assignments}
-              classInfoMap={classInfoMap}
-              date={date}
-              key={date ?? "undated"}
-            />
-          ));
+        : groupByDueDate(listItems, sortState).map(
+            ({ date, assignments }, index) => (
+              <DateGroup
+                assignments={assignments}
+                classInfoMap={classInfoMap}
+                date={date}
+                key={date ?? "undated"}
+                staggerIndex={index}
+              />
+            )
+          );
 
     return (
       <>

@@ -7,6 +7,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
+import { assignmentStaggerDelay, groupStaggerDelay } from "@/lib/stagger";
 import { hideClass } from "@/lib/storage";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
@@ -15,15 +16,21 @@ import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 interface ClassProps {
   assignments: AssignmentData[];
   classInfo: ClassInfo;
+  staggerIndex: number;
 }
 
-export function Class({ classInfo, assignments }: ClassProps) {
+export function Class({ classInfo, assignments, staggerIndex }: ClassProps) {
   const { t } = useI18n();
   return (
     <ContextMenu>
       <ContextMenuTrigger
         render={
-          <div className="flex gap-3 animate-in fade-in-0 duration-300 slide-in-from-bottom-1">
+          <div
+            className="flex gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-[400ms] motion-safe:ease-out motion-safe:fill-mode-backwards"
+            style={{
+              animationDelay: `${groupStaggerDelay(staggerIndex)}ms`,
+            }}
+          >
             <div className="w-48 rounded-lg bg-muted p-4">
               <div className={cn(assignments.length > 1 && "sticky top-4")}>
                 <a
@@ -47,8 +54,12 @@ export function Class({ classInfo, assignments }: ClassProps) {
               </div>
             </div>
             <div className="flex w-full flex-col gap-3">
-              {assignments.map((assignment) => (
-                <Assignment assignment={assignment} key={assignment.id} />
+              {assignments.map((assignment, index) => (
+                <Assignment
+                  assignment={assignment}
+                  key={assignment.id}
+                  staggerDelayMs={assignmentStaggerDelay(staggerIndex, index)}
+                />
               ))}
             </div>
           </div>

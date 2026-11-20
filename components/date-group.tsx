@@ -4,6 +4,7 @@ import { Assignment } from "@/components/assignment";
 import { StatusBadge } from "@/components/status-badge";
 import { getRelativeStatusColor } from "@/lib/assignment";
 import { getEffectiveDueDate } from "@/lib/manual-due-dates";
+import { assignmentStaggerDelay, groupStaggerDelay } from "@/lib/stagger";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 import type { Assignment as AssignmentData, ClassInfo } from "@/types";
@@ -12,9 +13,15 @@ interface DateGroupProps {
   assignments: AssignmentData[];
   classInfoMap: Map<number, ClassInfo>;
   date: string | null;
+  staggerIndex: number;
 }
 
-export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
+export function DateGroup({
+  date,
+  assignments,
+  classInfoMap,
+  staggerIndex,
+}: DateGroupProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
   const dateObj = date ? parse(date, "yyyy-MM-dd", new Date()) : null;
 
@@ -44,7 +51,10 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
   }
 
   return (
-    <div className="flex gap-3 animate-in fade-in-0 duration-300 slide-in-from-bottom-1">
+    <div
+      className="flex gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-[400ms] motion-safe:ease-out motion-safe:fill-mode-backwards"
+      style={{ animationDelay: `${groupStaggerDelay(staggerIndex)}ms` }}
+    >
       <div className="w-48 rounded-lg bg-muted p-4">
         <div className={cn(assignments.length > 1 && "sticky top-4")}>
           <div className="font-medium text-lg">{dateLabel}</div>
@@ -61,13 +71,14 @@ export function DateGroup({ date, assignments, classInfoMap }: DateGroupProps) {
         </div>
       </div>
       <div className="flex w-full flex-col gap-3">
-        {assignments.map((assignment) => {
+        {assignments.map((assignment, index) => {
           const classInfo = classInfoMap.get(assignment.class_id);
           return (
             <Assignment
               assignment={assignment}
               classInfo={classInfo}
               key={assignment.id}
+              staggerDelayMs={assignmentStaggerDelay(staggerIndex, index)}
             />
           );
         })}

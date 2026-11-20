@@ -37,6 +37,7 @@ import type { Assignment as AssignmentData, ClassInfo } from "@/types";
 interface AssignmentProps {
   assignment: AssignmentData;
   classInfo?: ClassInfo;
+  staggerDelayMs?: number;
 }
 
 function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
@@ -69,7 +70,11 @@ function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
   );
 }
 
-export function Assignment({ assignment, classInfo }: AssignmentProps) {
+export function Assignment({
+  assignment,
+  classInfo,
+  staggerDelayMs,
+}: AssignmentProps) {
   const { formatDate, formatDateRelative, t } = useI18n();
   const { formatTime } = useTimeFormat();
   const dueDateValue = getEffectiveDueDate(assignment);
@@ -96,9 +101,14 @@ export function Assignment({ assignment, classInfo }: AssignmentProps) {
         render={
           <div
             className={cn(
-              "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full",
+              "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-[400ms] motion-safe:ease-out motion-safe:fill-mode-backwards",
               getStatusBarColor(assignment)
             )}
+            style={
+              staggerDelayMs === undefined
+                ? undefined
+                : { animationDelay: `${staggerDelayMs}ms` }
+            }
           >
             <a
               className="font-medium text-[15px] underline-offset-4 hover:underline"
