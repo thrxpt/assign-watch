@@ -57,7 +57,7 @@ export function Class({
         <ContextMenuTrigger
           render={
             <div
-              className="flex gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-[400ms] motion-safe:ease-out motion-safe:fill-mode-backwards"
+              className="flex gap-3 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-3 motion-safe:duration-400 motion-safe:ease-out motion-safe:fill-mode-backwards"
               style={{ animationDelay: `${animationDelayMs}ms` }}
             >
               <div className="w-48 rounded-lg bg-muted p-4">

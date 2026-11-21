@@ -125,7 +125,7 @@ export function Assignment({
           render={
             <div
               className={cn(
-                "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-[400ms] motion-safe:ease-out motion-safe:fill-mode-backwards",
+                "relative rounded-lg border p-4 pl-9.25 after:absolute after:inset-y-4 after:left-4 after:w-1.25 after:rounded-full motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-bottom-2 motion-safe:duration-400 motion-safe:ease-out motion-safe:fill-mode-backwards",
                 getStatusBarColor(assignment)
               )}
               style={
