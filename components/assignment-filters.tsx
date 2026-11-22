@@ -93,7 +93,7 @@ export function AssignmentFilters({
               updateFilter("submissionStatus", "submitted", !!checked)
             }
           >
-            {t("submitted")}
+            {t("status_submitted")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.submissionStatus.notSubmitted}
@@ -105,7 +105,7 @@ export function AssignmentFilters({
               updateFilter("submissionStatus", "notSubmitted", !!checked)
             }
           >
-            {t("not_submitted")}
+            {t("status_not_submitted")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
@@ -123,7 +123,7 @@ export function AssignmentFilters({
               updateFilter("assignmentType", "assignment", !!checked)
             }
           >
-            {t("assignment")}
+            {t("assignment_type_assignment")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.assignmentType.quiz}
@@ -134,14 +134,14 @@ export function AssignmentFilters({
               updateFilter("assignmentType", "quiz", !!checked)
             }
           >
-            {t("quiz")}
+            {t("assignment_type_quiz")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{t("group_type")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("work_mode")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
             className={cn(
@@ -151,7 +151,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "individual", !!checked)
             }
           >
-            {t("individual")}
+            {t("work_mode_individual")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
@@ -162,7 +162,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "group", !!checked)
             }
           >
-            {t("group")}
+            {t("work_mode_group")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

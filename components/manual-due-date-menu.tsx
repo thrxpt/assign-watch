@@ -19,13 +19,15 @@ export function ManualDueDateMenu({ assignment }: { assignment: Assignment }) {
       {!assignment.due_date && (
         <ContextMenuItem onClick={() => openEditor(assignment)}>
           <CalendarClock />
-          {assignment.manualDueDate ? t("edit_due_date") : t("set_due_date")}
+          {assignment.manualDueDate
+            ? t("manual_due_date_edit")
+            : t("manual_due_date_set")}
         </ContextMenuItem>
       )}
       {assignment.manualDueDate && (
         <ContextMenuItem onClick={() => removeDate(assignment)}>
           <CalendarX />
-          {t("remove_manual_due_date")}
+          {t("manual_due_date_remove")}
         </ContextMenuItem>
       )}
       <ContextMenuSeparator />

@@ -77,7 +77,7 @@ export function AssignmentSort({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{t("order")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("sort_order")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup
             onValueChange={(value) =>
               handleDirectionChange(value as SortDirection)
@@ -85,10 +85,10 @@ export function AssignmentSort({
             value={sortState.direction}
           >
             <DropdownMenuRadioItem value="asc">
-              {t("asc")}
+              {t("sort_earliest_first")}
             </DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="desc">
-              {t("desc")}
+              {t("sort_latest_first")}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>

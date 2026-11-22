@@ -5,11 +5,6 @@ import type { Activity, Assignment } from "@/types";
 export const HOUR_IN_MS = 60 * 60 * 1000;
 export const DAY_IN_MS = 24 * HOUR_IN_MS;
 
-export const DUE_SOON_MESSAGES = {
-  "1h": "is due in less than 1 hour.",
-  "24h": "is due in less than 24 hours.",
-} as const;
-
 export interface NotifiedState {
   changedDay: boolean;
   changedHour: boolean;

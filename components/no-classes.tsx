@@ -25,7 +25,7 @@ export function NoClasses({ className }: { className?: string }) {
           <GraduationCap />
         </EmptyMedia>
         <EmptyTitle>{t("no_classes")}</EmptyTitle>
-        <EmptyDescription>{t("no_classes_desc")}</EmptyDescription>
+        <EmptyDescription>{t("no_classes_description")}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <a

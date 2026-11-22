@@ -71,9 +71,9 @@ export function CalendarView({ assignments }: CalendarViewProps) {
       : `${formatDate(weekStart, "MMM")} - ${formatDate(weekEnd, "MMM yyyy")}`;
 
   const currentWeekTitle =
-    weekOffset === 0 ? undefined : t("go_to_current_week");
+    weekOffset === 0 ? undefined : t("calendar_current_week");
   const currentMonthTitle =
-    monthOffset === 0 ? undefined : t("go_to_current_month");
+    monthOffset === 0 ? undefined : t("calendar_current_month");
 
   return (
     <Tabs
@@ -84,10 +84,10 @@ export function CalendarView({ assignments }: CalendarViewProps) {
       <div className="grid grid-cols-3 items-center">
         <TabsList className="h-8 w-fit">
           <TabsTrigger className="text-xs" value="week">
-            {t("weekly_view")}
+            {t("calendar_week")}
           </TabsTrigger>
           <TabsTrigger className="text-xs" value="month">
-            {t("monthly_view")}
+            {t("calendar_month")}
           </TabsTrigger>
         </TabsList>
         <div className="flex items-center justify-center">
@@ -99,7 +99,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronLeft />
-                <span className="sr-only">{t("previous_week")}</span>
+                <span className="sr-only">{t("calendar_previous_week")}</span>
               </Button>
               <Button
                 className="min-w-35 text-center"
@@ -115,7 +115,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronRight />
-                <span className="sr-only">{t("next_week")}</span>
+                <span className="sr-only">{t("calendar_next_week")}</span>
               </Button>
             </>
           ) : (
@@ -126,7 +126,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronLeft />
-                <span className="sr-only">{t("previous_month")}</span>
+                <span className="sr-only">{t("calendar_previous_month")}</span>
               </Button>
               <Button
                 className="min-w-35 text-center"
@@ -142,7 +142,7 @@ export function CalendarView({ assignments }: CalendarViewProps) {
                 variant="ghost"
               >
                 <ChevronRight />
-                <span className="sr-only">{t("next_month")}</span>
+                <span className="sr-only">{t("calendar_next_month")}</span>
               </Button>
             </>
           )}

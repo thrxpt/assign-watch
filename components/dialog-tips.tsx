@@ -8,16 +8,16 @@ import type { TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/use-i18n";
 
 const TIPS = [
-  "tips_desc",
-  "tips_shortcut",
-  "tips_calendar",
-  "tips_restore",
+  "tip_hide",
+  "tip_shortcut",
+  "tip_calendar",
+  "tip_restore",
 ] as const satisfies readonly TranslationKey[];
 
 const SHORTCUT_TOKEN = "{shortcut}";
 
 function shortcutTip(t: (key: TranslationKey) => string): ReactNode {
-  const [before, after] = t("tips_shortcut").split(SHORTCUT_TOKEN);
+  const [before, after] = t("tip_shortcut").split(SHORTCUT_TOKEN);
 
   return (
     <>
@@ -32,7 +32,7 @@ function tipContent(
   tip: (typeof TIPS)[number],
   t: (key: TranslationKey) => string
 ): ReactNode {
-  if (tip === "tips_shortcut") {
+  if (tip === "tip_shortcut") {
     return shortcutTip(t);
   }
   return t(tip);
@@ -48,7 +48,7 @@ export function DialogTips() {
     <div className="flex w-full items-center gap-1.5 text-muted-foreground text-xs">
       <Lightbulb className="size-3.5 shrink-0" />
       <p className="min-w-0 flex-1 leading-tight">
-        <span className="font-semibold">{t("tips")}:</span>{" "}
+        <span className="font-semibold">{t("tip_label")}:</span>{" "}
         {tipContent(TIPS[index], t)}
       </p>
       <Button
@@ -57,7 +57,7 @@ export function DialogTips() {
         variant="ghost"
       >
         <ChevronRight />
-        <span className="sr-only">{t("next_tip")}</span>
+        <span className="sr-only">{t("tip_next")}</span>
       </Button>
     </div>
   );

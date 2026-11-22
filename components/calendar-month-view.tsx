@@ -68,7 +68,7 @@ function CalendarMonthDay({
             <PopoverTrigger
               render={
                 <div className="block cursor-pointer truncate rounded-sm px-1 py-0.5 text-[10px] transition-colors hover:bg-accent hover:text-accent-foreground">
-                  +{overflowCount} {t("more")}
+                  {t("calendar_more_items", { count: overflowCount })}
                 </div>
               }
             />

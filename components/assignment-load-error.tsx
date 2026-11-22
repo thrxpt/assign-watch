@@ -87,10 +87,12 @@ export function AssignmentLoadError({
   );
   const rateLimitDescriptionKey =
     presentation === "inline"
-      ? "assignments_rate_limited_inline_desc"
-      : "assignments_rate_limited_desc";
+      ? "assignments_rate_limited_inline_description"
+      : "assignments_rate_limited_description";
   const description = t(
-    isRateLimited ? rateLimitDescriptionKey : "assignments_load_error_desc"
+    isRateLimited
+      ? rateLimitDescriptionKey
+      : "assignments_load_error_description"
   );
   let retryButtonLabel = t("try_again");
   if (isRetrying) {

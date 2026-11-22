@@ -7,6 +7,7 @@ import { readAssignmentSnapshot } from "@/lib/manual-due-dates";
 import {
   cachedAssignmentsStorage,
   deadlineNotificationHistoryStorage,
+  languageStorage,
   userIdStorage,
 } from "@/lib/storage";
 import type { Activity } from "@/types";
@@ -240,4 +241,47 @@ it("rejects mismatched classes and resolved manual dates at the raw-cache bounda
     {}
   );
   expect(await cachedAssignmentsStorage.getValue()).toEqual([]);
+});
+
+it("localizes desktop notifications in Thai and English based on language preference", async () => {
+  const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
+  const dueSoon = createMockActivity({
+    class_id: 10,
+    due_date: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    id: 101,
+    title: "Test Activity",
+  });
+
+  await languageStorage.setValue("th");
+  await userIdStorage.setValue("student-a");
+  await cachedAssignmentsStorage.setValue({
+    assignments: [dueSoon],
+    userId: "student-a",
+  });
+  await drainChecks();
+
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect(notify).toHaveBeenCalledWith(
+    "assignwatch-ASM-10-101-1h",
+    expect.objectContaining({
+      buttons: [{ title: "เปิดดูงาน" }],
+      message: '"Test Activity" จะครบกำหนดส่งในอีกไม่ถึง 1 ชั่วโมง',
+      title: "งานใกล้ถึงกำหนดส่ง",
+    })
+  );
+
+  notify.mockClear();
+  await languageStorage.setValue("en");
+  await deadlineNotificationHistoryStorage.setValue(null);
+  await drainChecks();
+
+  expect(notify).toHaveBeenCalledTimes(1);
+  expect(notify).toHaveBeenCalledWith(
+    "assignwatch-ASM-10-101-1h",
+    expect.objectContaining({
+      buttons: [{ title: "View assignment" }],
+      message: '"Test Activity" is due in less than 1 hour.',
+      title: "Assignment due soon",
+    })
+  );
 });

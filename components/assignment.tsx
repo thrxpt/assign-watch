@@ -58,7 +58,7 @@ function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
     return (
       <StatusBadge color="green">
         <CircleCheckBig />
-        {t("submitted")}
+        {t("status_submitted")}
       </StatusBadge>
     );
   }
@@ -67,7 +67,7 @@ function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
     return (
       <StatusBadge color="amber">
         <CircleAlert />
-        {t("done_not_submitted_yet")}
+        {t("status_answered_not_submitted")}
       </StatusBadge>
     );
   }
@@ -75,7 +75,7 @@ function SubmissionStatusBadge({ assignment }: { assignment: AssignmentData }) {
   return (
     <StatusBadge color="red">
       <CircleX />
-      {t("not_submitted")}
+      {t("status_not_submitted")}
     </StatusBadge>
   );
 }
@@ -109,7 +109,7 @@ export function Assignment({
       )}
       {dueDate ? formatTime(dueDate) : t("no_due_date")}
       {hasManualDueDate(assignment) && (
-        <StatusBadge className="ml-1">{t("manually_set")}</StatusBadge>
+        <StatusBadge className="ml-1">{t("manual_due_date_badge")}</StatusBadge>
       )}
     </span>
   );
@@ -180,15 +180,17 @@ export function Assignment({
                   color={assignment.type === "ASM" ? "teal" : "orange"}
                 >
                   {assignment.type === "ASM" ? <ClipboardList /> : <Timer />}
-                  {assignment.type === "ASM" ? t("assignment") : t("quiz")}
+                  {assignment.type === "ASM"
+                    ? t("assignment_type_assignment")
+                    : t("assignment_type_quiz")}
                 </StatusBadge>
                 <StatusBadge
                   color={assignment.group_type === "IND" ? "cyan" : "rose"}
                 >
                   {assignment.group_type === "IND" ? <User /> : <Users />}
                   {assignment.group_type === "IND"
-                    ? t("individual")
-                    : t("group")}
+                    ? t("work_mode_individual")
+                    : t("work_mode_group")}
                 </StatusBadge>
               </div>
             </div>
