@@ -6,6 +6,21 @@ export interface ClassInfo {
   title: string;
 }
 
+export interface ClassRoster {
+  classes: ClassInfo[];
+  userId: string;
+}
+
+export interface EnrollmentScope {
+  classes: ClassInfo[] | null;
+  generation: string;
+  pendingCachePrune?: { classIds: number[]; userId: string };
+  userId: string;
+}
+
+/** Pre-upgrade rosters lack a worker-approved generation. */
+export type StoredClassRoster = ClassInfo[] | ClassRoster | EnrollmentScope;
+
 export interface RootResponse {
   activities: Activity[];
   user: User[];

@@ -12,29 +12,21 @@ import {
   getUnhydratedAssignmentClassIds,
   restoreAssignmentSnapshotWhenCurrent,
 } from "@/lib/assignment-query-cache";
-import { scrapeUserId } from "@/lib/dom";
+import { readCurrentStudentId } from "@/lib/dom";
 import { cachedAssignmentsStorage } from "@/lib/storage";
 
 interface UseAssignmentHydrationOptions {
   classIds: number[];
   isOpen: boolean;
+  userId: string | null;
 }
 
 interface AssignmentHydration {
   isHydratedForCurrentClasses: boolean;
-  userId: string | null;
 }
 
-function readCurrentStudentId() {
-  const userId = scrapeUserId()?.trim();
-  return userId || null;
-}
-
-export function useAssignmentHydration({
-  classIds,
-  isOpen,
-}: UseAssignmentHydrationOptions): AssignmentHydration {
-  const queryClient = useQueryClient();
+/** The student the current LEB2 page identifies, tracked live while open. */
+export function useCurrentStudentId(isOpen: boolean): string | null {
   const subscribe = useCallback(
     (notify: () => void) => {
       const observer = new MutationObserver(notify);
@@ -50,11 +42,19 @@ export function useAssignmentHydration({
     },
     [isOpen]
   );
-  const userId = useSyncExternalStore(
+  return useSyncExternalStore(
     subscribe,
     readCurrentStudentId,
     readCurrentStudentId
   );
+}
+
+export function useAssignmentHydration({
+  classIds,
+  isOpen,
+  userId,
+}: UseAssignmentHydrationOptions): AssignmentHydration {
+  const queryClient = useQueryClient();
   const [hydration, setHydration] = useState<AssignmentHydrationState | null>(
     null
   );
@@ -108,5 +108,5 @@ export function useAssignmentHydration({
     };
   }, [classIds, classIdsToHydrate, isOpen, queryClient, userId]);
 
-  return { isHydratedForCurrentClasses, userId };
+  return { isHydratedForCurrentClasses };
 }

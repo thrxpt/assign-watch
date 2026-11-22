@@ -12,11 +12,14 @@ export default defineConfig({
       }
     },
   },
-  manifest: {
+  manifest: ({ browser }) => ({
     default_locale: "en",
     name: "Assign Watch - Extension for LEB2",
-    permissions: ["storage", "notifications", "alarms"],
-  },
+    permissions:
+      browser === "safari"
+        ? ["storage", "alarms"]
+        : ["storage", "notifications", "alarms"],
+  }),
   modules: [
     "@wxt-dev/module-react",
     "@wxt-dev/auto-icons",

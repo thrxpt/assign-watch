@@ -1,13 +1,77 @@
 import { browser } from "wxt/browser";
 
-import type { Activity } from "@/types";
+import type { Activity, ClassInfo, EnrollmentScope } from "@/types";
 
-export interface CacheClassAssignmentsMessage {
+type EnrollmentToken = Pick<EnrollmentScope, "generation" | "userId">;
+
+export interface PublishEnrollmentMessage {
+  action: "publishEnrollment";
+  classes: ClassInfo[] | null;
+  userId: string;
+}
+
+function isNonemptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isClassId(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0;
+}
+
+function isClassInfo(value: unknown): value is ClassInfo {
+  return (
+    !!value &&
+    typeof value === "object" &&
+    "id" in value &&
+    isClassId(value.id) &&
+    "title" in value &&
+    isNonemptyString(value.title) &&
+    "description" in value &&
+    typeof value.description === "string" &&
+    "section" in value &&
+    typeof value.section === "string" &&
+    "semester" in value &&
+    typeof value.semester === "string"
+  );
+}
+
+export function isPublishEnrollmentMessage(
+  value: unknown
+): value is PublishEnrollmentMessage {
+  if (
+    !value ||
+    typeof value !== "object" ||
+    !("action" in value) ||
+    value.action !== "publishEnrollment" ||
+    !("userId" in value) ||
+    !isNonemptyString(value.userId) ||
+    !("classes" in value)
+  ) {
+    return false;
+  }
+  const { classes } = value;
+  return (
+    classes === null ||
+    (Array.isArray(classes) &&
+      classes.every(isClassInfo) &&
+      new Set(classes.map(({ id }) => id)).size === classes.length)
+  );
+}
+
+export interface CacheClassAssignmentsMessage extends EnrollmentToken {
   action: "cacheClassAssignments";
   assignments: Activity[];
   classId: number;
-  classIds: number[];
-  userId: string | null;
+}
+
+export class SupersededAssignmentRequestError extends Error {
+  readonly generation: string;
+
+  constructor(generation: string) {
+    super("Assignment request was superseded by an enrollment change");
+    this.generation = generation;
+    this.name = "SupersededAssignmentRequestError";
+  }
 }
 
 export function isCacheClassAssignmentsMessage(
@@ -20,23 +84,11 @@ export function isCacheClassAssignmentsMessage(
     !("action" in value) ||
     value.action !== "cacheClassAssignments" ||
     !("classId" in value) ||
-    typeof value.classId !== "number" ||
-    !Number.isSafeInteger(value.classId) ||
-    value.classId <= 0 ||
-    !("classIds" in value) ||
-    !Array.isArray(value.classIds) ||
-    !value.classIds.every(
-      (classId: unknown) =>
-        typeof classId === "number" &&
-        Number.isSafeInteger(classId) &&
-        classId > 0
-    ) ||
-    !value.classIds.includes(value.classId) ||
+    !isClassId(value.classId) ||
+    !("generation" in value) ||
+    !isNonemptyString(value.generation) ||
     !("userId" in value) ||
-    !(
-      value.userId === null ||
-      (typeof value.userId === "string" && value.userId.trim().length > 0)
-    ) ||
+    !isNonemptyString(value.userId) ||
     !("assignments" in value) ||
     !Array.isArray(value.assignments)
   ) {
@@ -65,27 +117,31 @@ export function isCacheClassAssignmentsMessage(
   });
 }
 
-/** Resolve only after raw assignments are available to offline reminders. */
+/** A cached result is available to offline reminders before this resolves. */
 export async function cacheClassAssignments(
-  userId: string | null,
+  { generation, userId }: EnrollmentToken,
   classId: number,
-  assignments: Activity[],
-  classIds: number[]
-): Promise<void> {
+  assignments: Activity[]
+): Promise<"cached" | "discarded"> {
   const message: CacheClassAssignmentsMessage = {
     action: "cacheClassAssignments",
     assignments,
     classId,
-    classIds,
+    generation,
     userId,
   };
   const result: unknown = await browser.runtime.sendMessage(message);
-  if (
-    !result ||
-    typeof result !== "object" ||
-    !("ok" in result) ||
-    result.ok !== true
-  ) {
-    throw new Error("Could not cache class assignments for reminders");
+  if (result && typeof result === "object" && "ok" in result) {
+    if (result.ok === true) {
+      return "cached";
+    }
+    if (
+      result.ok === false &&
+      "discarded" in result &&
+      result.discarded === true
+    ) {
+      return "discarded";
+    }
   }
+  throw new Error("Could not cache class assignments for reminders");
 }

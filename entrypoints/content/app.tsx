@@ -1,5 +1,6 @@
-import { useQueries } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import type { Dispatch, SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { browser } from "#imports";
 import { AssignmentDialog } from "@/components/assignment-dialog";
@@ -9,9 +10,13 @@ import {
   isRateLimitError,
   shouldRetryAssignments,
 } from "@/lib/api";
-import { cacheClassAssignments } from "@/lib/assignment-cache";
+import {
+  cacheClassAssignments,
+  SupersededAssignmentRequestError,
+} from "@/lib/assignment-cache";
+import type { PublishEnrollmentMessage } from "@/lib/assignment-cache";
 import { assignmentQueryKey } from "@/lib/assignment-query-cache";
-import { scrapeClassCards } from "@/lib/dom";
+import { readCurrentStudentId, scrapeClassCards } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
   classInfoStorage,
@@ -20,16 +25,21 @@ import {
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   manualDueDatesStorage,
+  NO_CLASSES,
+  readEnrollmentScope,
   showUndatedAssignmentsStorage,
   sortStorage,
-  userIdStorage,
 } from "@/lib/storage";
-import { useAssignmentHydration } from "@/lib/use-assignment-hydration";
+import {
+  useAssignmentHydration,
+  useCurrentStudentId,
+} from "@/lib/use-assignment-hydration";
 import { useStorageState } from "@/lib/use-storage-state";
 import {
   getPendingClasses,
   visibleAssignments,
 } from "@/lib/visible-assignments";
+import type { Activity, ClassInfo, EnrollmentScope } from "@/types";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -48,52 +58,82 @@ async function openOptionsPage() {
   }
 }
 
-function App() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+async function publishObservedEnrollment(userId: string, canScrape: boolean) {
+  const scraped =
+    canScrape && window.location.pathname === "/class"
+      ? scrapeClassCards()
+      : null;
+  // Check the owner again because the cards themselves do not identify it.
+  if (readCurrentStudentId() !== userId) {
+    return;
+  }
 
-  const [allClassInfo] = useStorageState(classInfoStorage);
-  const [manualDueDates] = useStorageState(manualDueDatesStorage);
-  const [hiddenClasses] = useStorageState(hiddenClassesStorage);
-  const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
-  const [filters, setFilters] = useStorageState(filtersStorage);
-  const [showUndatedAssignments] = useStorageState(
-    showUndatedAssignmentsStorage
-  );
-  const [sortState, setSortState] = useStorageState(sortStorage);
-  const [groupState, setGroupState] = useStorageState(groupStorage);
+  const message: PublishEnrollmentMessage = {
+    action: "publishEnrollment",
+    classes: scraped?.status === "resolved" ? scraped.classes : null,
+    userId,
+  };
+  try {
+    await browser.runtime.sendMessage(message);
+  } catch {
+    // The storage subscription remains authoritative if the worker is unavailable.
+  }
+}
 
-  const classIds = useMemo(
-    () => allClassInfo.map((classInfo) => classInfo.id),
-    [allClassInfo]
-  );
-  const { isHydratedForCurrentClasses, userId } = useAssignmentHydration({
-    classIds,
-    isOpen: isModalOpen,
-  });
-  const batchAssignmentsRequest = useMemo(
-    () => createAssignmentsBatchRequest(classIds, userId),
-    [classIds, userId]
-  );
+function useEnrollmentScope(userId: string | null) {
+  const [storedRoster] = useStorageState(classInfoStorage);
+  const queryClient = useQueryClient();
+  const approvedScope = readEnrollmentScope(storedRoster);
+  const scope = approvedScope?.userId === userId ? approvedScope : null;
+  const generation = scope?.generation;
+  const [appliedScope, setAppliedScope] = useState(scope);
+  const hasObservedStudent = useRef(false);
+  const isScopeApplied = appliedScope?.generation === generation;
 
   useEffect(() => {
-    if (userId?.trim()) {
-      void userIdStorage.setValue(userId);
+    if (userId) {
+      // Cards left on the same page after an account switch may be stale.
+      const canScrape = !hasObservedStudent.current;
+      hasObservedStudent.current = true;
+      void publishObservedEnrollment(userId, canScrape);
     }
   }, [userId]);
 
   useEffect(() => {
-    const syncInfo = async () => {
-      if (window.location.pathname === "/class") {
-        const scraped = scrapeClassCards();
-        if (scraped.length > 0) {
-          await classInfoStorage.setValue(scraped);
-        }
+    if (appliedScope?.generation === generation) {
+      return;
+    }
+    let active = true;
+    const applyScope = async () => {
+      const previousClassIds = new Set(
+        appliedScope?.classes?.map(({ id }) => id)
+      );
+      // Cancel work before enabling the new generation on shared query keys.
+      await queryClient.cancelQueries({
+        predicate: ({ queryKey, state }) =>
+          state.fetchStatus !== "idle" &&
+          queryKey[0] === "assignments" &&
+          typeof queryKey[1] === "number" &&
+          previousClassIds.has(queryKey[1]) &&
+          queryKey[2] === appliedScope?.userId,
+      });
+      if (active) {
+        setAppliedScope(scope);
       }
     };
+    void applyScope();
+    return () => {
+      active = false;
+    };
+  }, [appliedScope, generation, queryClient, scope]);
 
-    void syncInfo();
-  }, []);
+  return { isScopeApplied, scope };
+}
 
+function useDialogTriggers(
+  setIsModalOpen: Dispatch<SetStateAction<boolean>>,
+  resetBatchRequest: () => void
+) {
   useEffect(() => {
     const button = document.createElement("button");
     button.textContent = "Assignments ✨";
@@ -104,7 +144,7 @@ function App() {
     const handleClick = () => {
       setIsModalOpen((prev) => {
         if (!prev) {
-          batchAssignmentsRequest.reset();
+          resetBatchRequest();
         }
         return true;
       });
@@ -119,7 +159,7 @@ function App() {
       button.removeEventListener("click", handleClick);
       button.remove();
     };
-  }, [batchAssignmentsRequest]);
+  }, [resetBatchRequest, setIsModalOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -127,7 +167,7 @@ function App() {
         e.preventDefault();
         setIsModalOpen((prev) => {
           if (!prev) {
-            batchAssignmentsRequest.reset();
+            resetBatchRequest();
           }
           return !prev;
         });
@@ -137,90 +177,265 @@ function App() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [batchAssignmentsRequest]);
+  }, [resetBatchRequest, setIsModalOpen]);
+}
+
+interface AssignmentQueriesOptions {
+  allClassInfo: ClassInfo[];
+  classIds: number[];
+  hiddenClasses: number[];
+  isHydratedForCurrentClasses: boolean;
+  isModalOpen: boolean;
+  isScopeApplied: boolean;
+  scope: EnrollmentScope | null;
+  userId: string | null;
+}
+
+function useAssignmentQueries({
+  allClassInfo,
+  classIds,
+  hiddenClasses,
+  isHydratedForCurrentClasses,
+  isModalOpen,
+  isScopeApplied,
+  scope,
+  userId,
+}: AssignmentQueriesOptions) {
+  const [retryingError, setRetryingError] = useState<
+    "rate-limit" | "load-error" | null
+  >(null);
+  // Refetch can start before React renders the progress state.
+  const retryAttempt = useRef<{
+    classIds: ReadonlySet<number>;
+    fetchBatch?: () => Promise<Activity[]>;
+    generation: string;
+    userId: string | null;
+  } | null>(null);
+  const batchRequests =
+    useRef<
+      Map<string | null, ReturnType<typeof createAssignmentsBatchRequest>>
+    >(null);
+  const queryClient = useQueryClient();
+
+  const resetBatchRequest = useCallback(() => {
+    batchRequests.current?.get(userId)?.reset();
+  }, [userId]);
+
+  const getBatchRequest = () => {
+    const requests = (batchRequests.current ??= new Map());
+    let request = requests.get(userId);
+    if (!request) {
+      request = createAssignmentsBatchRequest(userId);
+      requests.set(userId, request);
+    }
+    return request;
+  };
+
+  const getCurrentRetry = () => {
+    const attempt = retryAttempt.current;
+    return attempt?.userId === scope?.userId &&
+      attempt?.generation === scope?.generation
+      ? attempt
+      : null;
+  };
+
+  const getEligibleClassIds = () => {
+    const attempt = getCurrentRetry();
+    return classIds.filter((classId) => {
+      const isDirectRetry =
+        !attempt?.fetchBatch && attempt?.classIds.has(classId);
+      const error = queryClient.getQueryState(
+        assignmentQueryKey(classId, userId)
+      )?.error;
+      return !isDirectRetry && !isRateLimitError(error);
+    });
+  };
 
   const assignments = useQueries({
     combine: (results) => ({
       data: results.map((result) => result.data),
       results,
     }),
-    queries: allClassInfo.map((classInfo) => ({
-      // A 429 stays manual-only, including when the dialog is reopened.
-      enabled: (query: { state: { error: unknown } }) =>
-        isModalOpen &&
-        isHydratedForCurrentClasses &&
-        !isRateLimitError(query.state.error),
-      queryFn: async () => {
-        const data = await fetchClassAssignments(
-          classInfo.id,
-          userId,
-          batchAssignmentsRequest.fetch()
-        );
-        await cacheClassAssignments(userId, classInfo.id, data, classIds);
-        return data;
-      },
-      queryKey: assignmentQueryKey(classInfo.id, userId),
-      retry: shouldRetryAssignments,
-    })),
+    queries: scope
+      ? allClassInfo.map((classInfo) => ({
+          // A 429 stays manual-only, including when the dialog is reopened.
+          enabled: (query: { state: { error: unknown } }) =>
+            isModalOpen &&
+            isHydratedForCurrentClasses &&
+            isScopeApplied &&
+            !(
+              query.state.error instanceof SupersededAssignmentRequestError &&
+              query.state.error.generation === scope.generation
+            ) &&
+            !isRateLimitError(query.state.error),
+          queryFn: async ({ signal }) => {
+            const assertCurrentStudent = () => {
+              signal.throwIfAborted();
+              if (!isScopeApplied || readCurrentStudentId() !== scope.userId) {
+                throw new SupersededAssignmentRequestError(scope.generation);
+              }
+            };
+            assertCurrentStudent();
+            const attempt = getCurrentRetry();
+            const batch = attempt?.classIds.has(classInfo.id)
+              ? attempt.fetchBatch?.()
+              : getBatchRequest().fetch(
+                  classInfo.id,
+                  classIds,
+                  getEligibleClassIds,
+                  scope.generation
+                );
+            const data = await fetchClassAssignments(
+              classInfo.id,
+              scope.userId,
+              batch,
+              signal
+            );
+            assertCurrentStudent();
+            const outcome = await cacheClassAssignments(
+              scope,
+              classInfo.id,
+              data
+            );
+            if (outcome === "discarded") {
+              throw new SupersededAssignmentRequestError(scope.generation);
+            }
+            assertCurrentStudent();
+            return data;
+          },
+          queryKey: assignmentQueryKey(classInfo.id, userId),
+          retry: shouldRetryAssignments,
+        }))
+      : [],
   });
 
   const hiddenClassIds = new Set(hiddenClasses);
-  const failedQueries = assignments.results.filter(
-    (result, index) =>
-      result.isError && !hiddenClassIds.has(allClassInfo[index].id)
-  );
-  const hasStaleData = assignments.results.some((result, index) => {
+  const classQueries = assignments.results.flatMap((result, index) => {
     const classInfo = allClassInfo[index];
-    return (
-      classInfo !== undefined &&
-      !hiddenClassIds.has(classInfo.id) &&
+    return classInfo ? [{ classId: classInfo.id, result }] : [];
+  });
+  const failedQueries = classQueries.filter(
+    ({ classId, result }) =>
+      result.isError &&
+      !(result.error instanceof SupersededAssignmentRequestError) &&
+      !hiddenClassIds.has(classId)
+  );
+  const hasStaleData = classQueries.some(
+    ({ classId, result }) =>
+      !hiddenClassIds.has(classId) &&
       Boolean(result.data?.length) &&
       (result.dataUpdatedAt === 0 || result.isError)
-    );
-  });
-  const isBatchRateLimited = failedQueries.some(
-    (result) =>
-      isRateLimitError(result.error) &&
-      batchAssignmentsRequest.isError(result.error)
   );
-  const retryFailedQueries = async () => {
-    const refreshes: Promise<unknown>[] = [];
-    if (isBatchRateLimited) {
-      batchAssignmentsRequest.reset();
-    }
-    const retryTargets = isBatchRateLimited
-      ? assignments.results
-      : failedQueries;
-    for (const result of retryTargets) {
-      if (!result.isFetching) {
-        refreshes.push(result.refetch());
-      }
-    }
-    await Promise.all(refreshes);
-  };
+  const isRateLimited = failedQueries.some(({ result }) =>
+    isRateLimitError(result.error)
+  );
+  const isBatchRateLimited = failedQueries.some(
+    ({ result }) =>
+      isRateLimitError(result.error) && result.error.origin === "batch"
+  );
+  const retryTargets = isBatchRateLimited ? classQueries : failedQueries;
+  const isRetrying =
+    retryingError !== null ||
+    retryTargets.some(({ result }) => result.isFetching);
   let retryAt: number | null = null;
-  for (const result of failedQueries) {
-    if (!isRateLimitError(result.error)) {
-      continue;
+  for (const { result } of retryTargets) {
+    if (isRateLimitError(result.error) && result.error.retryAt !== null) {
+      const deadline = result.error.retryAt;
+      retryAt = retryAt === null ? deadline : Math.max(retryAt, deadline);
     }
-
-    const rateLimitRetryAt = result.error.retryAt;
-    if (rateLimitRetryAt === null) {
-      continue;
-    }
-
-    retryAt =
-      retryAt === null ? rateLimitRetryAt : Math.max(retryAt, rateLimitRetryAt);
   }
 
-  const loadErrorProps = {
-    isRateLimited: failedQueries.some((result) =>
-      isRateLimitError(result.error)
-    ),
-    isRetrying: failedQueries.some((result) => result.isFetching),
-    onRetry: retryFailedQueries,
-    retryAt,
+  const retryFailedQueries = async () => {
+    if (
+      !isScopeApplied ||
+      !scope ||
+      retryAttempt.current ||
+      isRetrying ||
+      retryTargets.length === 0 ||
+      (retryAt !== null && retryAt > Date.now())
+    ) {
+      return;
+    }
+
+    let batch: Promise<Activity[]> | undefined;
+    retryAttempt.current = {
+      classIds: new Set(
+        isRateLimited ? retryTargets.map(({ classId }) => classId) : []
+      ),
+      fetchBatch: isBatchRateLimited
+        ? () => (batch ??= getBatchRequest().retry(classIds, scope.generation))
+        : undefined,
+      generation: scope.generation,
+      userId: scope.userId,
+    };
+    setRetryingError(isRateLimited ? "rate-limit" : "load-error");
+    try {
+      await Promise.allSettled(
+        retryTargets.map(({ result }) => result.refetch())
+      );
+    } finally {
+      retryAttempt.current = null;
+      setRetryingError(null);
+    }
   };
+
+  return {
+    assignments,
+    hasFailures: failedQueries.length > 0 || retryingError !== null,
+    hasStaleData,
+    loadErrorProps: {
+      isRateLimited: isRateLimited || retryingError === "rate-limit",
+      isRetrying,
+      onRetry: retryFailedQueries,
+      retryAt,
+    },
+    resetBatchRequest,
+  };
+}
+
+function App() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const [manualDueDates] = useStorageState(manualDueDatesStorage);
+  const [hiddenClasses] = useStorageState(hiddenClassesStorage);
+  const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
+  const [filters, setFilters] = useStorageState(filtersStorage);
+  const [showUndatedAssignments] = useStorageState(
+    showUndatedAssignmentsStorage
+  );
+  const [sortState, setSortState] = useStorageState(sortStorage);
+  const [groupState, setGroupState] = useStorageState(groupStorage);
+
+  const userId = useCurrentStudentId(isModalOpen);
+  const { isScopeApplied, scope } = useEnrollmentScope(userId);
+  const roster = scope?.classes ?? null;
+  const allClassInfo = roster ?? NO_CLASSES;
+  const classIds = useMemo(
+    () => allClassInfo.map((classInfo) => classInfo.id),
+    [allClassInfo]
+  );
+  const { isHydratedForCurrentClasses } = useAssignmentHydration({
+    classIds,
+    isOpen: isModalOpen,
+    userId,
+  });
+  const {
+    assignments,
+    hasFailures,
+    hasStaleData,
+    loadErrorProps,
+    resetBatchRequest,
+  } = useAssignmentQueries({
+    allClassInfo,
+    classIds,
+    hiddenClasses,
+    isHydratedForCurrentClasses,
+    isModalOpen,
+    isScopeApplied,
+    scope,
+    userId,
+  });
+  useDialogTriggers(setIsModalOpen, resetBatchRequest);
 
   const resolvedData = assignments.data.map((items) =>
     items?.map((assignment) =>
@@ -250,12 +465,17 @@ function App() {
   const pendingClasses = getPendingClasses({
     allClassInfo,
     hiddenClasses,
-    results: assignments.results,
+    results: assignments.results.map(({ data, error, isPending }) => ({
+      isPending:
+        isPending ||
+        (data === undefined &&
+          error instanceof SupersededAssignmentRequestError),
+    })),
   });
   const resolvedAssignments = resolvedData.flatMap((items) => items ?? []);
   const handleDialogOpenChange = (open: boolean) => {
     if (open && !isModalOpen) {
-      batchAssignmentsRequest.reset();
+      resetBatchRequest();
     }
     setIsModalOpen(open);
   };
@@ -265,9 +485,10 @@ function App() {
       allAssignments={assignments.data}
       allClassInfo={allClassInfo}
       calendarItems={calendarItems}
+      enrollment={roster === null ? "unknown" : "known"}
       filters={filters}
       groupState={groupState}
-      hasFailures={failedQueries.length > 0}
+      hasFailures={hasFailures}
       hasStaleData={hasStaleData}
       hiddenAssignments={hiddenAssignments}
       hiddenClasses={hiddenClasses}

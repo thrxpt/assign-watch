@@ -20,7 +20,13 @@ import type {
   SortState,
   TimeFormat,
 } from "@/lib/preferences";
-import type { Activity, AssignmentSnapshot, ClassInfo } from "@/types";
+import type {
+  Activity,
+  AssignmentSnapshot,
+  ClassInfo,
+  EnrollmentScope,
+  StoredClassRoster,
+} from "@/types";
 
 export const hiddenClassesStorage = storage.defineItem<number[]>(
   "local:hiddenClasses",
@@ -96,12 +102,21 @@ export const userIdStorage = storage.defineItem<string | null>("local:userId", {
   fallback: null,
 });
 
-export const classInfoStorage = storage.defineItem<ClassInfo[]>(
+export const classInfoStorage = storage.defineItem<StoredClassRoster>(
   "local:classInfo",
   {
     fallback: [],
   }
 );
+/** Shared while enrollment is unknown, so memoized IDs stay stable. */
+export const NO_CLASSES: ClassInfo[] = [];
+
+export function readEnrollmentScope(
+  stored: StoredClassRoster
+): EnrollmentScope | null {
+  return !Array.isArray(stored) && "generation" in stored ? stored : null;
+}
+
 export const cachedAssignmentsStorage = storage.defineItem<
   Activity[] | AssignmentSnapshot
 >("local:cachedAssignments", {
