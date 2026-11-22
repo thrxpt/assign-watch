@@ -68,7 +68,7 @@ export function AnimatedCollapse({
         stateClassName
       )}
     >
-      <div className={cn("min-h-0", isCollapsed && "overflow-hidden")}>
+      <div className={cn("min-h-0 min-w-0", isCollapsed && "overflow-hidden")}>
         {children}
       </div>
     </div>
