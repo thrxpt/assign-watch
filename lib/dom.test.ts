@@ -113,6 +113,61 @@ describe("scrapeClassCards", () => {
     }
   );
 
+  it("reads a card whose text block is a sibling in its own wrapper", () => {
+    render(
+      '<section><div class="class-card" name="class-42"></div><ul></ul><div id="font-color-main-card"><p>Class 42</p><p>About 42</p></div></section>'
+    );
+
+    expect(scrapeClassCards()).toEqual({
+      classes: [
+        {
+          description: "About 42",
+          id: 42,
+          section: "",
+          semester: "",
+          title: "Class 42",
+        },
+      ],
+      status: "resolved",
+    });
+  });
+
+  it("keeps the TA marker on the next sibling list in a shared wrapper", () => {
+    render(
+      '<section><div class="class-card" name="class-42"></div><ul><li><div><div class="icon-setting-2 fix-oncard-btn"></div></div></li></ul><div id="font-color-main-card"><p>Class 42</p><p>About 42</p></div></section>'
+    );
+
+    expect(scrapeClassCards()).toEqual({ status: "unresolved" });
+  });
+
+  it("is unresolved when a wrapper shared by two cards holds the text", () => {
+    render(
+      '<section><div class="class-card" name="class-1"></div><div class="class-card" name="class-2"></div><div id="font-color-main-card"><p>Class 1</p><p>About 1</p></div></section>'
+    );
+    expect(scrapeClassCards()).toEqual({ status: "unresolved" });
+  });
+
+  it("is unresolved when a wrapper holds several text blocks", () => {
+    render(
+      '<section><div class="class-card" name="class-1"></div><div id="font-color-main-card"><p>A</p><p>B</p></div><div id="font-color-main-card"><p>C</p><p>D</p></div></section>'
+    );
+    expect(scrapeClassCards()).toEqual({ status: "unresolved" });
+  });
+
+  it("never reads text from document-level parents", () => {
+    render(
+      '<div class="class-card" name="class-1"></div><div id="font-color-main-card"><p>Class 1</p><p>About 1</p></div>'
+    );
+    expect(scrapeClassCards()).toEqual({ status: "unresolved" });
+  });
+
+  it("is unresolved for a wrapper text block missing its description", () => {
+    render(
+      '<section><div class="class-card" name="class-1"></div><div id="font-color-main-card"><p>Class 1</p></div></section>'
+    );
+    expect(scrapeClassCards()).toEqual({ status: "unresolved" });
+  });
+
   it("is unresolved when a card has no text container", () => {
     render(
       '<div class="card class-card" name="class-1"><div class="card-block"></div></div>'

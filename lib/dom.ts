@@ -2,7 +2,8 @@ import type { ClassInfo } from "@/types";
 
 const CLASS_ID_PATTERN = /^[0-9]+$/u;
 const TA_SETTINGS_ICON = "li > div > div.icon-setting-2.fix-oncard-btn";
-const CARD_TEXT = "#font-color-main-card p";
+const CARD_TEXT_BLOCK = "#font-color-main-card";
+const CARD_TEXT = `${CARD_TEXT_BLOCK} p`;
 const CARD_FOOTER = "div.card-block.card-footer.flex-container.f-jc-sb.f-ai-c";
 
 export type ClassScrape =
@@ -40,14 +41,39 @@ function isTeachingAssistantCard(card: Element): boolean {
   );
 }
 
+/**
+ * The title and description paragraphs for one card: inside the card when it
+ * holds a text block, otherwise in its immediate wrapper when that wrapper
+ * holds exactly this one card and exactly one text block (the card, an
+ * optional TA marker list, and the text block as siblings). Document-level
+ * parents and wrappers shared by several cards are never searched.
+ */
+function findCardText(card: Element): Element[] {
+  if (card.querySelector(CARD_TEXT_BLOCK) !== null) {
+    return [...card.querySelectorAll(CARD_TEXT)];
+  }
+
+  const wrapper = card.parentElement;
+  if (
+    wrapper === null ||
+    wrapper === document.body ||
+    wrapper === document.documentElement ||
+    wrapper.querySelectorAll(".class-card").length !== 1 ||
+    wrapper.querySelectorAll(CARD_TEXT_BLOCK).length !== 1
+  ) {
+    return [];
+  }
+  return [...wrapper.querySelectorAll(CARD_TEXT)];
+}
+
 function readClassCard(card: Element): ClassInfo | null {
   const id = readClassId(card);
   if (id === null) {
     return null;
   }
 
-  // Read text from this card only, never by position across the page.
-  const [titleElement, descriptionElement] = card.querySelectorAll(CARD_TEXT);
+  // Read text local to this card only, never by position across the page.
+  const [titleElement, descriptionElement] = findCardText(card);
   const title = titleElement?.textContent;
   if (!title?.trim() || descriptionElement === undefined) {
     return null;
