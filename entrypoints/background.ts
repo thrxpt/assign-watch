@@ -88,7 +88,7 @@ const notifyDueSoon = (
 const readReminderEnrollment = async () => {
   const scope = readEnrollmentScope(await classInfoStorage.getValue());
   return {
-    classes: scope?.classes ?? null,
+    scope,
     userId: scope?.userId ?? (await userIdStorage.getValue()),
   };
 };
@@ -99,6 +99,21 @@ const filterEnrolledAssignments = (
 ) => {
   const classIds = new Set(classes.map(({ id }) => id));
   return assignments.filter(({ class_id }) => classIds.has(class_id));
+};
+
+const filterCacheForScope = (
+  cached: AssignmentSnapshot,
+  { classes, pendingCachePrune, userId }: EnrollmentScope
+) => {
+  const enrolled =
+    (!cached.userId || cached.userId === userId) && classes !== null
+      ? filterEnrolledAssignments(cached.assignments, classes)
+      : cached.assignments;
+  if (pendingCachePrune?.userId !== cached.userId) {
+    return enrolled;
+  }
+  const excluded = new Set(pendingCachePrune.classIds);
+  return enrolled.filter(({ class_id }) => !excluded.has(class_id));
 };
 
 const reviewCachedAssignments = async () => {
@@ -136,9 +151,8 @@ const reviewCachedAssignments = async () => {
     }
 
     const locale = resolveLocale(language);
-    // The roster is authoritative even if saving a pruned snapshot failed.
-    const assignments = enrollment.classes
-      ? filterEnrolledAssignments(snapshot.assignments, enrollment.classes)
+    const assignments = enrollment.scope
+      ? filterCacheForScope(snapshot, enrollment.scope)
       : snapshot.assignments;
 
     const result = reviewDeadlineNotifications({
@@ -181,22 +195,9 @@ const openNotificationAssignment = (notificationId: string) => {
   }
 };
 
-const filterCacheForScope = (
-  cached: AssignmentSnapshot,
-  { classes, pendingCachePrune, userId }: EnrollmentScope
-) => {
-  if (pendingCachePrune?.userId === cached.userId) {
-    const removed = new Set(pendingCachePrune.classIds);
-    return cached.assignments.filter(({ class_id }) => !removed.has(class_id));
-  }
-  return cached.userId === userId && classes !== null
-    ? filterEnrolledAssignments(cached.assignments, classes)
-    : cached.assignments;
-};
-
 const pruneAssignmentCache = async (
   scope: EnrollmentScope,
-  nextUserId = scope.userId
+  nextScope?: EnrollmentScope
 ): Promise<EnrollmentScope["pendingCachePrune"]> => {
   if (scope.classes === null && !scope.pendingCachePrune) {
     return;
@@ -218,14 +219,12 @@ const pruneAssignmentCache = async (
       userId: cached.userId,
     });
   } catch (error) {
-    if (cached.userId === nextUserId) {
+    if (!nextScope) {
       throw error;
     }
-    // The next owner cannot use this snapshot. Carry its exclusions across
-    // the switch so it can be repaired before its owner becomes active again.
-    const retainedClassIds = new Set(
-      assignments.map(({ class_id }) => class_id)
-    );
+    // Carry both scopes' exclusions if the snapshot survives the transition.
+    const retained = filterCacheForScope({ ...cached, assignments }, nextScope);
+    const retainedClassIds = new Set(retained.map(({ class_id }) => class_id));
     const removedClassIds = new Set<number>();
     for (const { class_id } of cached.assignments) {
       if (!retainedClassIds.has(class_id)) {
@@ -234,6 +233,23 @@ const pruneAssignmentCache = async (
     }
     return { classIds: [...removedClassIds], userId: cached.userId };
   }
+};
+
+const hasSameMembership = (
+  previousClasses: EnrollmentScope["classes"],
+  classes: EnrollmentScope["classes"]
+) => {
+  if (previousClasses === classes) {
+    return true;
+  }
+  if (previousClasses === null || classes === null) {
+    return false;
+  }
+  const previousClassIds = new Set(previousClasses.map(({ id }) => id));
+  return (
+    classes.length === previousClassIds.size &&
+    classes.every(({ id }) => previousClassIds.has(id))
+  );
 };
 
 const publishEnrollment = (message: PublishEnrollmentMessage) =>
@@ -246,16 +262,9 @@ const publishEnrollment = (message: PublishEnrollmentMessage) =>
       (!Array.isArray(stored) && stored.userId === userId
         ? stored.classes
         : null);
-    const previousClasses = previous?.classes ?? null;
-    const previousClassIds = new Set(previousClasses?.map(({ id }) => id));
-    const sameMembership =
-      previousClasses === classes ||
-      (classes !== null &&
-        previousClasses !== null &&
-        classes.length === previousClassIds.size &&
-        classes.every(({ id }) => previousClassIds.has(id)));
     const generation =
-      previous?.userId === userId && sameMembership
+      previous?.userId === userId &&
+      hasSameMembership(previous.classes, classes)
         ? previous.generation
         : crypto.randomUUID();
     const scope: EnrollmentScope = { classes, generation, userId };
@@ -264,11 +273,17 @@ const publishEnrollment = (message: PublishEnrollmentMessage) =>
       // Repair lingering rows before a new roster for their owner can expose
       // them again, including when a removed class is re-added.
       const pendingCachePrune =
-        previous && (await pruneAssignmentCache(previous, userId));
-      await classInfoStorage.setValue({
-        ...scope,
-        ...(pendingCachePrune && { pendingCachePrune }),
-      });
+        previous && (await pruneAssignmentCache(previous, scope));
+      if (pendingCachePrune) {
+        // Revoke the old generation without exposing the dirty snapshot.
+        await classInfoStorage.setValue({
+          ...scope,
+          classes: pendingCachePrune.userId === userId ? null : classes,
+          pendingCachePrune,
+        });
+        return { ok: true };
+      }
+      await classInfoStorage.setValue(scope);
     } else if (JSON.stringify(previous.classes) !== JSON.stringify(classes)) {
       await classInfoStorage.setValue({ ...previous, classes });
     }
@@ -291,7 +306,7 @@ const cacheClassAssignments = (message: CacheClassAssignmentsMessage) =>
     );
     const retained =
       cached.userId === message.userId
-        ? filterEnrolledAssignments(cached.assignments, scope.classes).filter(
+        ? filterCacheForScope(cached, scope).filter(
             ({ class_id }) => class_id !== message.classId
           )
         : [];

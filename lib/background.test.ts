@@ -488,6 +488,83 @@ it("publishes a new owner when retrying the previous owner's prune fails", async
   );
 });
 
+it.each([
+  {
+    accountSwitch: true,
+    context: "on return to a previous owner",
+    nextClassIds: [10, 20],
+  },
+  {
+    accountSwitch: false,
+    context: "on a same-owner membership change",
+    nextClassIds: [30],
+  },
+])(
+  "revokes the old generation when cache cleanup fails $context",
+  async ({ accountSwitch, nextClassIds }) => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    background.main();
+    const notify = vi
+      .spyOn(browser.notifications, "create")
+      .mockResolvedValue();
+    const a = await publishEnrollment("student-a", [10]);
+    const dueDate = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+    const current = createMockActivity({ class_id: 10, due_date: dueDate });
+    const retired = createMockActivity({ class_id: 20, due_date: dueDate });
+    const snapshot = { assignments: [current, retired], userId: a.userId };
+    await cachedAssignmentsStorage.setValue(snapshot);
+
+    const writeCache = vi.spyOn(cachedAssignmentsStorage, "setValue");
+    const storageError = new Error("Cache prune temporarily unavailable");
+    let previous = a;
+    let previousClassId = 10;
+    if (accountSwitch) {
+      writeCache.mockRejectedValueOnce(storageError);
+      previousClassId = 30;
+      previous = await publishEnrollment("student-b", [previousClassId]);
+    }
+
+    writeCache.mockRejectedValueOnce(storageError);
+    const publication = await sendMessage({
+      action: "publishEnrollment",
+      classes: nextClassIds.map(classInfo),
+      userId: a.userId,
+    });
+    const late = createMockActivity({
+      class_id: previousClassId,
+      due_date: dueDate,
+      id: 2,
+    });
+    expect(
+      await sendMessage(cacheMessage(previous, previousClassId, [late]))
+    ).toEqual({ discarded: true, ok: false });
+    expect(publication).toEqual({ ok: true });
+    const unresolved = readEnrollmentScope(await classInfoStorage.getValue());
+    expect(unresolved).toMatchObject({ classes: null, userId: a.userId });
+    expect(unresolved?.generation).not.toBe(previous.generation);
+    expect(await cachedAssignmentsStorage.getValue()).toEqual(snapshot);
+
+    vi.setSystemTime(Date.now() - 60 * 60 * 1000);
+    await drainChecks();
+    expect(notify.mock.calls.map(([id]) => id)).toEqual(
+      accountSwitch ? ["assignwatch-ASM-10-1-1h"] : []
+    );
+
+    const recovered = await publishEnrollment(a.userId, nextClassIds);
+    expect(recovered.classes).toEqual(nextClassIds.map(classInfo));
+    expect(recovered.generation).not.toBe(unresolved?.generation);
+    expect(recovered.pendingCachePrune).toBeUndefined();
+    expect(await cachedAssignmentsStorage.getValue()).toEqual({
+      assignments: accountSwitch ? [current] : [],
+      userId: a.userId,
+    });
+    await drainChecks();
+    expect(notify.mock.calls.map(([id]) => id)).toEqual(
+      accountSwitch ? ["assignwatch-ASM-10-1-1h"] : []
+    );
+  }
+);
+
 it("keeps the previous roster and rows if publishing the new scope fails", async () => {
   background.main();
   const previous = await publishEnrollment("student-a", [10, 20]);
