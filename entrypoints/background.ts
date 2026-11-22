@@ -3,9 +3,11 @@ import { defineBackground } from "wxt/utils/define-background";
 
 import { getAssignmentUrl } from "@/lib/assignment";
 import { isCacheClassAssignmentsMessage } from "@/lib/assignment-cache";
+import type { CacheClassAssignmentsMessage } from "@/lib/assignment-cache";
 import { resolveLocale, translate } from "@/lib/i18n";
 import type { Locale, TranslationKey } from "@/lib/i18n";
 import { isManualDueDateMessage } from "@/lib/manual-due-date-storage";
+import type { ManualDueDateMessage } from "@/lib/manual-due-date-storage";
 import {
   getAssignmentKey,
   readAssignmentSnapshot,
@@ -47,20 +49,24 @@ const enqueue = async <T>(task: () => Promise<T>): Promise<T> => {
   }
 };
 
+const supportsNotificationButtons = () => {
+  const { BROWSER } = import.meta.env;
+  return BROWSER === "chrome" || BROWSER === "edge" || BROWSER === "opera";
+};
+
 const notifyDueSoon = (
+  notifications: Pick<typeof browser.notifications, "create">,
   assignment: Activity,
   timeframe: Timeframe,
   locale: Locale
 ) => {
   const idSuffix = timeframe === "1h" ? "-1h" : "";
-  void browser.notifications.create(
+  void notifications.create(
     `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}${idSuffix}`,
     {
-      buttons: [
-        {
-          title: translate("notification_view_assignment", locale),
-        },
-      ],
+      ...(supportsNotificationButtons() && {
+        buttons: [{ title: translate("notification_view_assignment", locale) }],
+      }),
       iconUrl: browser.runtime.getURL("/icons/128.png"),
       message: translate(DUE_SOON_MESSAGE_KEYS[timeframe], locale, {
         title: assignment.title,
@@ -72,6 +78,11 @@ const notifyDueSoon = (
 };
 
 const reviewCachedAssignments = async () => {
+  const { notifications } = browser;
+  if (typeof notifications?.create !== "function") {
+    return;
+  }
+
   try {
     const [
       cached,
@@ -112,7 +123,7 @@ const reviewCachedAssignments = async () => {
       legacyNotifiedDay: notifiedDay,
       legacyNotifiedHour: notifiedHour,
       notify: (assignment, timeframe) =>
-        notifyDueSoon(assignment, timeframe, locale),
+        notifyDueSoon(notifications, assignment, timeframe, locale),
       now: new Date(),
       userId: snapshot.userId,
     });
@@ -138,11 +149,111 @@ const openNotificationAssignment = (notificationId: string) => {
         type: type as Activity["type"],
       }),
     });
-    void browser.notifications.clear(notificationId);
+    void browser.notifications?.clear?.(notificationId);
   }
 };
 
+const cacheClassAssignments = (message: CacheClassAssignmentsMessage) =>
+  enqueue(async () => {
+    const cached = readAssignmentSnapshot(
+      await cachedAssignmentsStorage.getValue()
+    );
+    const enrolledClassIds = new Set(message.classIds);
+    const retained =
+      cached.userId === message.userId
+        ? cached.assignments.filter(
+            (assignment) =>
+              assignment.class_id !== message.classId &&
+              enrolledClassIds.has(assignment.class_id)
+          )
+        : [];
+    await cachedAssignmentsStorage.setValue({
+      assignments: [...retained, ...message.assignments],
+      userId: message.userId,
+    });
+    return { ok: true };
+  });
+
+const setManualDueDate = (message: ManualDueDateMessage) =>
+  enqueue(async () => {
+    const cached = readAssignmentSnapshot(
+      await cachedAssignmentsStorage.getValue()
+    );
+    const assignment = {
+      class_id: message.classId,
+      id: message.assignmentId,
+    };
+    const current =
+      cached.userId === message.userId
+        ? cached.assignments.find(
+            (item) =>
+              item.id === assignment.id && item.class_id === assignment.class_id
+          )
+        : undefined;
+    if (message.dueDate && current?.due_date) {
+      return { ok: false };
+    }
+    const dates = new Map(
+      Object.entries(await manualDueDatesStorage.getValue())
+    );
+    const key = getAssignmentKey(message.userId, assignment);
+    if (message.dueDate === null) {
+      dates.delete(key);
+    } else {
+      dates.set(key, new Date(message.dueDate).toISOString());
+    }
+    await manualDueDatesStorage.setValue(Object.fromEntries(dates));
+    return { ok: true };
+  });
+
+const openOptionsPage = async () => {
+  try {
+    await browser.runtime.openOptionsPage();
+  } catch {
+    await browser.tabs.create({
+      url: browser.runtime.getURL("/options.html"),
+    });
+  }
+  return { ok: true };
+};
+
+const sendAsyncResponse = async (
+  operation: Promise<{ ok: boolean }>,
+  sendResponse: (response: { ok: boolean }) => void
+) => {
+  let response: { ok: boolean };
+  try {
+    response = await operation;
+  } catch {
+    response = { ok: false };
+  }
+  sendResponse(response);
+};
+
 export default defineBackground(() => {
+  browser.runtime.onMessage.addListener(
+    (message: unknown, _sender, sendResponse) => {
+      let operation: Promise<{ ok: boolean }>;
+      if (isCacheClassAssignmentsMessage(message)) {
+        operation = cacheClassAssignments(message);
+      } else if (isManualDueDateMessage(message)) {
+        operation = setManualDueDate(message);
+      } else if (
+        message &&
+        typeof message === "object" &&
+        "action" in message &&
+        message.action === "openOptionsPage"
+      ) {
+        operation = openOptionsPage();
+      } else {
+        return;
+      }
+      void sendAsyncResponse(operation, sendResponse);
+      // Keep the response channel open on browsers that require a callback.
+      return true;
+    }
+  );
+
   const setupAlarm = async () => {
     try {
       await browser.alarms.clear(ALARM_NAME);
@@ -192,85 +303,9 @@ export default defineBackground(() => {
     void checkCachedAssignments();
   });
 
-  browser.notifications.onButtonClicked.addListener((notificationId) => {
-    openNotificationAssignment(notificationId);
-  });
-
-  browser.notifications.onClicked.addListener((notificationId) => {
-    openNotificationAssignment(notificationId);
-  });
-
-  browser.runtime.onMessage.addListener(async (message) => {
-    if (isCacheClassAssignmentsMessage(message)) {
-      try {
-        return await enqueue(async () => {
-          const cached = readAssignmentSnapshot(
-            await cachedAssignmentsStorage.getValue()
-          );
-          const enrolledClassIds = new Set(message.classIds);
-          const retained =
-            cached.userId === message.userId
-              ? cached.assignments.filter(
-                  (assignment) =>
-                    assignment.class_id !== message.classId &&
-                    enrolledClassIds.has(assignment.class_id)
-                )
-              : [];
-          await cachedAssignmentsStorage.setValue({
-            assignments: [...retained, ...message.assignments],
-            userId: message.userId,
-          });
-          return { ok: true };
-        });
-      } catch {
-        return { ok: false };
-      }
-    }
-    if (isManualDueDateMessage(message)) {
-      try {
-        return await enqueue(async () => {
-          const cached = readAssignmentSnapshot(
-            await cachedAssignmentsStorage.getValue()
-          );
-          const assignment = {
-            class_id: message.classId,
-            id: message.assignmentId,
-          };
-          const current =
-            cached.userId === message.userId
-              ? cached.assignments.find(
-                  (item) =>
-                    item.id === assignment.id &&
-                    item.class_id === assignment.class_id
-                )
-              : undefined;
-          if (message.dueDate && current?.due_date) {
-            return { ok: false };
-          }
-          const dates = new Map(
-            Object.entries(await manualDueDatesStorage.getValue())
-          );
-          const key = getAssignmentKey(message.userId, assignment);
-          if (message.dueDate === null) {
-            dates.delete(key);
-          } else {
-            dates.set(key, new Date(message.dueDate).toISOString());
-          }
-          await manualDueDatesStorage.setValue(Object.fromEntries(dates));
-          return { ok: true };
-        });
-      } catch {
-        return { ok: false };
-      }
-    }
-    if (message?.action === "openOptionsPage") {
-      try {
-        await browser.runtime.openOptionsPage();
-      } catch {
-        await browser.tabs.create({
-          url: browser.runtime.getURL("/options.html"),
-        });
-      }
-    }
-  });
+  const { notifications } = browser;
+  notifications?.onClicked?.addListener(openNotificationAssignment);
+  if (supportsNotificationButtons()) {
+    notifications?.onButtonClicked?.addListener(openNotificationAssignment);
+  }
 });

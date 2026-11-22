@@ -8,6 +8,7 @@ import {
   cachedAssignmentsStorage,
   deadlineNotificationHistoryStorage,
   languageStorage,
+  manualDueDatesStorage,
   userIdStorage,
 } from "@/lib/storage";
 import type { Activity } from "@/types";
@@ -55,16 +56,57 @@ const drainChecks = async () => {
   });
 };
 
+const spyOnMessageRegistration = () =>
+  vi.spyOn(browser.runtime.onMessage, "addListener");
+
+let messageRegistration: ReturnType<typeof spyOnMessageRegistration>;
+
+const dispatchMessage = (
+  message: unknown,
+  sendResponse: (response: unknown) => void
+) => {
+  expect(messageRegistration).toHaveBeenCalledTimes(1);
+  const listener = messageRegistration.mock.calls[0]?.[0];
+  return listener?.(message, {}, sendResponse);
+};
+
+const sendMessage = async (message: unknown): Promise<unknown> => {
+  const { promise, resolve } = Promise.withResolvers<unknown>();
+  const sendResponse = vi.fn(resolve);
+  expect(dispatchMessage(message, sendResponse)).toBe(true);
+  const response = await promise;
+  expect(sendResponse).toHaveBeenCalledTimes(1);
+  return response;
+};
+
 beforeEach(() => {
   fakeBrowser.reset();
-  background.main();
+  messageRegistration = spyOnMessageRegistration();
 });
 afterEach(async () => {
   await drainChecks();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+});
+
+it("opens the options tab when the runtime options API fails", async () => {
+  background.main();
+  const openOptions = vi
+    .spyOn(browser.runtime, "openOptionsPage")
+    .mockRejectedValue(new Error("Options API unavailable"));
+  const createTab = vi.spyOn(browser.tabs, "create");
+
+  expect(await sendMessage({ action: "openOptionsPage" })).toEqual({
+    ok: true,
+  });
+  expect(openOptions).toHaveBeenCalledTimes(1);
+  expect(createTab).toHaveBeenCalledExactlyOnceWith({
+    url: browser.runtime.getURL("/options.html"),
+  });
 });
 
 it("sends a manual deadline reminder when another class has not loaded", async () => {
+  background.main();
   const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
   await userIdStorage.setValue("student-a");
   const assignment = createMockActivity({
@@ -72,26 +114,20 @@ it("sends a manual deadline reminder when another class has not loaded", async (
     due_date: null,
     id: 101,
   });
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "cacheClassAssignments",
-      assignments: [assignment],
-      classId: 10,
-      classIds: [10, 20],
-      userId: "student-a",
-    },
-    {}
-  );
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "setManualDueDate",
-      assignmentId: 101,
-      classId: 10,
-      dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      userId: "student-a",
-    },
-    {}
-  );
+  await sendMessage({
+    action: "cacheClassAssignments",
+    assignments: [assignment],
+    classId: 10,
+    classIds: [10, 20],
+    userId: "student-a",
+  });
+  await sendMessage({
+    action: "setManualDueDate",
+    assignmentId: 101,
+    classId: 10,
+    dueDate: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    userId: "student-a",
+  });
   await drainChecks();
   expect(notify).toHaveBeenCalledTimes(1);
   expect(
@@ -102,6 +138,7 @@ it("sends a manual deadline reminder when another class has not loaded", async (
 });
 
 it("retains the cached records of failed classes and replaces successful classes", async () => {
+  background.main();
   const oldA = createMockActivity({ class_id: 10, due_date: null, id: 1 });
   const oldB = createMockActivity({ class_id: 20, due_date: null, id: 2 });
   const freshA = createMockActivity({ class_id: 10, due_date: null, id: 3 });
@@ -109,30 +146,24 @@ it("retains the cached records of failed classes and replaces successful classes
     assignments: [oldA, oldB],
     userId: "student-a",
   });
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "cacheClassAssignments",
-      assignments: [freshA],
-      classId: 10,
-      classIds: [10, 20],
-      userId: "student-a",
-    },
-    {}
-  );
+  await sendMessage({
+    action: "cacheClassAssignments",
+    assignments: [freshA],
+    classId: 10,
+    classIds: [10, 20],
+    userId: "student-a",
+  });
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
   ).toEqual([oldB, freshA]);
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "cacheClassAssignments",
-      assignments: [],
-      classId: 10,
-      classIds: [10, 20],
-      userId: "student-a",
-    },
-    {}
-  );
+  await sendMessage({
+    action: "cacheClassAssignments",
+    assignments: [],
+    classId: 10,
+    classIds: [10, 20],
+    userId: "student-a",
+  });
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
@@ -140,22 +171,20 @@ it("retains the cached records of failed classes and replaces successful classes
 });
 
 it("does not mix records belonging to different student accounts", async () => {
+  background.main();
   const old = createMockActivity({ class_id: 10, due_date: null });
   const fresh = createMockActivity({ class_id: 20, due_date: null });
   await cachedAssignmentsStorage.setValue({
     assignments: [old],
     userId: "student-a",
   });
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "cacheClassAssignments",
-      assignments: [fresh],
-      classId: 20,
-      classIds: [10, 20],
-      userId: "student-b",
-    },
-    {}
-  );
+  await sendMessage({
+    action: "cacheClassAssignments",
+    assignments: [fresh],
+    classId: 20,
+    classIds: [10, 20],
+    userId: "student-b",
+  });
   expect(await cachedAssignmentsStorage.getValue()).toEqual({
     assignments: [fresh],
     userId: "student-b",
@@ -163,29 +192,24 @@ it("does not mix records belonging to different student accounts", async () => {
 });
 
 it("serializes concurrent successful class updates without losing either result", async () => {
+  background.main();
   const a = createMockActivity({ class_id: 10, due_date: null, id: 1 });
   const b = createMockActivity({ class_id: 20, due_date: null, id: 2 });
   await Promise.all([
-    fakeBrowser.runtime.onMessage.trigger(
-      {
-        action: "cacheClassAssignments",
-        assignments: [a],
-        classId: 10,
-        classIds: [10, 20],
-        userId: "student-a",
-      },
-      {}
-    ),
-    fakeBrowser.runtime.onMessage.trigger(
-      {
-        action: "cacheClassAssignments",
-        assignments: [b],
-        classId: 20,
-        classIds: [10, 20],
-        userId: "student-a",
-      },
-      {}
-    ),
+    sendMessage({
+      action: "cacheClassAssignments",
+      assignments: [a],
+      classId: 10,
+      classIds: [10, 20],
+      userId: "student-a",
+    }),
+    sendMessage({
+      action: "cacheClassAssignments",
+      assignments: [b],
+      classId: 20,
+      classIds: [10, 20],
+      userId: "student-a",
+    }),
   ]);
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
@@ -194,22 +218,20 @@ it("serializes concurrent successful class updates without losing either result"
 });
 
 it("drops records for classes no longer enrolled", async () => {
+  background.main();
   const retired = createMockActivity({ class_id: 30, due_date: null, id: 1 });
   const current = createMockActivity({ class_id: 10, due_date: null, id: 2 });
   await cachedAssignmentsStorage.setValue({
     assignments: [retired],
     userId: "student-a",
   });
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      action: "cacheClassAssignments",
-      assignments: [current],
-      classId: 10,
-      classIds: [10],
-      userId: "student-a",
-    },
-    {}
-  );
+  await sendMessage({
+    action: "cacheClassAssignments",
+    assignments: [current],
+    classId: 10,
+    classIds: [10],
+    userId: "student-a",
+  });
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
@@ -217,6 +239,7 @@ it("drops records for classes no longer enrolled", async () => {
 });
 
 it("rejects mismatched classes and resolved manual dates at the raw-cache boundary", async () => {
+  background.main();
   const raw = createMockActivity({ class_id: 10, due_date: null });
   const message = {
     action: "cacheClassAssignments",
@@ -225,25 +248,29 @@ it("rejects mismatched classes and resolved manual dates at the raw-cache bounda
     classIds: [10],
     userId: "student-a",
   };
-  await fakeBrowser.runtime.onMessage.trigger(
-    { ...message, assignments: [{ ...raw, class_id: 20 }] },
-    {}
-  );
-  await fakeBrowser.runtime.onMessage.trigger(
-    {
-      ...message,
-      assignments: [{ ...raw, manualDueDate: "2030-01-01T00:00:00Z" }],
-    },
-    {}
-  );
-  await fakeBrowser.runtime.onMessage.trigger(
-    { ...message, classIds: [20] },
-    {}
-  );
+  expect(
+    dispatchMessage(
+      { ...message, assignments: [{ ...raw, class_id: 20 }] },
+      vi.fn()
+    )
+  ).toBeUndefined();
+  expect(
+    dispatchMessage(
+      {
+        ...message,
+        assignments: [{ ...raw, manualDueDate: "2030-01-01T00:00:00Z" }],
+      },
+      vi.fn()
+    )
+  ).toBeUndefined();
+  expect(
+    dispatchMessage({ ...message, classIds: [20] }, vi.fn())
+  ).toBeUndefined();
   expect(await cachedAssignmentsStorage.getValue()).toEqual([]);
 });
 
 it("localizes desktop notifications in Thai and English based on language preference", async () => {
+  background.main();
   const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
   const dueSoon = createMockActivity({
     class_id: 10,
@@ -284,4 +311,143 @@ it("localizes desktop notifications in Thai and English based on language prefer
       title: "Assignment due soon",
     })
   );
+});
+
+it("acknowledges assignment and manual date writes without Safari notifications", async ({
+  onTestFinished,
+}) => {
+  vi.stubEnv("BROWSER", "safari");
+  const { notifications } = browser;
+  Object.defineProperty(browser, "notifications", { value: undefined });
+  onTestFinished(() => {
+    Object.defineProperty(browser, "notifications", { value: notifications });
+  });
+  background.main();
+  await userIdStorage.setValue("student-a");
+  const assignment = createMockActivity({
+    class_id: 10,
+    due_date: null,
+    id: 101,
+  });
+  const dueDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+  expect(
+    await sendMessage({
+      action: "cacheClassAssignments",
+      assignments: [assignment],
+      classId: 10,
+      classIds: [10],
+      userId: "student-a",
+    })
+  ).toEqual({ ok: true });
+  expect(
+    await sendMessage({
+      action: "setManualDueDate",
+      assignmentId: 101,
+      classId: 10,
+      dueDate,
+      userId: "student-a",
+    })
+  ).toEqual({ ok: true });
+
+  await drainChecks();
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [assignment],
+    userId: "student-a",
+  });
+  expect(await manualDueDatesStorage.getValue()).toEqual({
+    '["student-a",10,101]': dueDate,
+  });
+  expect(await deadlineNotificationHistoryStorage.getValue()).toBeNull();
+});
+
+it("uses Firefox-compatible notification options and opens the assignment on a body click", async () => {
+  vi.stubEnv("BROWSER", "firefox");
+  const registerButton = vi
+    .spyOn(browser.notifications.onButtonClicked, "addListener")
+    .mockImplementation(() => {});
+  const createNotification = fakeBrowser.notifications.create;
+  type NotificationOptions = Parameters<typeof createNotification>[0];
+  const notify = vi
+    .spyOn(fakeBrowser.notifications, "create")
+    .mockImplementation(
+      (
+        idOrOptions: string | NotificationOptions,
+        options?: NotificationOptions
+      ) => {
+        const payload = typeof idOrOptions === "string" ? options : idOrOptions;
+        if (payload && "buttons" in payload) {
+          return Promise.reject(
+            new TypeError("Firefox notifications do not accept buttons")
+          );
+        }
+        if (typeof idOrOptions !== "string") {
+          return createNotification(idOrOptions);
+        }
+        if (!options) {
+          return Promise.reject(
+            new TypeError("Notification options are required")
+          );
+        }
+        return createNotification(idOrOptions, options);
+      }
+    );
+  const createTab = vi.spyOn(browser.tabs, "create");
+  background.main();
+  await userIdStorage.setValue("student-a");
+  await cachedAssignmentsStorage.setValue({
+    assignments: [
+      createMockActivity({
+        class_id: 10,
+        due_date: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        id: 101,
+      }),
+    ],
+    userId: "student-a",
+  });
+  await drainChecks();
+
+  const notificationId = "assignwatch-ASM-10-101-1h";
+  expect(notify).toHaveBeenCalledExactlyOnceWith(
+    notificationId,
+    expect.objectContaining({ type: "basic" })
+  );
+  const notifications = await fakeBrowser.notifications.getAll();
+  expect(notifications[notificationId]).not.toHaveProperty("buttons");
+  expect(registerButton).not.toHaveBeenCalled();
+  await fakeBrowser.notifications.onClicked.trigger(notificationId);
+  expect(createTab).toHaveBeenCalledExactlyOnceWith({
+    url: "https://app.leb2.org/class/10/activity/101",
+  });
+});
+
+it("opens the assignment and clears the notification for both Chromium click events", async () => {
+  vi.stubEnv("BROWSER", "chrome");
+  const createTab = vi.spyOn(browser.tabs, "create");
+  const clear = vi.spyOn(browser.notifications, "clear");
+  background.main();
+
+  const notificationId = "assignwatch-ASM-10-101-1h";
+  const assignmentTab = { url: "https://app.leb2.org/class/10/activity/101" };
+  await fakeBrowser.notifications.onClicked.trigger(notificationId);
+  expect(createTab).toHaveBeenCalledExactlyOnceWith(assignmentTab);
+  expect(clear).toHaveBeenCalledExactlyOnceWith(notificationId);
+
+  createTab.mockClear();
+  clear.mockClear();
+  await fakeBrowser.notifications.onButtonClicked.trigger(notificationId, 0);
+  expect(createTab).toHaveBeenCalledExactlyOnceWith(assignmentTab);
+  expect(clear).toHaveBeenCalledExactlyOnceWith(notificationId);
+});
+
+it("leaves unrelated Chrome messages unclaimed without a response", async () => {
+  vi.stubEnv("BROWSER", "chrome");
+  background.main();
+
+  const sendResponse = vi.fn();
+  expect(
+    dispatchMessage({ action: "unrelated" }, sendResponse)
+  ).toBeUndefined();
+  await drainChecks();
+  expect(sendResponse).not.toHaveBeenCalled();
 });
