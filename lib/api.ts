@@ -1,5 +1,10 @@
+import { SupersededAssignmentRequestError } from "@/lib/assignment-cache";
 import { scrapeUserId } from "@/lib/dom";
-import { userIdStorage } from "@/lib/storage";
+import {
+  classInfoStorage,
+  readEnrollmentScope,
+  userIdStorage,
+} from "@/lib/storage";
 import type { RootResponse } from "@/types";
 
 export const REQUEST_PACING_MS = 100;
@@ -30,7 +35,11 @@ export function shouldRetryAssignments(
   failureCount: number,
   error: Error
 ): boolean {
-  return !isRateLimitError(error) && failureCount < 3;
+  return (
+    !isRateLimitError(error) &&
+    !(error instanceof SupersededAssignmentRequestError) &&
+    failureCount < 3
+  );
 }
 
 let lastRequestTime = 0;
@@ -95,7 +104,10 @@ export async function fetchAssignments(
   await paceRequest();
 
   const finalUserId =
-    userId ?? scrapeUserId() ?? (await userIdStorage.getValue());
+    userId ??
+    scrapeUserId() ??
+    readEnrollmentScope(await classInfoStorage.getValue())?.userId ??
+    (await userIdStorage.getValue());
   const params = new URLSearchParams({ student_id: String(finalUserId) });
   params.set("filter_groups[0][filters][0][key]", "class_id");
   params.set("filter_groups[0][filters][0][operator]", "in");
@@ -152,7 +164,8 @@ export function createAssignmentsBatchRequest(
 export async function fetchClassAssignments(
   classId: number,
   userId: string | null,
-  batchAssignments: Promise<RootResponse["activities"]>
+  batchAssignments: Promise<RootResponse["activities"]>,
+  signal?: AbortSignal
 ) {
   try {
     const assignments = await batchAssignments;
@@ -162,6 +175,7 @@ export async function fetchClassAssignments(
       throw error;
     }
 
+    signal?.throwIfAborted();
     return fetchAssignments([classId], userId);
   }
 }

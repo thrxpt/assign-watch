@@ -24,6 +24,7 @@ import type {
   Activity,
   AssignmentSnapshot,
   ClassInfo,
+  EnrollmentScope,
   StoredClassRoster,
 } from "@/types";
 
@@ -110,22 +111,10 @@ export const classInfoStorage = storage.defineItem<StoredClassRoster>(
 /** Shared while enrollment is unknown, so memoized IDs stay stable. */
 export const NO_CLASSES: ClassInfo[] = [];
 
-/**
- * The classes belonging to the student the page identifies, or null when the
- * enrollment is unknown: no current student, a legacy array with no owner, or a
- * roster saved for another student. An empty array means confirmed empty.
- */
-export function selectClassRoster(
-  stored: StoredClassRoster | null | undefined,
-  userId: string | null
-): ClassInfo[] | null {
-  if (!userId || !stored || Array.isArray(stored)) {
-    return null;
-  }
-  if (stored.userId !== userId || !Array.isArray(stored.classes)) {
-    return null;
-  }
-  return stored.classes;
+export function readEnrollmentScope(
+  stored: StoredClassRoster
+): EnrollmentScope | null {
+  return !Array.isArray(stored) && "generation" in stored ? stored : null;
 }
 
 export const cachedAssignmentsStorage = storage.defineItem<

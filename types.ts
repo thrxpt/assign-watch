@@ -11,8 +11,14 @@ export interface ClassRoster {
   userId: string;
 }
 
-/** A bare array is a legacy roster with no trusted owner. */
-export type StoredClassRoster = ClassInfo[] | ClassRoster;
+export interface EnrollmentScope {
+  classes: ClassInfo[] | null;
+  generation: string;
+  userId: string;
+}
+
+/** Pre-upgrade rosters lack a worker-approved generation. */
+export type StoredClassRoster = ClassInfo[] | ClassRoster | EnrollmentScope;
 
 export interface RootResponse {
   activities: Activity[];

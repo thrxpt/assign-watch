@@ -1,5 +1,5 @@
-import { useQueries } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { browser } from "#imports";
 import { AssignmentDialog } from "@/components/assignment-dialog";
@@ -9,7 +9,11 @@ import {
   isRateLimitError,
   shouldRetryAssignments,
 } from "@/lib/api";
-import { cacheClassAssignments } from "@/lib/assignment-cache";
+import {
+  cacheClassAssignments,
+  SupersededAssignmentRequestError,
+} from "@/lib/assignment-cache";
+import type { PublishEnrollmentMessage } from "@/lib/assignment-cache";
 import { assignmentQueryKey } from "@/lib/assignment-query-cache";
 import { readCurrentStudentId, scrapeClassCards } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
@@ -21,10 +25,9 @@ import {
   hiddenClassesStorage,
   manualDueDatesStorage,
   NO_CLASSES,
-  selectClassRoster,
+  readEnrollmentScope,
   showUndatedAssignmentsStorage,
   sortStorage,
-  userIdStorage,
 } from "@/lib/storage";
 import {
   useAssignmentHydration,
@@ -53,38 +56,89 @@ async function openOptionsPage() {
   }
 }
 
-/**
- * Saves the roster shown on `/class` for the student the page identifies. An
- * unresolved scrape or a changed student leaves the stored roster alone.
- */
-async function syncClassRoster() {
-  if (window.location.pathname !== "/class") {
-    return;
-  }
-
-  const userId = readCurrentStudentId();
-  if (!userId) {
-    return;
-  }
-
-  const scraped = scrapeClassCards();
-  if (scraped.status !== "resolved") {
-    return;
-  }
-
-  // The cards carry no owner, so never label them with a student who took
-  // over the page after they were read.
+async function publishObservedEnrollment(userId: string, canScrape: boolean) {
+  const scraped =
+    canScrape && window.location.pathname === "/class"
+      ? scrapeClassCards()
+      : null;
+  // Check the owner again because the cards themselves do not identify it.
   if (readCurrentStudentId() !== userId) {
     return;
   }
 
-  await classInfoStorage.setValue({ classes: scraped.classes, userId });
+  const message: PublishEnrollmentMessage = {
+    action: "publishEnrollment",
+    classes: scraped?.status === "resolved" ? scraped.classes : null,
+    userId,
+  };
+  try {
+    await browser.runtime.sendMessage(message);
+  } catch {
+    // The storage subscription remains authoritative if the worker is unavailable.
+  }
+}
+
+function useEnrollmentScope(userId: string | null) {
+  const [storedRoster] = useStorageState(classInfoStorage);
+  const queryClient = useQueryClient();
+  const approvedScope = readEnrollmentScope(storedRoster);
+  const scope = approvedScope?.userId === userId ? approvedScope : null;
+  const generation = scope?.generation;
+  const [appliedScope, setAppliedScope] = useState(scope);
+  const hasObservedStudent = useRef(false);
+  const isScopeApplied = appliedScope?.generation === generation;
+  const batchAssignmentsRequest = useMemo(
+    () =>
+      createAssignmentsBatchRequest(
+        appliedScope?.classes?.map(({ id }) => id) ?? [],
+        appliedScope?.userId
+      ),
+    [appliedScope]
+  );
+
+  useEffect(() => {
+    if (userId) {
+      // Cards left on the same page after an account switch may be stale.
+      const canScrape = !hasObservedStudent.current;
+      hasObservedStudent.current = true;
+      void publishObservedEnrollment(userId, canScrape);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    if (appliedScope?.generation === generation) {
+      return;
+    }
+    let active = true;
+    const applyScope = async () => {
+      const previousClassIds = new Set(
+        appliedScope?.classes?.map(({ id }) => id)
+      );
+      // Cancel work before enabling the new generation on shared query keys.
+      await queryClient.cancelQueries({
+        predicate: ({ queryKey, state }) =>
+          state.fetchStatus !== "idle" &&
+          queryKey[0] === "assignments" &&
+          typeof queryKey[1] === "number" &&
+          previousClassIds.has(queryKey[1]) &&
+          queryKey[2] === appliedScope?.userId,
+      });
+      if (active) {
+        setAppliedScope(scope);
+      }
+    };
+    void applyScope();
+    return () => {
+      active = false;
+    };
+  }, [appliedScope, generation, queryClient, scope]);
+
+  return { batchAssignmentsRequest, isScopeApplied, scope };
 }
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [storedRoster] = useStorageState(classInfoStorage);
   const [manualDueDates] = useStorageState(manualDueDatesStorage);
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
@@ -96,11 +150,9 @@ function App() {
   const [groupState, setGroupState] = useStorageState(groupStorage);
 
   const userId = useCurrentStudentId(isModalOpen);
-  // Only the signed-in student's own roster may drive requests or titles.
-  const roster = useMemo(
-    () => selectClassRoster(storedRoster, userId),
-    [storedRoster, userId]
-  );
+  const { batchAssignmentsRequest, isScopeApplied, scope } =
+    useEnrollmentScope(userId);
+  const roster = scope?.classes ?? null;
   const allClassInfo = roster ?? NO_CLASSES;
   const classIds = useMemo(
     () => allClassInfo.map((classInfo) => classInfo.id),
@@ -111,20 +163,6 @@ function App() {
     isOpen: isModalOpen,
     userId,
   });
-  const batchAssignmentsRequest = useMemo(
-    () => createAssignmentsBatchRequest(classIds, userId),
-    [classIds, userId]
-  );
-
-  useEffect(() => {
-    if (userId?.trim()) {
-      void userIdStorage.setValue(userId);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    void syncClassRoster();
-  }, []);
 
   useEffect(() => {
     const button = document.createElement("button");
@@ -176,30 +214,56 @@ function App() {
       data: results.map((result) => result.data),
       results,
     }),
-    queries: allClassInfo.map((classInfo) => ({
-      // A 429 stays manual-only, including when the dialog is reopened.
-      enabled: (query: { state: { error: unknown } }) =>
-        isModalOpen &&
-        isHydratedForCurrentClasses &&
-        !isRateLimitError(query.state.error),
-      queryFn: async () => {
-        const data = await fetchClassAssignments(
-          classInfo.id,
-          userId,
-          batchAssignmentsRequest.fetch()
-        );
-        await cacheClassAssignments(userId, classInfo.id, data, classIds);
-        return data;
-      },
-      queryKey: assignmentQueryKey(classInfo.id, userId),
-      retry: shouldRetryAssignments,
-    })),
+    queries: scope
+      ? allClassInfo.map((classInfo) => ({
+          // A 429 stays manual-only, including when the dialog is reopened.
+          enabled: (query: { state: { error: unknown } }) =>
+            isModalOpen &&
+            isHydratedForCurrentClasses &&
+            isScopeApplied &&
+            !(
+              query.state.error instanceof SupersededAssignmentRequestError &&
+              query.state.error.generation === scope.generation
+            ) &&
+            !isRateLimitError(query.state.error),
+          queryFn: async ({ signal }) => {
+            const assertCurrentStudent = () => {
+              signal.throwIfAborted();
+              if (!isScopeApplied || readCurrentStudentId() !== scope.userId) {
+                throw new SupersededAssignmentRequestError(scope.generation);
+              }
+            };
+            assertCurrentStudent();
+            const data = await fetchClassAssignments(
+              classInfo.id,
+              scope.userId,
+              batchAssignmentsRequest.fetch(),
+              signal
+            );
+            assertCurrentStudent();
+            const outcome = await cacheClassAssignments(
+              scope,
+              classInfo.id,
+              data
+            );
+            if (outcome === "discarded") {
+              throw new SupersededAssignmentRequestError(scope.generation);
+            }
+            assertCurrentStudent();
+            return data;
+          },
+          queryKey: assignmentQueryKey(classInfo.id, userId),
+          retry: shouldRetryAssignments,
+        }))
+      : [],
   });
 
   const hiddenClassIds = new Set(hiddenClasses);
   const failedQueries = assignments.results.filter(
     (result, index) =>
-      result.isError && !hiddenClassIds.has(allClassInfo[index].id)
+      result.isError &&
+      !(result.error instanceof SupersededAssignmentRequestError) &&
+      !hiddenClassIds.has(allClassInfo[index].id)
   );
   const hasStaleData = assignments.results.some((result, index) => {
     const classInfo = allClassInfo[index];
@@ -216,6 +280,9 @@ function App() {
       batchAssignmentsRequest.isError(result.error)
   );
   const retryFailedQueries = async () => {
+    if (!isScopeApplied) {
+      return;
+    }
     const refreshes: Promise<unknown>[] = [];
     if (isBatchRateLimited) {
       batchAssignmentsRequest.reset();
@@ -282,7 +349,12 @@ function App() {
   const pendingClasses = getPendingClasses({
     allClassInfo,
     hiddenClasses,
-    results: assignments.results,
+    results: assignments.results.map(({ data, error, isPending }) => ({
+      isPending:
+        isPending ||
+        (data === undefined &&
+          error instanceof SupersededAssignmentRequestError),
+    })),
   });
   const resolvedAssignments = resolvedData.flatMap((items) => items ?? []);
   const handleDialogOpenChange = (open: boolean) => {

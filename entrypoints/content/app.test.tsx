@@ -1,11 +1,14 @@
 // @vitest-environment happy-dom
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { UseQueryOptions, useQueries } from "@tanstack/react-query";
 import type { ComponentProps, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { browser } from "wxt/browser";
 
 import type {
   AssignmentLoadError,
@@ -17,6 +20,11 @@ import {
   fetchAssignments,
   resetPacingQueue,
 } from "@/lib/api";
+import {
+  isCacheClassAssignmentsMessage,
+  SupersededAssignmentRequestError,
+} from "@/lib/assignment-cache";
+import { assignmentQueryKey } from "@/lib/assignment-query-cache";
 import type * as Dom from "@/lib/dom";
 import { translate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
@@ -24,9 +32,13 @@ import {
   cachedAssignmentsStorage,
   classInfoStorage,
   hiddenClassesStorage,
-  userIdStorage,
 } from "@/lib/storage";
-import type { Activity, ClassInfo, StoredClassRoster } from "@/types";
+import type {
+  Activity,
+  ClassInfo,
+  EnrollmentScope,
+  StoredClassRoster,
+} from "@/types";
 
 interface QueryResult {
   data: Activity[] | undefined;
@@ -35,7 +47,7 @@ interface QueryResult {
   isError: boolean;
   isFetching: boolean;
   isPending: boolean;
-  refetch: () => Promise<void>;
+  refetch: () => Promise<unknown>;
 }
 
 const state = vi.hoisted(() => ({
@@ -64,6 +76,7 @@ const state = vi.hoisted(() => ({
 }));
 
 const queryClient = {
+  cancelQueries: async () => {},
   getQueryState: (queryKey: readonly unknown[]) =>
     state.queryCache.get(JSON.stringify(queryKey)),
   setQueryData: (
@@ -81,6 +94,13 @@ const queryClient = {
   },
 };
 let mountedRoot: Root | null = null;
+let integrationQueryClient: QueryClient | null = null;
+
+const spyOnRuntimeMessages = (
+  runtime: {
+    sendMessage: (message: unknown) => Promise<unknown>;
+  } = browser.runtime
+) => vi.spyOn(runtime, "sendMessage");
 
 vi.mock("@/components/assignment-load-error", async (importOriginal) => {
   const actual = await importOriginal<{
@@ -98,18 +118,13 @@ vi.mock("@/components/assignment-load-error", async (importOriginal) => {
   };
 });
 
-vi.mock("@tanstack/react-query", () => ({
-  useQueries: ({
-    combine,
-    queries,
-  }: {
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<{ useQueries: typeof useQueries }>();
+  interface QueryOptions {
     combine: (results: QueryResult[]) => unknown;
-    queries: {
-      enabled: unknown;
-      queryFn: unknown;
-      queryKey: readonly unknown[];
-    }[];
-  }) => {
+    queries: UseQueryOptions<Activity[]>[];
+  }
+  const useSimulatedQueries = ({ combine, queries }: QueryOptions) => {
     state.queryConfigs = queries.map((query) => ({
       enabled: query.enabled,
       queryFn: query.queryFn,
@@ -132,9 +147,18 @@ vi.mock("@tanstack/react-query", () => ({
         })
       : state.results;
     return combine(results);
-  },
-  useQueryClient: () => queryClient,
-}));
+  };
+  return {
+    ...actual,
+    useQueries: (options: QueryOptions) => {
+      const useQueries = integrationQueryClient
+        ? actual.useQueries
+        : useSimulatedQueries;
+      return useQueries(options);
+    },
+    useQueryClient: () => integrationQueryClient ?? queryClient,
+  };
+});
 
 vi.mock("@/lib/dom", async (importOriginal) => {
   const actual = await importOriginal<typeof Dom>();
@@ -234,8 +258,16 @@ function classInfo(id: number): ClassInfo {
   };
 }
 
+function approvedRoster(
+  userId = "student-1",
+  ids = [1],
+  generation = "initial"
+): EnrollmentScope {
+  return { classes: ids.map(classInfo), generation, userId };
+}
+
 function addClasses(...ids: number[]) {
-  if (Array.isArray(state.storedClasses)) {
+  if (Array.isArray(state.storedClasses) || !state.storedClasses.classes) {
     throw new TypeError("Expected an owned roster");
   }
   state.storedClasses.classes.push(...ids.map(classInfo));
@@ -272,13 +304,25 @@ function result(overrides: Partial<QueryResult> = {}): QueryResult {
   };
 }
 
+function renderApp() {
+  mountedRoot?.render(
+    integrationQueryClient ? (
+      <QueryClientProvider client={integrationQueryClient}>
+        <App />
+      </QueryClientProvider>
+    ) : (
+      <App />
+    )
+  );
+}
+
 function mountApp() {
   const navigation = document.createElement("div");
   navigation.className = "nav navbar-nav page-menu flex-container fxf-rnw";
   const container = document.createElement("div");
   document.body.append(navigation, container);
   mountedRoot = createRoot(container);
-  act(() => mountedRoot?.render(<App />));
+  act(renderApp);
   return { container, navigation };
 }
 
@@ -302,7 +346,7 @@ describe("assignment dialog load failures", () => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     document.body.replaceChildren();
     document.body.dataset.userid = "student-1";
-    state.storedClasses = { classes: [classInfo(1)], userId: "student-1" };
+    state.storedClasses = approvedRoster();
     state.hiddenClasses = [];
     state.hiddenItemsClasses = [];
     state.onScrape = null;
@@ -369,7 +413,6 @@ describe("assignment dialog load failures", () => {
         isError: true,
       }),
     ];
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
     const { container } = mountApp();
 
     expect(container.textContent).toContain("Try again in 120s");
@@ -465,7 +508,6 @@ describe("assignment dialog load failures", () => {
     state.results = [
       result({ data: [assignment], dataUpdatedAt: 0, isFetching: true }),
     ];
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
     const { container } = mountApp();
 
     expect(container.querySelector("output")?.textContent).toContain(
@@ -499,7 +541,6 @@ describe("assignment dialog load failures", () => {
     vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
       snapshotPromise
     );
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
 
     const { container, navigation } = mountApp();
 
@@ -538,7 +579,6 @@ describe("assignment dialog load failures", () => {
     vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
       snapshotPromise
     );
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
 
     const { container, navigation } = mountApp();
     const openButton = navigation.querySelector<HTMLButtonElement>(
@@ -599,7 +639,6 @@ describe("assignment dialog load failures", () => {
     vi.spyOn(cachedAssignmentsStorage, "getValue").mockReturnValue(
       snapshotPromise
     );
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
 
     const { container, navigation } = mountApp();
     const openButton = navigation.querySelector<HTMLButtonElement>(
@@ -608,7 +647,7 @@ describe("assignment dialog load failures", () => {
     act(() => openButton?.click());
 
     await act(async () => {
-      state.storedClasses = { classes: [classInfo(1)], userId: "student-2" };
+      state.storedClasses = approvedRoster("student-2");
       document.body.dataset.userid = "student-2";
       await Promise.resolve();
     });
@@ -712,20 +751,19 @@ describe("assignment dialog load failures", () => {
   it("retries a rate-limited batch once for every enrolled class", async () => {
     addClasses(2);
     state.hiddenClasses = [2];
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
     const fetch = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(new Response(null, { status: 429 }))
       .mockResolvedValueOnce(new Response(null, { status: 429 }));
     const { container } = mountApp();
     const initialQuery = state.queryConfigs[0]?.queryFn as
-      | (() => Promise<unknown>)
+      | ((context: { signal: AbortSignal }) => Promise<unknown>)
       | undefined;
     let batchError: unknown;
 
     await act(async () => {
       try {
-        await initialQuery?.();
+        await initialQuery?.({ signal: new AbortController().signal });
       } catch (error) {
         batchError = error;
       }
@@ -735,10 +773,10 @@ describe("assignment dialog load failures", () => {
     const refetch = (index: number) =>
       vi.fn(async () => {
         const query = state.queryConfigs[index]?.queryFn as
-          | (() => Promise<unknown>)
+          | ((context: { signal: AbortSignal }) => Promise<unknown>)
           | undefined;
         try {
-          await query?.();
+          await query?.({ signal: new AbortController().signal });
         } catch {
           // React Query resolves refetch with its result, even when the query fails.
         }
@@ -816,10 +854,9 @@ describe("class roster ownership", () => {
     state.queryCache.clear();
     state.queryConfigs = [];
     state.results = [];
-    state.storedClasses = { classes: [classInfo(1)], userId: "student-1" };
+    state.storedClasses = approvedRoster();
     state.useQueryCache = false;
     setPageUrl("/");
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
     vi.spyOn(cachedAssignmentsStorage, "getValue").mockResolvedValue([]);
   });
 
@@ -836,9 +873,10 @@ describe("class roster ownership", () => {
   it.each([
     ["a legacy roster with no owner", [classInfo(1)]],
     [
-      "a roster owned by another student",
-      { classes: [classInfo(1)], userId: "student-2" },
+      "an owned roster without a worker generation",
+      { classes: [classInfo(1)], userId: "student-1" },
     ],
+    ["a roster owned by another student", approvedRoster("student-2")],
   ] satisfies [string, StoredClassRoster][])(
     "requests nothing and prompts a sync for %s away from /class",
     async (_name, stored) => {
@@ -900,14 +938,203 @@ describe("class roster ownership", () => {
     expect(occurrences(container.textContent, "No classes found")).toBe(2);
   });
 
+  it("does not republish this tab's student after another tab changes the scope", async () => {
+    const publish = spyOnRuntimeMessages().mockResolvedValue({ ok: true });
+    const { navigation } = mountApp();
+    await openDialog(navigation);
+
+    await act(() => {
+      state.storedClasses = approvedRoster("student-2", [1], "next");
+      renderApp();
+    });
+
+    expect(queryClassIds()).toEqual([]);
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-1",
+    });
+  });
+
   it("shows the empty-work state in both tabs for a confirmed empty roster", async () => {
-    state.storedClasses = { classes: [], userId: "student-1" };
+    state.storedClasses = approvedRoster("student-1", []);
     const { container, navigation } = mountApp();
     await openDialog(navigation);
 
     expect(queryClassIds()).toEqual([]);
     expect(occurrences(container.textContent, "All caught up!")).toBe(2);
     expect(container.textContent).not.toContain("No classes found");
+  });
+});
+
+function holdAssignmentResponse() {
+  const oldResponse = Promise.withResolvers<Response>();
+  const activity = {
+    activity_submission_id: 0,
+    class_id: 1,
+    due_date: "2099-12-31T12:00:00Z",
+    group_type: "IND",
+    id: 101,
+    type: "ASM",
+  };
+  const old = { ...activity, title: "Superseded assignment" };
+  const fresh = { ...activity, id: 102, title: "Current assignment" };
+  const fetch = vi
+    .spyOn(globalThis, "fetch")
+    .mockReturnValueOnce(oldResponse.promise)
+    .mockResolvedValueOnce(Response.json({ activities: [fresh] }));
+  const send = spyOnRuntimeMessages().mockImplementation((message) =>
+    Promise.resolve(
+      isCacheClassAssignmentsMessage(message) &&
+        message.generation === "initial"
+        ? { discarded: true, ok: false }
+        : { ok: true }
+    )
+  );
+  return { fetch, fresh, old, oldResponse, send };
+}
+
+describe("in-flight assignment requests across enrollment changes", () => {
+  let client: QueryClient;
+
+  beforeEach(() => {
+    resetPacingQueue();
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    document.body.replaceChildren();
+    document.body.dataset.userid = "student-1";
+    state.storedClasses = approvedRoster();
+    state.hiddenClasses = [];
+    state.locale = "en";
+    setPageUrl("/");
+    vi.spyOn(cachedAssignmentsStorage, "getValue").mockResolvedValue([]);
+    client = new QueryClient({
+      defaultOptions: {
+        queries: { retryDelay: 0, staleTime: 5 * 60 * 1000 },
+      },
+    });
+    integrationQueryClient = client;
+  });
+
+  afterEach(() => {
+    if (mountedRoot) {
+      act(() => mountedRoot?.unmount());
+      mountedRoot = null;
+    }
+    client.clear();
+    integrationQueryClient = null;
+    document.body.replaceChildren();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    { change: "account", ids: [1], nextUser: "student-2" },
+    { change: "roster", ids: [1, 2, 3, 4], nextUser: "student-1" },
+  ])(
+    "restarts eligible work after a $change change and ignores the late result",
+    async ({ change, ids, nextUser }) => {
+      const rosterChange = change === "roster";
+      const emptyKey = assignmentQueryKey(2, "student-1");
+      const limitedKey = assignmentQueryKey(3, "student-1");
+      const limited = new AssignmentRequestError(429, "Too Many Requests");
+      if (rosterChange) {
+        addClasses(2, 3, 5);
+        client.setQueryData(emptyKey, []);
+        await expect(
+          client.fetchQuery({
+            queryFn: () => Promise.reject(limited),
+            queryKey: limitedKey,
+          })
+        ).rejects.toBe(limited);
+      }
+      const { fetch, fresh, old, oldResponse, send } = holdAssignmentResponse();
+      const { container, navigation } = mountApp();
+      await openDialog(navigation);
+      await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+      const completedEmpty = client.getQueryState(emptyKey);
+
+      await act(async () => {
+        state.storedClasses = approvedRoster(nextUser, ids, "next");
+        document.body.dataset.userid = nextUser;
+        renderApp();
+        await Promise.resolve();
+      });
+      await act(async () => {
+        // The new request can start even though the old network response is held.
+        await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+        oldResponse.resolve(Response.json({ activities: [old] }));
+        await vi.waitFor(() =>
+          expect(client.getQueryData(assignmentQueryKey(1, nextUser))).toEqual([
+            fresh,
+          ])
+        );
+      });
+
+      const requests = send.mock.calls.map(([message]) => message);
+      expect(requests.filter(isCacheClassAssignmentsMessage)).toContainEqual({
+        action: "cacheClassAssignments",
+        assignments: [fresh],
+        classId: 1,
+        generation: "next",
+        userId: nextUser,
+      });
+      expect(
+        requests.filter(isCacheClassAssignmentsMessage)
+      ).not.toContainEqual(expect.objectContaining({ generation: "initial" }));
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(container.textContent).toContain(fresh.title);
+      expect(container.textContent).not.toContain(old.title);
+      if (rosterChange) {
+        expect(client.getQueryState(emptyKey)).toEqual(completedEmpty);
+        expect(client.getQueryState(limitedKey)).toMatchObject({
+          error: limited,
+          fetchStatus: "idle",
+        });
+        expect(
+          requests.filter(isCacheClassAssignmentsMessage)
+        ).not.toContainEqual(expect.objectContaining({ classId: 3 }));
+      } else {
+        expect(
+          client.getQueryData(assignmentQueryKey(1, "student-1"))
+        ).toBeUndefined();
+      }
+    }
+  );
+
+  it("discards a worker-rejected result before the storage update reaches the tab", async () => {
+    const { fetch, fresh, old, oldResponse, send } = holdAssignmentResponse();
+    const { container, navigation } = mountApp();
+    await openDialog(navigation);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    const key = assignmentQueryKey(1, "student-1");
+
+    await act(async () => {
+      oldResponse.resolve(Response.json({ activities: [old] }));
+      await vi.waitFor(() =>
+        expect(client.getQueryState(key)?.error).toBeInstanceOf(
+          SupersededAssignmentRequestError
+        )
+      );
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      send.mock.calls
+        .map(([message]) => message)
+        .filter(isCacheClassAssignmentsMessage)
+    ).toHaveLength(1);
+    expect(client.getQueryData(key)).toBeUndefined();
+    expect(container.textContent).not.toContain(old.title);
+    expect(container.textContent).not.toContain("All caught up!");
+
+    await act(() => {
+      state.storedClasses = approvedRoster("student-1", [1, 4], "next");
+      renderApp();
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(client.getQueryData(key)).toEqual([fresh]));
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toContain(fresh.title);
   });
 });
 
@@ -929,7 +1156,7 @@ function classCard(
 }
 
 describe("class roster sync on /class", () => {
-  let setClassValue: ReturnType<typeof vi.spyOn>;
+  let publish: ReturnType<typeof spyOnRuntimeMessages>;
 
   beforeEach(() => {
     resetPacingQueue();
@@ -941,8 +1168,7 @@ describe("class roster sync on /class", () => {
     state.results = [];
     state.storedClasses = [classInfo(9)];
     setPageUrl("/class");
-    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
-    setClassValue = vi.spyOn(classInfoStorage, "setValue").mockResolvedValue();
+    publish = spyOnRuntimeMessages().mockResolvedValue({ ok: true });
   });
 
   afterEach(() => {
@@ -970,8 +1196,8 @@ describe("class roster sync on /class", () => {
       `${classCard(1)}${classCard(2, { isTeachingAssistant: true })}${classCard(3)}`
     );
 
-    expect(setClassValue).toHaveBeenCalledOnce();
-    expect(setClassValue).toHaveBeenCalledWith({
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
       classes: [
         { ...classInfo(1), description: "About 1", section: "", semester: "" },
         { ...classInfo(3), description: "About 3", section: "", semester: "" },
@@ -980,22 +1206,34 @@ describe("class roster sync on /class", () => {
     });
   });
 
-  it("keeps the stored roster when a student card is malformed or incomplete", async () => {
+  it("publishes only the observed student when a card is malformed or incomplete", async () => {
     await mountWithCards(
       `${classCard(1)}${classCard(2, { withDescription: false })}`
     );
 
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-1",
+    });
   });
 
   it("keeps the stored roster when no student cards are found", async () => {
     await mountWithCards(classCard(2, { isTeachingAssistant: true }));
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-1",
+    });
   });
 
   it("keeps the stored roster when the page has no cards at all", async () => {
     await mountWithCards("");
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-1",
+    });
   });
 
   it("does not label cards with a student who took over after the scrape", async () => {
@@ -1004,20 +1242,42 @@ describe("class roster sync on /class", () => {
     };
     await mountWithCards(classCard(1));
 
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
+  });
+
+  it("does not reuse cards left on the page when it observes a new student", async () => {
+    await mountWithCards(classCard(1));
+    await act(() => {
+      document.querySelector<HTMLButtonElement>("button.header-link")?.click();
+    });
+    await act(async () => {
+      document.body.dataset.userid = "student-2";
+      await Promise.resolve();
+    });
+
+    expect(publish).toHaveBeenCalledTimes(2);
+    expect(publish).toHaveBeenLastCalledWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-2",
+    });
   });
 
   it("does not save a roster when the page has no current student", async () => {
     delete document.body.dataset.userid;
     await mountWithCards(classCard(1));
 
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).not.toHaveBeenCalled();
   });
 
   it("does not scrape away from /class", async () => {
     setPageUrl("/");
     await mountWithCards(classCard(1));
 
-    expect(setClassValue).not.toHaveBeenCalled();
+    expect(publish).toHaveBeenCalledExactlyOnceWith({
+      action: "publishEnrollment",
+      classes: null,
+      userId: "student-1",
+    });
   });
 });

@@ -3,15 +3,18 @@ import { browser } from "wxt/browser";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 
 import background from "@/entrypoints/background";
+import type { CacheClassAssignmentsMessage } from "@/lib/assignment-cache";
 import { readAssignmentSnapshot } from "@/lib/manual-due-dates";
 import {
   cachedAssignmentsStorage,
+  classInfoStorage,
   deadlineNotificationHistoryStorage,
   languageStorage,
   manualDueDatesStorage,
+  readEnrollmentScope,
   userIdStorage,
 } from "@/lib/storage";
-import type { Activity } from "@/types";
+import type { Activity, EnrollmentScope } from "@/types";
 
 function createMockActivity(overrides: Partial<Activity> = {}): Activity {
   return {
@@ -79,12 +82,53 @@ const sendMessage = async (message: unknown): Promise<unknown> => {
   return response;
 };
 
+const classInfo = (id: number) => ({
+  description: "",
+  id,
+  section: "",
+  semester: "",
+  title: `Class ${id}`,
+});
+
+async function publishEnrollment(
+  userId: string,
+  classIds: number[] | null
+): Promise<EnrollmentScope> {
+  expect(
+    await sendMessage({
+      action: "publishEnrollment",
+      classes: classIds?.map(classInfo) ?? null,
+      userId,
+    })
+  ).toEqual({ ok: true });
+  const scope = readEnrollmentScope(await classInfoStorage.getValue());
+  if (!scope) {
+    throw new Error("Expected a worker-approved enrollment");
+  }
+  return scope;
+}
+
+function cacheMessage(
+  { generation, userId }: EnrollmentScope,
+  classId: number,
+  assignments: Activity[]
+): CacheClassAssignmentsMessage {
+  return {
+    action: "cacheClassAssignments",
+    assignments,
+    classId,
+    generation,
+    userId,
+  };
+}
+
 beforeEach(() => {
   fakeBrowser.reset();
   messageRegistration = spyOnMessageRegistration();
 });
 afterEach(async () => {
   await drainChecks();
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
 });
@@ -108,18 +152,14 @@ it("opens the options tab when the runtime options API fails", async () => {
 it("sends a manual deadline reminder when another class has not loaded", async () => {
   background.main();
   const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
-  await userIdStorage.setValue("student-a");
+  const scope = await publishEnrollment("student-a", [10, 20]);
   const assignment = createMockActivity({
     class_id: 10,
     due_date: null,
     id: 101,
   });
-  await sendMessage({
-    action: "cacheClassAssignments",
-    assignments: [assignment],
-    classId: 10,
-    classIds: [10, 20],
-    userId: "student-a",
+  expect(await sendMessage(cacheMessage(scope, 10, [assignment]))).toEqual({
+    ok: true,
   });
   await sendMessage({
     action: "setManualDueDate",
@@ -146,24 +186,13 @@ it("retains the cached records of failed classes and replaces successful classes
     assignments: [oldA, oldB],
     userId: "student-a",
   });
-  await sendMessage({
-    action: "cacheClassAssignments",
-    assignments: [freshA],
-    classId: 10,
-    classIds: [10, 20],
-    userId: "student-a",
-  });
+  const scope = await publishEnrollment("student-a", [10, 20]);
+  await sendMessage(cacheMessage(scope, 10, [freshA]));
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
   ).toEqual([oldB, freshA]);
-  await sendMessage({
-    action: "cacheClassAssignments",
-    assignments: [],
-    classId: 10,
-    classIds: [10, 20],
-    userId: "student-a",
-  });
+  await sendMessage(cacheMessage(scope, 10, []));
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
@@ -178,13 +207,8 @@ it("does not mix records belonging to different student accounts", async () => {
     assignments: [old],
     userId: "student-a",
   });
-  await sendMessage({
-    action: "cacheClassAssignments",
-    assignments: [fresh],
-    classId: 20,
-    classIds: [10, 20],
-    userId: "student-b",
-  });
+  const scope = await publishEnrollment("student-b", [10, 20]);
+  await sendMessage(cacheMessage(scope, 20, [fresh]));
   expect(await cachedAssignmentsStorage.getValue()).toEqual({
     assignments: [fresh],
     userId: "student-b",
@@ -195,21 +219,10 @@ it("serializes concurrent successful class updates without losing either result"
   background.main();
   const a = createMockActivity({ class_id: 10, due_date: null, id: 1 });
   const b = createMockActivity({ class_id: 20, due_date: null, id: 2 });
+  const scope = await publishEnrollment("student-a", [10, 20]);
   await Promise.all([
-    sendMessage({
-      action: "cacheClassAssignments",
-      assignments: [a],
-      classId: 10,
-      classIds: [10, 20],
-      userId: "student-a",
-    }),
-    sendMessage({
-      action: "cacheClassAssignments",
-      assignments: [b],
-      classId: 20,
-      classIds: [10, 20],
-      userId: "student-a",
-    }),
+    sendMessage(cacheMessage(scope, 10, [a])),
+    sendMessage(cacheMessage(scope, 20, [b])),
   ]);
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
@@ -222,32 +235,238 @@ it("drops records for classes no longer enrolled", async () => {
   const retired = createMockActivity({ class_id: 30, due_date: null, id: 1 });
   const current = createMockActivity({ class_id: 10, due_date: null, id: 2 });
   await cachedAssignmentsStorage.setValue({
-    assignments: [retired],
+    assignments: [retired, current],
     userId: "student-a",
   });
-  await sendMessage({
-    action: "cacheClassAssignments",
-    assignments: [current],
-    classId: 10,
-    classIds: [10],
-    userId: "student-a",
-  });
+  await publishEnrollment("student-a", [10, 30]);
+  await publishEnrollment("student-a", [10]);
   expect(
     readAssignmentSnapshot(await cachedAssignmentsStorage.getValue())
       .assignments
   ).toEqual([current]);
 });
 
+it("keeps a generation for equivalent enrollment and changes it for a new owner", async () => {
+  background.main();
+  await classInfoStorage.setValue({
+    classes: [classInfo(10), classInfo(20)],
+    userId: "student-a",
+  });
+  const initial = await publishEnrollment("student-a", null);
+  expect(initial.classes).toEqual([classInfo(10), classInfo(20)]);
+  expect(await publishEnrollment("student-a", null)).toEqual(initial);
+  const renamed = [{ ...classInfo(20), title: "Renamed" }, classInfo(10)];
+  expect(
+    await sendMessage({
+      action: "publishEnrollment",
+      classes: renamed,
+      userId: "student-a",
+    })
+  ).toEqual({ ok: true });
+  expect(await classInfoStorage.getValue()).toEqual({
+    ...initial,
+    classes: renamed,
+  });
+  const other = await publishEnrollment("student-b", null);
+  expect(other.classes).toBeNull();
+  expect(other.generation).not.toBe(initial.generation);
+  expect(await publishEnrollment("student-b", null)).toEqual(other);
+  expect(await publishEnrollment("student-a", null)).toMatchObject({
+    classes: null,
+    userId: "student-a",
+  });
+});
+
+it("rejects late A results after B saves its own assignments and reminders", async () => {
+  background.main();
+  const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
+  const a = await publishEnrollment("student-a", [10]);
+  const response = Promise.withResolvers<Activity[]>();
+  const deliverLateResult = async () =>
+    sendMessage(cacheMessage(a, 10, await response.promise));
+  const late = deliverLateResult();
+
+  const b = await publishEnrollment("student-b", [20]);
+  const dueDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+  const assignment = createMockActivity({ class_id: 20, due_date: dueDate });
+  expect(await sendMessage(cacheMessage(b, 20, [assignment]))).toEqual({
+    ok: true,
+  });
+  response.resolve([createMockActivity({ class_id: 10, due_date: dueDate })]);
+
+  expect(await late).toEqual({ discarded: true, ok: false });
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [assignment],
+    userId: "student-b",
+  });
+  await drainChecks();
+  expect(notify).toHaveBeenCalledExactlyOnceWith(
+    "assignwatch-ASM-20-1-1h",
+    expect.anything()
+  );
+});
+
+it("rejects obsolete A work after A to B to A and a worker restart", async () => {
+  background.main();
+  const firstA = await publishEnrollment("student-a", [10]);
+  await publishEnrollment("student-b", [10]);
+  const currentA = await publishEnrollment("student-a", [10]);
+  expect(currentA.generation).not.toBe(firstA.generation);
+
+  await drainChecks();
+  const persisted = await browser.storage.local.get(null);
+  fakeBrowser.reset();
+  messageRegistration.mockClear();
+  await browser.storage.local.set(persisted);
+  vi.resetModules();
+  const { default: restartedWorker } = await import("@/entrypoints/background");
+  restartedWorker.main();
+
+  expect(await sendMessage(cacheMessage(firstA, 10, []))).toEqual({
+    discarded: true,
+    ok: false,
+  });
+  expect(await sendMessage(cacheMessage(currentA, 10, []))).toEqual({
+    ok: true,
+  });
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [],
+    userId: "student-a",
+  });
+});
+
+it("preserves the new roster and newly cached class when old enrollment finishes last", async () => {
+  background.main();
+  const old = await publishEnrollment("student-a", [10, 20]);
+  const retired = createMockActivity({ class_id: 20, due_date: null });
+  await sendMessage(cacheMessage(old, 20, [retired]));
+
+  const current = await publishEnrollment("student-a", [10, 30]);
+  expect(current.generation).not.toBe(old.generation);
+  const added = createMockActivity({ class_id: 30, due_date: null });
+  await sendMessage(cacheMessage(current, 30, [added]));
+  expect(await sendMessage(cacheMessage(old, 10, []))).toEqual({
+    discarded: true,
+    ok: false,
+  });
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [added],
+    userId: "student-a",
+  });
+
+  const empty = await publishEnrollment("student-a", []);
+  expect(empty.generation).not.toBe(current.generation);
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [],
+    userId: "student-a",
+  });
+  expect(await sendMessage(cacheMessage(current, 30, [added]))).toEqual({
+    discarded: true,
+    ok: false,
+  });
+});
+
+it("filters reminders after a prune failure and repairs the cache before re-adding a class", async () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  background.main();
+  const notify = vi.spyOn(browser.notifications, "create").mockResolvedValue();
+  const old = await publishEnrollment("student-a", [10, 20]);
+  const retired = createMockActivity({
+    class_id: 20,
+    due_date: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  });
+  await sendMessage(cacheMessage(old, 20, [retired]));
+  vi.spyOn(cachedAssignmentsStorage, "setValue").mockRejectedValueOnce(
+    new Error("Storage temporarily unavailable")
+  );
+  expect(
+    await sendMessage({
+      action: "publishEnrollment",
+      classes: [classInfo(10)],
+      userId: "student-a",
+    })
+  ).toEqual({ ok: false });
+  expect(await classInfoStorage.getValue()).toMatchObject({
+    classes: [classInfo(10)],
+  });
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [retired],
+    userId: "student-a",
+  });
+  expect(await sendMessage(cacheMessage(old, 10, []))).toEqual({
+    discarded: true,
+    ok: false,
+  });
+  // Move the clock into the reminder window of the lingering row.
+  vi.setSystemTime(Date.now() - 60 * 60 * 1000);
+  await drainChecks();
+  expect(notify).not.toHaveBeenCalled();
+
+  await publishEnrollment("student-a", [10, 20]);
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [],
+    userId: "student-a",
+  });
+});
+
+it("keeps the previous roster and rows if publishing the new scope fails", async () => {
+  background.main();
+  const previous = await publishEnrollment("student-a", [10, 20]);
+  const row = createMockActivity({ class_id: 20, due_date: null });
+  await sendMessage(cacheMessage(previous, 20, [row]));
+  vi.spyOn(classInfoStorage, "setValue").mockRejectedValueOnce(
+    new Error("Storage temporarily unavailable")
+  );
+  expect(
+    await sendMessage({
+      action: "publishEnrollment",
+      classes: [classInfo(10)],
+      userId: "student-a",
+    })
+  ).toEqual({ ok: false });
+  expect(await classInfoStorage.getValue()).toEqual(previous);
+  expect(await cachedAssignmentsStorage.getValue()).toEqual({
+    assignments: [row],
+    userId: "student-a",
+  });
+  expect(await sendMessage(cacheMessage(previous, 10, []))).toEqual({
+    ok: true,
+  });
+});
+
+it("reports a cache storage failure separately from a superseded result", async () => {
+  background.main();
+  const scope = await publishEnrollment("student-a", [10]);
+  vi.spyOn(cachedAssignmentsStorage, "setValue").mockRejectedValueOnce(
+    new Error("Storage temporarily unavailable")
+  );
+  const message = cacheMessage(scope, 10, []);
+  expect(await sendMessage(message)).toEqual({ ok: false });
+  expect(await sendMessage(message)).toEqual({ ok: true });
+});
+
+it("rejects malformed enrollment observations without changing the scope", async () => {
+  background.main();
+  const scope = await publishEnrollment("student-a", [10]);
+  for (const message of [
+    { classes: [classInfo(0)], userId: "student-b" },
+    { classes: [classInfo(20), classInfo(20)], userId: "student-b" },
+    { classes: [{ id: 20 }], userId: "student-b" },
+    { classes: [], userId: " " },
+    { userId: "student-b" },
+  ]) {
+    expect(
+      dispatchMessage({ action: "publishEnrollment", ...message }, vi.fn())
+    ).toBeUndefined();
+  }
+  expect(await classInfoStorage.getValue()).toEqual(scope);
+});
+
 it("rejects mismatched classes and resolved manual dates at the raw-cache boundary", async () => {
   background.main();
   const raw = createMockActivity({ class_id: 10, due_date: null });
-  const message = {
-    action: "cacheClassAssignments",
-    assignments: [raw],
-    classId: 10,
-    classIds: [10],
-    userId: "student-a",
-  };
+  const scope = await publishEnrollment("student-a", [10]);
+  const message = cacheMessage(scope, 10, [raw]);
   expect(
     dispatchMessage(
       { ...message, assignments: [{ ...raw, class_id: 20 }] },
@@ -264,8 +483,12 @@ it("rejects mismatched classes and resolved manual dates at the raw-cache bounda
     )
   ).toBeUndefined();
   expect(
-    dispatchMessage({ ...message, classIds: [20] }, vi.fn())
+    dispatchMessage({ ...message, generation: "" }, vi.fn())
   ).toBeUndefined();
+  expect(await sendMessage(cacheMessage(scope, 20, []))).toEqual({
+    discarded: true,
+    ok: false,
+  });
   expect(await cachedAssignmentsStorage.getValue()).toEqual([]);
 });
 
@@ -323,7 +546,7 @@ it("acknowledges assignment and manual date writes without Safari notifications"
     Object.defineProperty(browser, "notifications", { value: notifications });
   });
   background.main();
-  await userIdStorage.setValue("student-a");
+  const scope = await publishEnrollment("student-a", [10]);
   const assignment = createMockActivity({
     class_id: 10,
     due_date: null,
@@ -331,15 +554,9 @@ it("acknowledges assignment and manual date writes without Safari notifications"
   });
   const dueDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-  expect(
-    await sendMessage({
-      action: "cacheClassAssignments",
-      assignments: [assignment],
-      classId: 10,
-      classIds: [10],
-      userId: "student-a",
-    })
-  ).toEqual({ ok: true });
+  expect(await sendMessage(cacheMessage(scope, 10, [assignment]))).toEqual({
+    ok: true,
+  });
   expect(
     await sendMessage({
       action: "setManualDueDate",

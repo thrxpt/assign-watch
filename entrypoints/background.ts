@@ -2,8 +2,14 @@ import { browser } from "wxt/browser";
 import { defineBackground } from "wxt/utils/define-background";
 
 import { getAssignmentUrl } from "@/lib/assignment";
-import { isCacheClassAssignmentsMessage } from "@/lib/assignment-cache";
-import type { CacheClassAssignmentsMessage } from "@/lib/assignment-cache";
+import {
+  isCacheClassAssignmentsMessage,
+  isPublishEnrollmentMessage,
+} from "@/lib/assignment-cache";
+import type {
+  CacheClassAssignmentsMessage,
+  PublishEnrollmentMessage,
+} from "@/lib/assignment-cache";
 import { resolveLocale, translate } from "@/lib/i18n";
 import type { Locale, TranslationKey } from "@/lib/i18n";
 import { isManualDueDateMessage } from "@/lib/manual-due-date-storage";
@@ -17,6 +23,7 @@ import { reviewDeadlineNotifications } from "@/lib/notification";
 import type { Timeframe } from "@/lib/notification";
 import {
   cachedAssignmentsStorage,
+  classInfoStorage,
   deadlineNotificationHistoryStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
@@ -24,9 +31,10 @@ import {
   manualDueDatesStorage,
   notifiedAssignments1hStorage,
   notifiedAssignmentsStorage,
+  readEnrollmentScope,
   userIdStorage,
 } from "@/lib/storage";
-import type { Activity } from "@/types";
+import type { Activity, EnrollmentScope } from "@/types";
 
 const ALARM_NAME = "reviewCachedAssignments";
 const CHECK_INTERVAL_MINUTES = 10;
@@ -77,6 +85,22 @@ const notifyDueSoon = (
   );
 };
 
+const readReminderEnrollment = async () => {
+  const scope = readEnrollmentScope(await classInfoStorage.getValue());
+  return {
+    classes: scope?.classes ?? null,
+    userId: scope?.userId ?? (await userIdStorage.getValue()),
+  };
+};
+
+const filterEnrolledAssignments = (
+  assignments: Activity[],
+  classes: NonNullable<EnrollmentScope["classes"]>
+) => {
+  const classIds = new Set(classes.map(({ id }) => id));
+  return assignments.filter(({ class_id }) => classIds.has(class_id));
+};
+
 const reviewCachedAssignments = async () => {
   const { notifications } = browser;
   if (typeof notifications?.create !== "function") {
@@ -92,7 +116,7 @@ const reviewCachedAssignments = async () => {
       notifiedHour,
       manualDueDates,
       history,
-      currentUserId,
+      enrollment,
       language,
     ] = await Promise.all([
       cachedAssignmentsStorage.getValue(),
@@ -102,19 +126,23 @@ const reviewCachedAssignments = async () => {
       notifiedAssignments1hStorage.getValue(),
       manualDueDatesStorage.getValue(),
       deadlineNotificationHistoryStorage.getValue(),
-      userIdStorage.getValue(),
+      readReminderEnrollment(),
       languageStorage.getValue(),
     ]);
 
     const snapshot = readAssignmentSnapshot(cached);
-    if (snapshot.userId && snapshot.userId !== currentUserId) {
+    if (snapshot.userId && snapshot.userId !== enrollment.userId) {
       return;
     }
 
     const locale = resolveLocale(language);
+    // The roster is authoritative even if saving a pruned snapshot failed.
+    const assignments = enrollment.classes
+      ? filterEnrolledAssignments(snapshot.assignments, enrollment.classes)
+      : snapshot.assignments;
 
     const result = reviewDeadlineNotifications({
-      assignments: snapshot.assignments.map((assignment) =>
+      assignments: assignments.map((assignment) =>
         resolveAssignment(assignment, snapshot.userId, manualDueDates)
       ),
       hiddenAssignments,
@@ -153,18 +181,78 @@ const openNotificationAssignment = (notificationId: string) => {
   }
 };
 
+const pruneAssignmentCache = async ({ classes, userId }: EnrollmentScope) => {
+  if (classes === null) {
+    return;
+  }
+  const cached = readAssignmentSnapshot(
+    await cachedAssignmentsStorage.getValue()
+  );
+  if (cached.userId !== userId) {
+    return;
+  }
+  const assignments = filterEnrolledAssignments(cached.assignments, classes);
+  if (assignments.length < cached.assignments.length) {
+    await cachedAssignmentsStorage.setValue({ assignments, userId });
+  }
+};
+
+const publishEnrollment = (message: PublishEnrollmentMessage) =>
+  enqueue(async () => {
+    const stored = await classInfoStorage.getValue();
+    const previous = readEnrollmentScope(stored);
+    const { userId } = message;
+    const classes =
+      message.classes ??
+      (!Array.isArray(stored) && stored.userId === userId
+        ? stored.classes
+        : null);
+    const previousClasses = previous?.classes ?? null;
+    const previousClassIds = new Set(previousClasses?.map(({ id }) => id));
+    const sameMembership =
+      previousClasses === classes ||
+      (classes !== null &&
+        previousClasses !== null &&
+        classes.length === previousClassIds.size &&
+        classes.every(({ id }) => previousClassIds.has(id)));
+    const generation =
+      previous?.userId === userId && sameMembership
+        ? previous.generation
+        : crypto.randomUUID();
+    const scope: EnrollmentScope = { classes, generation, userId };
+
+    if (previous && previous.generation !== generation) {
+      // Finish any interrupted prune before replacing the roster that
+      // excludes those rows, including when a removed class is re-added.
+      await pruneAssignmentCache(previous);
+    }
+    if (
+      previous?.generation !== generation ||
+      JSON.stringify(previous.classes) !== JSON.stringify(classes)
+    ) {
+      await classInfoStorage.setValue(scope);
+    }
+    await pruneAssignmentCache(scope);
+    return { ok: true };
+  });
+
 const cacheClassAssignments = (message: CacheClassAssignmentsMessage) =>
   enqueue(async () => {
+    const scope = readEnrollmentScope(await classInfoStorage.getValue());
+    if (
+      scope?.userId !== message.userId ||
+      scope.generation !== message.generation ||
+      !scope.classes?.some(({ id }) => id === message.classId)
+    ) {
+      return { discarded: true, ok: false };
+    }
     const cached = readAssignmentSnapshot(
       await cachedAssignmentsStorage.getValue()
     );
-    const enrolledClassIds = new Set(message.classIds);
     const retained =
       cached.userId === message.userId
-        ? cached.assignments.filter(
-            (assignment) =>
-              assignment.class_id !== message.classId &&
-              enrolledClassIds.has(assignment.class_id)
+        ? filterEnrolledAssignments(cached.assignments, scope.classes).filter(
+            ({ class_id }) => class_id !== message.classId
           )
         : [];
     await cachedAssignmentsStorage.setValue({
@@ -217,11 +305,16 @@ const openOptionsPage = async () => {
   return { ok: true };
 };
 
+interface WorkerResponse {
+  discarded?: boolean;
+  ok: boolean;
+}
+
 const sendAsyncResponse = async (
-  operation: Promise<{ ok: boolean }>,
-  sendResponse: (response: { ok: boolean }) => void
+  operation: Promise<WorkerResponse>,
+  sendResponse: (response: WorkerResponse) => void
 ) => {
-  let response: { ok: boolean };
+  let response: WorkerResponse;
   try {
     response = await operation;
   } catch {
@@ -233,9 +326,11 @@ const sendAsyncResponse = async (
 export default defineBackground(() => {
   browser.runtime.onMessage.addListener(
     (message: unknown, _sender, sendResponse) => {
-      let operation: Promise<{ ok: boolean }>;
+      let operation: Promise<WorkerResponse>;
       if (isCacheClassAssignmentsMessage(message)) {
         operation = cacheClassAssignments(message);
+      } else if (isPublishEnrollmentMessage(message)) {
+        operation = publishEnrollment(message);
       } else if (isManualDueDateMessage(message)) {
         operation = setManualDueDate(message);
       } else if (
@@ -299,7 +394,7 @@ export default defineBackground(() => {
   manualDueDatesStorage.watch(() => {
     void checkCachedAssignments();
   });
-  userIdStorage.watch(() => {
+  classInfoStorage.watch(() => {
     void checkCachedAssignments();
   });
 
