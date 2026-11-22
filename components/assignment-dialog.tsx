@@ -44,6 +44,8 @@ interface AssignmentDialogProps {
   allAssignments: (Activity[] | undefined)[];
   allClassInfo: ClassInfo[];
   calendarItems: VisibleAssignment[];
+  /** Unknown until the roster is known to belong to the signed-in student. */
+  enrollment: "known" | "unknown";
   filters: FilterState;
   groupState: GroupState;
   hasFailures: boolean;
@@ -68,6 +70,7 @@ export function AssignmentDialog({
   allAssignments,
   allClassInfo,
   calendarItems,
+  enrollment,
   filters,
   groupState,
   hasFailures,
@@ -117,8 +120,12 @@ export function AssignmentDialog({
   };
 
   const renderList = () => {
-    if (allClassInfo.length === 0) {
+    if (enrollment === "unknown") {
       return <NoClasses className="mt-4" />;
+    }
+
+    if (allClassInfo.length === 0) {
+      return <NoAssignments className="mt-4" />;
     }
 
     if (listItems.length === 0 && pendingClasses.length === 0) {
@@ -175,6 +182,22 @@ export function AssignmentDialog({
         {groups}
         {skeletons}
       </>
+    );
+  };
+
+  const renderCalendar = () => {
+    if (enrollment === "unknown") {
+      return <NoClasses />;
+    }
+
+    if (allClassInfo.length === 0) {
+      return <NoAssignments />;
+    }
+
+    return (
+      <div className="min-h-0 flex-1">
+        <CalendarView assignments={calendarItems} />
+      </div>
     );
   };
 
@@ -285,13 +308,7 @@ export function AssignmentDialog({
                       presentation="inline"
                     />
                   )}
-                  {allClassInfo.length === 0 ? (
-                    <NoClasses />
-                  ) : (
-                    <div className="min-h-0 flex-1">
-                      <CalendarView assignments={calendarItems} />
-                    </div>
-                  )}
+                  {renderCalendar()}
                 </div>
               </TabsContent>
             </Tabs>

@@ -17,6 +17,7 @@ import {
   fetchAssignments,
   resetPacingQueue,
 } from "@/lib/api";
+import type * as Dom from "@/lib/dom";
 import { translate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
 import {
@@ -25,7 +26,7 @@ import {
   hiddenClassesStorage,
   userIdStorage,
 } from "@/lib/storage";
-import type { Activity, ClassInfo } from "@/types";
+import type { Activity, ClassInfo, StoredClassRoster } from "@/types";
 
 interface QueryResult {
   data: Activity[] | undefined;
@@ -38,9 +39,10 @@ interface QueryResult {
 }
 
 const state = vi.hoisted(() => ({
-  classes: [] as ClassInfo[],
   hiddenClasses: [] as number[],
+  hiddenItemsClasses: [] as ClassInfo[],
   locale: "en" as Locale,
+  onScrape: null as (() => void) | null,
   queryCache: new Map<
     string,
     {
@@ -57,7 +59,7 @@ const state = vi.hoisted(() => ({
   }[],
   results: [] as QueryResult[],
   retry: null as (() => Promise<void>) | null,
-  scrapedUserId: "student-1" as string | null,
+  storedClasses: [] as StoredClassRoster,
   useQueryCache: false,
 }));
 
@@ -134,14 +136,20 @@ vi.mock("@tanstack/react-query", () => ({
   useQueryClient: () => queryClient,
 }));
 
-vi.mock("@/lib/dom", () => ({
-  scrapeClassCards: () => [],
-  scrapeUserId: () => state.scrapedUserId,
-}));
+vi.mock("@/lib/dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof Dom>();
+  return {
+    ...actual,
+    scrapeClassCards: () => {
+      state.onScrape?.();
+      return actual.scrapeClassCards();
+    },
+  };
+});
 vi.mock("@/lib/use-storage-state", () => ({
   useStorageState: (item: { fallback: unknown }) => {
     if (item === classInfoStorage) {
-      return [state.classes, vi.fn()];
+      return [state.storedClasses, vi.fn()];
     }
     if (item === hiddenClassesStorage) {
       return [state.hiddenClasses, vi.fn()];
@@ -185,7 +193,10 @@ vi.mock("@/components/assignment-group", () => ({
   AssignmentGroup: () => null,
 }));
 vi.mock("@/components/hidden-items-manager", () => ({
-  HiddenItemsManager: () => null,
+  HiddenItemsManager: ({ allClassInfo }: { allClassInfo: ClassInfo[] }) => {
+    state.hiddenItemsClasses = allClassInfo;
+    return null;
+  },
 }));
 vi.mock("@/components/dialog-tips", () => ({
   DialogTips: () => <span>Dialog tips</span>,
@@ -212,6 +223,41 @@ vi.mock("@/components/calendar-view", () => ({
     </div>
   ),
 }));
+
+function classInfo(id: number): ClassInfo {
+  return {
+    description: "",
+    id,
+    section: "1",
+    semester: "1/2026",
+    title: `Class ${id}`,
+  };
+}
+
+function addClasses(...ids: number[]) {
+  if (Array.isArray(state.storedClasses)) {
+    throw new TypeError("Expected an owned roster");
+  }
+  state.storedClasses.classes.push(...ids.map(classInfo));
+}
+
+function setPageUrl(pathname: string) {
+  const { happyDOM } = window as unknown as {
+    happyDOM: { setURL: (url: string) => void };
+  };
+  happyDOM.setURL(`https://app.leb2.org${pathname}`);
+}
+
+async function openDialog(navigation: HTMLElement) {
+  const openButton = navigation.querySelector<HTMLButtonElement>(
+    "button.nav-link.header-link"
+  );
+  await act(async () => {
+    openButton?.click();
+    // Let the snapshot read settle so hydration finishes inside act.
+    await cachedAssignmentsStorage.getValue();
+  });
+}
 
 function result(overrides: Partial<QueryResult> = {}): QueryResult {
   return {
@@ -256,23 +302,17 @@ describe("assignment dialog load failures", () => {
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
     document.body.replaceChildren();
     document.body.dataset.userid = "student-1";
-    state.classes = [
-      {
-        description: "",
-        id: 1,
-        section: "1",
-        semester: "1/2026",
-        title: "Class 1",
-      },
-    ];
+    state.storedClasses = { classes: [classInfo(1)], userId: "student-1" };
     state.hiddenClasses = [];
+    state.hiddenItemsClasses = [];
+    state.onScrape = null;
     state.locale = "en";
     state.results = [];
     state.retry = null;
     state.queryCache.clear();
     state.queryConfigs = [];
-    state.scrapedUserId = "student-1";
     state.useQueryCache = false;
+    setPageUrl("/");
   });
 
   afterEach(() => {
@@ -506,7 +546,6 @@ describe("assignment dialog load failures", () => {
     );
     act(() => openButton?.click());
 
-    state.scrapedUserId = null;
     await act(async () => {
       delete document.body.dataset.userid;
       await Promise.resolve();
@@ -535,13 +574,10 @@ describe("assignment dialog load failures", () => {
 
     expect(state.queryCache.size).toBe(0);
     expect(container.textContent).not.toContain("Other student's assignment");
-    const isEnabledAfterRead = state.queryConfigs[0]?.enabled as (query: {
-      state: { error: unknown };
-    }) => boolean;
-    expect(isEnabledAfterRead({ state: { error: null } })).toBe(false);
+    // With no identifiable student the roster is unknown, so nothing is queried.
+    expect(state.queryConfigs).toEqual([]);
 
     await act(async () => {
-      state.scrapedUserId = "student-1";
       document.body.dataset.userid = "student-1";
       await Promise.resolve();
     });
@@ -572,7 +608,7 @@ describe("assignment dialog load failures", () => {
     act(() => openButton?.click());
 
     await act(async () => {
-      state.scrapedUserId = "student-2";
+      state.storedClasses = { classes: [classInfo(1)], userId: "student-2" };
       document.body.dataset.userid = "student-2";
       await Promise.resolve();
     });
@@ -659,10 +695,7 @@ describe("assignment dialog load failures", () => {
   });
 
   it("retries only failed visible classes, leaving successful and hidden classes alone", async () => {
-    state.classes.push(
-      { ...state.classes[0], id: 2 },
-      { ...state.classes[0], id: 3 }
-    );
+    addClasses(2, 3);
     state.hiddenClasses = [3];
     const failed = result({ error: await requestError(), isError: true });
     const successful = result({ data: [] });
@@ -677,7 +710,7 @@ describe("assignment dialog load failures", () => {
   });
 
   it("retries a rate-limited batch once for every enrolled class", async () => {
-    state.classes.push({ ...state.classes[0], id: 2 });
+    addClasses(2);
     state.hiddenClasses = [2];
     vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
     const fetch = vi
@@ -759,5 +792,232 @@ describe("assignment dialog load failures", () => {
     );
     await state.retry?.();
     expect(failed.refetch).not.toHaveBeenCalled();
+  });
+});
+
+function queryClassIds() {
+  return state.queryConfigs.map(({ queryKey }) => queryKey[1]);
+}
+
+function occurrences(text: string | null, search: string) {
+  return (text ?? "").split(search).length - 1;
+}
+
+describe("class roster ownership", () => {
+  beforeEach(() => {
+    resetPacingQueue();
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    document.body.replaceChildren();
+    document.body.dataset.userid = "student-1";
+    state.hiddenClasses = [];
+    state.hiddenItemsClasses = [];
+    state.locale = "en";
+    state.onScrape = null;
+    state.queryCache.clear();
+    state.queryConfigs = [];
+    state.results = [];
+    state.storedClasses = { classes: [classInfo(1)], userId: "student-1" };
+    state.useQueryCache = false;
+    setPageUrl("/");
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+    vi.spyOn(cachedAssignmentsStorage, "getValue").mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    if (mountedRoot) {
+      act(() => mountedRoot?.unmount());
+      mountedRoot = null;
+    }
+    document.body.replaceChildren();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  it.each([
+    ["a legacy roster with no owner", [classInfo(1)]],
+    [
+      "a roster owned by another student",
+      { classes: [classInfo(1)], userId: "student-2" },
+    ],
+  ] satisfies [string, StoredClassRoster][])(
+    "requests nothing and prompts a sync for %s away from /class",
+    async (_name, stored) => {
+      state.storedClasses = stored;
+      const { container, navigation } = mountApp();
+      await openDialog(navigation);
+
+      expect(queryClassIds()).toEqual([]);
+      expect(state.hiddenItemsClasses).toEqual([]);
+      expect(occurrences(container.textContent, "No classes found")).toBe(2);
+      expect(container.textContent).not.toContain("All caught up!");
+      expect(container.textContent).not.toContain("Class 1");
+    }
+  );
+
+  it("treats a roster as unknown when the page has no current student", async () => {
+    delete document.body.dataset.userid;
+    const { container, navigation } = mountApp();
+    await openDialog(navigation);
+
+    expect(queryClassIds()).toEqual([]);
+    expect(occurrences(container.textContent, "No classes found")).toBe(2);
+  });
+
+  it("uses the roster owned by the current student away from /class", async () => {
+    addClasses(2);
+    const { container, navigation } = mountApp();
+    await openDialog(navigation);
+
+    expect(queryClassIds()).toEqual([1, 2]);
+    for (const { enabled } of state.queryConfigs) {
+      expect(
+        (enabled as (query: { state: { error: unknown } }) => boolean)({
+          state: { error: null },
+        })
+      ).toBe(true);
+    }
+    expect(state.queryConfigs.map(({ queryKey }) => queryKey[2])).toEqual([
+      "student-1",
+      "student-1",
+    ]);
+    expect(state.hiddenItemsClasses.map(({ id }) => id)).toEqual([1, 2]);
+    expect(container.textContent).not.toContain("No classes found");
+  });
+
+  it("drops the roster when the account changes while the dialog is open", async () => {
+    addClasses(2);
+    const { container, navigation } = mountApp();
+    await openDialog(navigation);
+    expect(queryClassIds()).toEqual([1, 2]);
+
+    await act(async () => {
+      document.body.dataset.userid = "student-2";
+      await Promise.resolve();
+    });
+
+    expect(queryClassIds()).toEqual([]);
+    expect(state.hiddenItemsClasses).toEqual([]);
+    expect(occurrences(container.textContent, "No classes found")).toBe(2);
+  });
+
+  it("shows the empty-work state in both tabs for a confirmed empty roster", async () => {
+    state.storedClasses = { classes: [], userId: "student-1" };
+    const { container, navigation } = mountApp();
+    await openDialog(navigation);
+
+    expect(queryClassIds()).toEqual([]);
+    expect(occurrences(container.textContent, "All caught up!")).toBe(2);
+    expect(container.textContent).not.toContain("No classes found");
+  });
+});
+
+function classCard(
+  id: number,
+  { isTeachingAssistant = false, withDescription = true } = {}
+) {
+  return `
+    <div class="card class-card" name="class-${id}">
+      <div class="card-block" id="font-color-main-card">
+        <p>Class ${id}</p>${withDescription ? `<p>About ${id}</p>` : ""}
+      </div>
+    </div>
+    ${
+      isTeachingAssistant
+        ? '<ul><li><div><div class="icon-setting-2 fix-oncard-btn"></div></div></li></ul>'
+        : "<ul></ul>"
+    }`;
+}
+
+describe("class roster sync on /class", () => {
+  let setClassValue: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    resetPacingQueue();
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    document.body.replaceChildren();
+    document.body.dataset.userid = "student-1";
+    state.onScrape = null;
+    state.queryConfigs = [];
+    state.results = [];
+    state.storedClasses = [classInfo(9)];
+    setPageUrl("/class");
+    vi.spyOn(userIdStorage, "setValue").mockResolvedValue();
+    setClassValue = vi.spyOn(classInfoStorage, "setValue").mockResolvedValue();
+  });
+
+  afterEach(() => {
+    if (mountedRoot) {
+      act(() => mountedRoot?.unmount());
+      mountedRoot = null;
+    }
+    document.body.replaceChildren();
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
+  async function mountWithCards(html: string) {
+    const cards = document.createElement("div");
+    cards.innerHTML = html;
+    document.body.append(cards);
+    await act(async () => {
+      mountApp();
+      await Promise.resolve();
+    });
+  }
+
+  it("saves the nonempty roster for the current student and skips TA cards", async () => {
+    await mountWithCards(
+      `${classCard(1)}${classCard(2, { isTeachingAssistant: true })}${classCard(3)}`
+    );
+
+    expect(setClassValue).toHaveBeenCalledOnce();
+    expect(setClassValue).toHaveBeenCalledWith({
+      classes: [
+        { ...classInfo(1), description: "About 1", section: "", semester: "" },
+        { ...classInfo(3), description: "About 3", section: "", semester: "" },
+      ],
+      userId: "student-1",
+    });
+  });
+
+  it("keeps the stored roster when a student card is malformed or incomplete", async () => {
+    await mountWithCards(
+      `${classCard(1)}${classCard(2, { withDescription: false })}`
+    );
+
+    expect(setClassValue).not.toHaveBeenCalled();
+  });
+
+  it("keeps the stored roster when no student cards are found", async () => {
+    await mountWithCards(classCard(2, { isTeachingAssistant: true }));
+    expect(setClassValue).not.toHaveBeenCalled();
+  });
+
+  it("keeps the stored roster when the page has no cards at all", async () => {
+    await mountWithCards("");
+    expect(setClassValue).not.toHaveBeenCalled();
+  });
+
+  it("does not label cards with a student who took over after the scrape", async () => {
+    state.onScrape = () => {
+      document.body.dataset.userid = "student-2";
+    };
+    await mountWithCards(classCard(1));
+
+    expect(setClassValue).not.toHaveBeenCalled();
+  });
+
+  it("does not save a roster when the page has no current student", async () => {
+    delete document.body.dataset.userid;
+    await mountWithCards(classCard(1));
+
+    expect(setClassValue).not.toHaveBeenCalled();
+  });
+
+  it("does not scrape away from /class", async () => {
+    setPageUrl("/");
+    await mountWithCards(classCard(1));
+
+    expect(setClassValue).not.toHaveBeenCalled();
   });
 });

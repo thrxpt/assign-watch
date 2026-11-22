@@ -11,7 +11,7 @@ import {
 } from "@/lib/api";
 import { cacheClassAssignments } from "@/lib/assignment-cache";
 import { assignmentQueryKey } from "@/lib/assignment-query-cache";
-import { scrapeClassCards } from "@/lib/dom";
+import { readCurrentStudentId, scrapeClassCards } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
 import {
   classInfoStorage,
@@ -20,11 +20,16 @@ import {
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
   manualDueDatesStorage,
+  NO_CLASSES,
+  selectClassRoster,
   showUndatedAssignmentsStorage,
   sortStorage,
   userIdStorage,
 } from "@/lib/storage";
-import { useAssignmentHydration } from "@/lib/use-assignment-hydration";
+import {
+  useAssignmentHydration,
+  useCurrentStudentId,
+} from "@/lib/use-assignment-hydration";
 import { useStorageState } from "@/lib/use-storage-state";
 import {
   getPendingClasses,
@@ -48,10 +53,38 @@ async function openOptionsPage() {
   }
 }
 
+/**
+ * Saves the roster shown on `/class` for the student the page identifies. An
+ * unresolved scrape or a changed student leaves the stored roster alone.
+ */
+async function syncClassRoster() {
+  if (window.location.pathname !== "/class") {
+    return;
+  }
+
+  const userId = readCurrentStudentId();
+  if (!userId) {
+    return;
+  }
+
+  const scraped = scrapeClassCards();
+  if (scraped.status !== "resolved") {
+    return;
+  }
+
+  // The cards carry no owner, so never label them with a student who took
+  // over the page after they were read.
+  if (readCurrentStudentId() !== userId) {
+    return;
+  }
+
+  await classInfoStorage.setValue({ classes: scraped.classes, userId });
+}
+
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const [allClassInfo] = useStorageState(classInfoStorage);
+  const [storedRoster] = useStorageState(classInfoStorage);
   const [manualDueDates] = useStorageState(manualDueDatesStorage);
   const [hiddenClasses] = useStorageState(hiddenClassesStorage);
   const [hiddenAssignments] = useStorageState(hiddenAssignmentsStorage);
@@ -62,13 +95,21 @@ function App() {
   const [sortState, setSortState] = useStorageState(sortStorage);
   const [groupState, setGroupState] = useStorageState(groupStorage);
 
+  const userId = useCurrentStudentId(isModalOpen);
+  // Only the signed-in student's own roster may drive requests or titles.
+  const roster = useMemo(
+    () => selectClassRoster(storedRoster, userId),
+    [storedRoster, userId]
+  );
+  const allClassInfo = roster ?? NO_CLASSES;
   const classIds = useMemo(
     () => allClassInfo.map((classInfo) => classInfo.id),
     [allClassInfo]
   );
-  const { isHydratedForCurrentClasses, userId } = useAssignmentHydration({
+  const { isHydratedForCurrentClasses } = useAssignmentHydration({
     classIds,
     isOpen: isModalOpen,
+    userId,
   });
   const batchAssignmentsRequest = useMemo(
     () => createAssignmentsBatchRequest(classIds, userId),
@@ -82,16 +123,7 @@ function App() {
   }, [userId]);
 
   useEffect(() => {
-    const syncInfo = async () => {
-      if (window.location.pathname === "/class") {
-        const scraped = scrapeClassCards();
-        if (scraped.length > 0) {
-          await classInfoStorage.setValue(scraped);
-        }
-      }
-    };
-
-    void syncInfo();
+    void syncClassRoster();
   }, []);
 
   useEffect(() => {
@@ -265,6 +297,7 @@ function App() {
       allAssignments={assignments.data}
       allClassInfo={allClassInfo}
       calendarItems={calendarItems}
+      enrollment={roster === null ? "unknown" : "known"}
       filters={filters}
       groupState={groupState}
       hasFailures={failedQueries.length > 0}
