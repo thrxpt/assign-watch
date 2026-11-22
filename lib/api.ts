@@ -80,6 +80,20 @@ const RFC_850_DATE =
 const ASCTIME_DATE =
   /^(?<weekday>Mon|Tue|Wed|Thu|Fri|Sat|Sun) (?<month>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (?<day>\d{2}| \d) (?<time>\d{2}:\d{2}:\d{2}) (?<year>\d{4})$/u;
 const HTTP_TIME = /^(?:(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d|23:59:60)$/u;
+const HTTP_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 function parseHttpDate(value: string): number | null {
   const date =
@@ -90,17 +104,21 @@ function parseHttpDate(value: string): number | null {
     return null;
   }
 
-  const { weekday, day, month, year, time } = date.groups;
+  const { day, month, year, time } = date.groups;
   if (!HTTP_TIME.test(time)) {
     return null;
   }
 
   const isLeapSecond = time === "23:59:60";
   const parsedTime = isLeapSecond ? "23:59:59" : time;
-  const parseYear = (fullYear: string) =>
-    Date.parse(
-      `${weekday.slice(0, 3)}, ${day.trim().padStart(2, "0")} ${month} ${fullYear} ${parsedTime} GMT`
-    );
+  const [hours, minutes, seconds] = parsedTime.split(":").map(Number);
+  const monthIndex = HTTP_MONTHS.indexOf(month);
+  const dayOfMonth = Number(day);
+  const parseYear = (fullYear: number) => {
+    const result = new Date(0);
+    result.setUTCFullYear(fullYear, monthIndex, dayOfMonth);
+    return result.setUTCHours(hours, minutes, seconds);
+  };
   let retryAt: number;
   if (year.length === 2) {
     // RFC 9110 limits obsolete two-digit years to 50 years in the future.
@@ -108,15 +126,15 @@ function parseHttpDate(value: string): number | null {
     const latestYear = limit.getUTCFullYear() + 50;
     limit.setUTCFullYear(latestYear);
     const candidateYear = latestYear - ((latestYear - Number(year)) % 100);
-    retryAt = parseYear(String(candidateYear));
+    retryAt = parseYear(candidateYear);
     if (retryAt > limit.getTime()) {
-      retryAt = parseYear(String(candidateYear - 100));
+      retryAt = parseYear(candidateYear - 100);
     }
   } else {
-    retryAt = parseYear(year);
+    retryAt = parseYear(Number(year));
   }
 
-  if (new Date(retryAt).getUTCDate() !== Number(day)) {
+  if (new Date(retryAt).getUTCDate() !== dayOfMonth) {
     return null;
   }
 
@@ -179,20 +197,84 @@ export async function fetchAssignments(
   return data.activities;
 }
 
-export function createAssignmentsBatchRequest(
-  classIds: number[],
-  userId?: string | null
-) {
-  let request: Promise<RootResponse["activities"]> | undefined;
+export function createAssignmentsBatchRequest(userId: string | null) {
+  type Batch = Promise<RootResponse["activities"]>;
+  const state: {
+    rateLimit?: AssignmentRequestError;
+    request?: {
+      classIds: Set<number>;
+      isPending: boolean;
+      promise: Batch;
+      roster: number[];
+    };
+  } = {};
+
+  const start = (roster: number[], classIds: number[]) => {
+    const previousRateLimit = state.rateLimit;
+    let isPending = true;
+    const run = async () => {
+      try {
+        return await fetchAssignments(classIds, userId);
+      } catch (error) {
+        if (isRateLimitError(error)) {
+          state.rateLimit = error;
+        }
+        throw error;
+      } finally {
+        if (state.rateLimit === previousRateLimit) {
+          state.rateLimit = undefined;
+        }
+        isPending = false;
+      }
+    };
+    const promise = run();
+    state.request = {
+      classIds: new Set(classIds),
+      get isPending() {
+        return isPending;
+      },
+      promise,
+      roster,
+    };
+    return promise;
+  };
+
+  const fetch = async (
+    classId: number,
+    roster: number[],
+    getEligibleClassIds: () => number[]
+  ): Batch => {
+    const { request } = state;
+    if (request?.isPending) {
+      if (request.classIds.has(classId)) {
+        return await request.promise;
+      }
+
+      // A roster change can add classes while a batch is still in flight.
+      try {
+        await request.promise;
+      } catch {
+        // Check the shared rate limit before requesting the new class.
+      }
+      return await fetch(classId, roster, getEligibleClassIds);
+    }
+    if (state.rateLimit) {
+      throw state.rateLimit;
+    }
+    if (request?.roster === roster && request.classIds.has(classId)) {
+      return await request.promise;
+    }
+    return await start(roster, getEligibleClassIds());
+  };
 
   return {
-    fetch: () => {
-      request ??= fetchAssignments(classIds, userId);
-      return request;
-    },
+    fetch,
     reset: () => {
-      request = undefined;
+      if (!state.request?.isPending) {
+        state.request = undefined;
+      }
     },
+    retry: (classIds: number[]) => start(classIds, classIds),
   };
 }
 

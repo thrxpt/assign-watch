@@ -1,4 +1,4 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { browser } from "#imports";
@@ -30,6 +30,7 @@ import {
   getPendingClasses,
   visibleAssignments,
 } from "@/lib/visible-assignments";
+import type { Activity } from "@/types";
 
 async function openOptionsPage() {
   if (typeof browser?.runtime?.openOptionsPage === "function") {
@@ -55,9 +56,15 @@ function App() {
   >(null);
   // Refetch can start before React renders the progress state.
   const retryAttempt = useRef<{
-    directClassIds: ReadonlySet<number>;
+    classIds: ReadonlySet<number>;
+    fetchBatch?: () => Promise<Activity[]>;
     userId: string | null;
   } | null>(null);
+  const batchRequests =
+    useRef<
+      Map<string | null, ReturnType<typeof createAssignmentsBatchRequest>>
+    >(null);
+  const queryClient = useQueryClient();
 
   const [allClassInfo] = useStorageState(classInfoStorage);
   const [manualDueDates] = useStorageState(manualDueDatesStorage);
@@ -78,10 +85,32 @@ function App() {
     classIds,
     isOpen: isModalOpen,
   });
-  const batchAssignmentsRequest = useMemo(
-    () => createAssignmentsBatchRequest(classIds, userId),
-    [classIds, userId]
-  );
+  const getBatchRequest = () => {
+    const requests = (batchRequests.current ??= new Map());
+    let request = requests.get(userId);
+    if (!request) {
+      request = createAssignmentsBatchRequest(userId);
+      requests.set(userId, request);
+    }
+    return request;
+  };
+
+  const getCurrentRetry = () => {
+    const attempt = retryAttempt.current;
+    return attempt?.userId === userId ? attempt : null;
+  };
+
+  const getEligibleClassIds = () => {
+    const attempt = getCurrentRetry();
+    return classIds.filter((classId) => {
+      const isDirectRetry =
+        !attempt?.fetchBatch && attempt?.classIds.has(classId);
+      const error = queryClient.getQueryState(
+        assignmentQueryKey(classId, userId)
+      )?.error;
+      return !isDirectRetry && !isRateLimitError(error);
+    });
+  };
 
   useEffect(() => {
     if (userId?.trim()) {
@@ -112,7 +141,7 @@ function App() {
     const handleClick = () => {
       setIsModalOpen((prev) => {
         if (!prev) {
-          batchAssignmentsRequest.reset();
+          batchRequests.current?.get(userId)?.reset();
         }
         return true;
       });
@@ -127,7 +156,7 @@ function App() {
       button.removeEventListener("click", handleClick);
       button.remove();
     };
-  }, [batchAssignmentsRequest]);
+  }, [userId]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -135,7 +164,7 @@ function App() {
         e.preventDefault();
         setIsModalOpen((prev) => {
           if (!prev) {
-            batchAssignmentsRequest.reset();
+            batchRequests.current?.get(userId)?.reset();
           }
           return !prev;
         });
@@ -145,7 +174,7 @@ function App() {
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [batchAssignmentsRequest]);
+  }, [userId]);
 
   const assignments = useQueries({
     combine: (results) => ({
@@ -159,15 +188,15 @@ function App() {
         isHydratedForCurrentClasses &&
         !isRateLimitError(query.state.error),
       queryFn: async () => {
-        const attempt = retryAttempt.current;
-        const fetchDirectly =
-          attempt?.userId === userId &&
-          attempt.directClassIds.has(classInfo.id);
-        const data = await fetchClassAssignments(
-          classInfo.id,
-          userId,
-          fetchDirectly ? undefined : batchAssignmentsRequest.fetch()
-        );
+        const attempt = getCurrentRetry();
+        const batch = attempt?.classIds.has(classInfo.id)
+          ? attempt.fetchBatch?.()
+          : getBatchRequest().fetch(
+              classInfo.id,
+              classIds,
+              getEligibleClassIds
+            );
+        const data = await fetchClassAssignments(classInfo.id, userId, batch);
         await cacheClassAssignments(userId, classInfo.id, data, classIds);
         return data;
       },
@@ -219,15 +248,14 @@ function App() {
       return;
     }
 
-    if (isBatchRateLimited) {
-      batchAssignmentsRequest.reset();
-    }
+    let batch: Promise<Activity[]> | undefined;
     retryAttempt.current = {
-      directClassIds: new Set(
-        isRateLimited && !isBatchRateLimited
-          ? retryTargets.map(({ classId }) => classId)
-          : []
+      classIds: new Set(
+        isRateLimited ? retryTargets.map(({ classId }) => classId) : []
       ),
+      fetchBatch: isBatchRateLimited
+        ? () => (batch ??= getBatchRequest().retry(classIds))
+        : undefined,
       userId,
     };
     setRetryingError(isRateLimited ? "rate-limit" : "load-error");
@@ -281,7 +309,7 @@ function App() {
   const resolvedAssignments = resolvedData.flatMap((items) => items ?? []);
   const handleDialogOpenChange = (open: boolean) => {
     if (open && !isModalOpen) {
-      batchAssignmentsRequest.reset();
+      batchRequests.current?.get(userId)?.reset();
     }
     setIsModalOpen(open);
   };

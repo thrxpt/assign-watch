@@ -104,14 +104,21 @@ describe("api logic", () => {
           user: [],
         })
       );
-      const batchRequest = createAssignmentsBatchRequest(
-        [101, 202],
-        "student-1"
-      );
+      const classIds = [101, 202];
+      const batchRequest = createAssignmentsBatchRequest("student-1");
+      const getEligibleClassIds = () => classIds;
 
       const results = await Promise.all([
-        fetchClassAssignments(101, "student-1", batchRequest.fetch()),
-        fetchClassAssignments(202, "student-1", batchRequest.fetch()),
+        fetchClassAssignments(
+          101,
+          "student-1",
+          batchRequest.fetch(101, classIds, getEligibleClassIds)
+        ),
+        fetchClassAssignments(
+          202,
+          "student-1",
+          batchRequest.fetch(202, classIds, getEligibleClassIds)
+        ),
       ]);
 
       expect(fetch).toHaveBeenCalledOnce();
@@ -126,12 +133,12 @@ describe("api logic", () => {
         .spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(new Response(null, { status: 429 }))
         .mockResolvedValueOnce(Response.json({ activities: [], user: [] }));
-      const batchRequest = createAssignmentsBatchRequest(
-        [101, 202],
-        "student-1"
-      );
+      const classIds = [101, 202];
+      const batchRequest = createAssignmentsBatchRequest("student-1");
+      const automaticBatch = () =>
+        batchRequest.fetch(101, classIds, () => classIds);
 
-      const initialRequest = batchRequest.fetch();
+      const initialRequest = automaticBatch();
       await expect(initialRequest).rejects.toMatchObject({
         origin: "batch",
         status: 429,
@@ -139,8 +146,9 @@ describe("api logic", () => {
       expect(fetch).toHaveBeenCalledOnce();
 
       batchRequest.reset();
-      await expect(batchRequest.fetch()).resolves.toEqual([]);
-      await expect(initialRequest).rejects.toMatchObject({ origin: "batch" });
+      await expect(automaticBatch()).rejects.toMatchObject({ origin: "batch" });
+      await expect(batchRequest.retry(classIds)).resolves.toEqual([]);
+      await expect(automaticBatch()).resolves.toEqual([]);
 
       expect(
         fetch.mock.calls.map(([input]) =>
@@ -198,13 +206,15 @@ describe("api logic", () => {
         .spyOn(globalThis, "fetch")
         .mockResolvedValueOnce(new Response(null, { status: 500 }))
         .mockResolvedValueOnce(new Response(null, { status: 429 }));
-      const batchRequest = createAssignmentsBatchRequest(
-        [101, 202],
-        "student-1"
-      );
+      const classIds = [101, 202];
+      const batchRequest = createAssignmentsBatchRequest("student-1");
 
       await expect(
-        fetchClassAssignments(202, "student-1", batchRequest.fetch())
+        fetchClassAssignments(
+          202,
+          "student-1",
+          batchRequest.fetch(202, classIds, () => classIds)
+        )
       ).rejects.toMatchObject({ origin: "class", status: 429 });
       expect(
         fetch.mock.calls.map(([input]) =>
@@ -244,6 +254,7 @@ describe("api logic", () => {
       ["0", now],
       ["Tue, 17 Nov 2026 00:01:00 GMT", now + 60_000],
       ["Mon, 16 Nov 2026 23:59:00 GMT", now - 60_000],
+      ["Tue, 01 Dec 0026 00:00:00 GMT", Date.parse("0026-12-01T00:00:00Z")],
       ["Tuesday, 17-Nov-26 00:01:00 GMT", now + 60_000],
       ["Sunday, 01-Nov-76 00:00:00 GMT", Date.parse("2076-11-01T00:00:00Z")],
       ["Thursday, 18-Nov-76 00:00:00 GMT", Date.parse("1976-11-18T00:00:00Z")],

@@ -12,6 +12,7 @@ import { MotionPreferencesProvider } from "@/components/motion-preferences";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import App from "@/entrypoints/content/app";
 import { REQUEST_PACING_MS, resetPacingQueue } from "@/lib/api";
+import { assignmentQueryKey } from "@/lib/assignment-query-cache";
 import {
   classInfoStorage,
   hiddenClassesStorage,
@@ -128,13 +129,15 @@ afterEach(() => {
 it("retries a rate-limited class directly after reopening and waiting for its HTTP-date", async () => {
   const fallback = Promise.withResolvers<Response>();
   const retry = Promise.withResolvers<Response>();
-  const retryAt = NOW + 10_000;
+  const retryAt = NOW + 2 * QUERY_STALE_TIME_MS;
   vi.mocked(fetch)
     .mockResolvedValueOnce(new Response(null, { status: 500 }))
     .mockReturnValueOnce(fallback.promise)
     .mockResolvedValueOnce(noAssignments())
     .mockResolvedValueOnce(noAssignments())
-    .mockReturnValueOnce(retry.promise);
+    .mockResolvedValueOnce(noAssignments())
+    .mockReturnValueOnce(retry.promise)
+    .mockResolvedValueOnce(noAssignments());
 
   await mountApp();
   await advanceTime(3 * REQUEST_PACING_MS);
@@ -150,11 +153,20 @@ it("retries a rate-limited class directly after reopening and waiting for its HT
 
   await toggleDialog();
   expect(document.querySelector("[role=dialog][data-open]")).toBeNull();
+  await act(async () => {
+    await hiddenClassesStorage.setValue([101]);
+  });
+  await advanceTime(QUERY_STALE_TIME_MS + 1);
   await toggleDialog();
-  expect(retryButton("Try again in 10s")?.disabled).toBe(true);
+  await advanceTime(1);
+  const refreshedRequests = [...initialRequests, [202, 303]];
+  expect(classIdRequests()).toEqual(refreshedRequests);
+  await act(async () => {
+    await hiddenClassesStorage.setValue([]);
+  });
   await advanceTime(retryAt - Date.now() - 1);
   expect(retryButton("Try again in 1s")?.disabled).toBe(true);
-  expect(classIdRequests()).toEqual(initialRequests);
+  expect(classIdRequests()).toEqual(refreshedRequests);
 
   await advanceTime(1);
   const action = retryButton();
@@ -164,20 +176,31 @@ it("retries a rate-limited class directly after reopening and waiting for its HT
     action?.click();
   });
   await advanceTime(1);
-  expect(classIdRequests()).toEqual([...initialRequests, [101]]);
+  expect(classIdRequests()).toEqual([...refreshedRequests, [101]]);
+  expect(retryButton("Trying again…")?.disabled).toBe(true);
+
+  await toggleDialog();
+  await advanceTime(4 * REQUEST_PACING_MS);
+  await toggleDialog();
+  await advanceTime(1);
+  const requestsDuringRetry = [...refreshedRequests, [101], [202, 303]];
+  expect(classIdRequests()).toEqual(requestsDuringRetry);
   expect(retryButton("Trying again…")?.disabled).toBe(true);
 
   retry.resolve(noAssignments());
   await advanceTime(1);
   expect(retryButton("Trying again…")).toBeUndefined();
-  expect(classIdRequests()).toEqual([...initialRequests, [101]]);
+  expect(classIdRequests()).toEqual(requestsDuringRetry);
 });
 
 it("retries a shared rate limit with one batch for the current roster", async () => {
-  await hiddenClassesStorage.setValue([303]);
+  const newClassIds = [404, 505, 606];
+  await hiddenClassesStorage.setValue([606]);
   const retry = Promise.withResolvers<Response>();
   vi.mocked(fetch)
-    .mockResolvedValueOnce(new Response(null, { status: 429 }))
+    .mockResolvedValueOnce(
+      new Response(null, { headers: { "Retry-After": "1" }, status: 429 })
+    )
     .mockReturnValueOnce(retry.promise);
 
   await mountApp();
@@ -185,21 +208,41 @@ it("retries a shared rate limit with one batch for the current roster", async ()
   expect(classIdRequests()).toEqual([CLASS_IDS]);
   await toggleDialog();
   await act(async () => {
-    await classInfoStorage.setValue([...ROSTER].toReversed());
+    mounted?.client.setQueryData(assignmentQueryKey(404, STUDENT_ID), [], {
+      updatedAt: NOW - QUERY_STALE_TIME_MS + 500,
+    });
+    await classInfoStorage.setValue(
+      ROSTER.map((classInfo, index) => ({
+        ...classInfo,
+        id: newClassIds[index],
+      }))
+    );
   });
   await toggleDialog();
-  expect(retryButton()?.disabled).toBe(false);
+  await advanceTime(1);
   expect(classIdRequests()).toEqual([CLASS_IDS]);
+  expect(retryButton("Try again in 1s")?.disabled).toBe(true);
+
+  await advanceTime(NOW + 1000 - Date.now());
+  await toggleDialog();
+  await toggleDialog();
+  await advanceTime(1);
+  expect(classIdRequests()).toEqual([CLASS_IDS]);
+  expect(retryButton()?.disabled).toBe(false);
 
   await act(() => retryButton()?.click());
   await advanceTime(REQUEST_PACING_MS);
-  expect(classIdRequests()).toEqual([CLASS_IDS, [303, 202, 101]]);
+  expect(classIdRequests()).toEqual([CLASS_IDS, newClassIds]);
+  await toggleDialog();
+  await toggleDialog();
+  await advanceTime(REQUEST_PACING_MS);
+  expect(classIdRequests()).toEqual([CLASS_IDS, newClassIds]);
   expect(retryButton("Trying again…")?.disabled).toBe(true);
 
   retry.resolve(noAssignments());
   await advanceTime(1);
   expect(retryButton("Trying again…")).toBeUndefined();
-  expect(classIdRequests()).toEqual([CLASS_IDS, [303, 202, 101]]);
+  expect(classIdRequests()).toEqual([CLASS_IDS, newClassIds]);
 });
 
 it.each([101, 202])(
