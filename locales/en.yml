@@ -1,68 +1,68 @@
 todo: To-do
 calendar: Calendar
-list_view: List View
-calendar_view: Calendar View
+list_view: List view
+calendar_view: Calendar view
 filter: Filter
 undated_assignments_description: Include these assignments in your to-do list.
-submission_status: Submission Status
+submission_status: Submission status
 submitted: Submitted
-not_submitted: Not Submitted
-assignment_type: Assignment Type
+not_submitted: Not submitted
+assignment_type: Assignment type
 assignment: Assignment
 quiz: Quiz
-group_type: Group Type
+group_type: Work mode
 individual: Individual
 group: Group
-due_date: Due Date
+due_date: Due date
 no_due_date: No due date
 show_undated_assignments: Show assignments without a due date
-posted_date: Posted Date
+posted_date: Posted date
 sort: Sort
-sort_by: Sort By
+sort_by: Sort by
 order: Order
-asc: Ascending
-desc: Descending
+asc: Earliest first
+desc: Latest first
 hidden: Hidden
-hidden_items: Hidden Items
-clear_all: Clear All
-class: Class
+hidden_items: Hidden items
+clear_all: Restore all
+classes: Classes
+assignments: Assignments
 section: Section
-no_assignments: No Assignments
-no_assignments_desc: Congratulations! You have no assignments to do.
+no_assignments: No assignments
+no_assignments_desc: All caught up! You have no assignments to do.
 assignments_rate_limited: LEB2 request limit reached
-assignments_rate_limited_desc: LEB2 is temporarily limiting requests. Some assignments could not be loaded. Please wait before trying again.
+assignments_rate_limited_desc: LEB2 is temporarily limiting requests, so some assignments could not be loaded. Please wait a moment and try again.
 assignments_rate_limited_inline_desc: Some assignments may not have loaded.
 assignments_load_error: Unable to load assignments
 assignments_load_error_desc: Some assignments could not be loaded. Check your connection and try again.
-assignments_stale_warning: Previously loaded assignments are still shown and may be outdated.
+assignments_stale_warning: Showing previously loaded assignments, which may be outdated.
 try_again: Try again
 retry_after: Try again in {seconds}s
 retrying: Trying again…
-no_classes: No Classes Found
-no_classes_desc: Go to the classes page on LEB2 to sync your enrolled courses.
-go_to_classes: Go to Classes
-done_not_submitted_yet: Done (Not Submitted Yet)
-hide_class: Hide Class
-hide_assignment: Hide Assignment
-tips: Tips
-tips_desc: Right-click within the frame of each class or assignment to hide it.
-tips_shortcut: Press {shortcut} anywhere on LEB2 to open or close this dialog.
+no_classes: No classes found
+no_classes_desc: Go to the classes page on LEB2 to sync your enrolled classes.
+go_to_classes: Go to classes
+done_not_submitted_yet: Answered (not submitted)
+hide_class: Hide class
+hide_assignment: Hide assignment
+tips: Tip
+tips_desc: Right-click any class or assignment to hide it.
+tips_shortcut: Press {shortcut} anywhere on LEB2 to open or close Assign Watch.
 tips_calendar: Switch to Calendar view to see your assignments by week or month.
-tips_restore: >-
-  Hidden classes and assignments can be brought back from the Hidden menu.
+tips_restore: Restore hidden classes and assignments from the Hidden menu.
 next_tip: Next tip
-group_by: Group By
-group_by_class: By Class
-group_by_due_date: By Due Date
+group_by: Group by
+group_by_class: By class
+group_by_due_date: By due date
 weekly_view: Week
 monthly_view: Month
-previous_month: Previous Month
-next_month: Next Month
-go_to_current_month: Go to Current Month
-previous_week: Previous Week
-next_week: Next Week
-go_to_current_week: Go to Current Week
-more: more
+previous_month: Previous month
+next_month: Next month
+go_to_current_month: Go to current month
+previous_week: Previous week
+next_week: Next week
+go_to_current_week: Go to current week
+more: "+{count} more"
 today: Today
 tomorrow: Tomorrow
 settings: Settings
@@ -70,29 +70,41 @@ language: Language
 language_auto: Auto
 language_en: English
 language_th: Thai (ไทย)
-language_desc: Choose your preferred interface language.
-time_format: Time Format
-time_format_desc: Choose how time is displayed.
+language_desc: Choose your preferred display language.
+time_format: Time format
+time_format_desc: Choose how times are displayed.
 time_format_12h: 12-hour
 time_format_24h: 24-hour
 reduce_motion: Reduce motion
-reduce_motion_desc: Reduce motion and transitions across the interface.
-keyboard_shortcut: Keyboard Shortcut
-keyboard_shortcut_desc: Toggle the assignment dialog anywhere on LEB2.
+reduce_motion_desc: Minimize animations and transitions across the interface.
+keyboard_shortcut: Keyboard shortcut
+keyboard_shortcut_desc: Open or close Assign Watch anywhere on LEB2.
 shortcut: Shortcut
-hidden_items_desc: Restore all classes and assignments hidden on LEB2.
-cleared: Cleared!
+hidden_items_desc: Restore all hidden classes and assignments.
+cleared: Restored!
 sponsor: Sponsor
-set_due_date: "Set due date"
-edit_due_date: "Edit due date"
-remove_manual_due_date: "Remove manually set due date"
-manually_set: "Manually set"
-manual_due_date_description: "Record the assignment deadline missing from LEB2. This is saved only in Assign Watch; a date set on LEB2 takes precedence."
-manual_due_date_official: "LEB2 now has a due date for this assignment. Your manually set date is kept as a fallback."
-due_date_and_time: "Due date and time"
+set_due_date: Set due date
+edit_due_date: Edit due date
+remove_manual_due_date: Remove manual due date
+manually_set: Manually set
+manual_due_date_description: Set a due date when one is missing from LEB2. This is saved only in Assign Watch, and a due date on LEB2 always takes precedence.
+manual_due_date_official: LEB2 now provides a due date for this assignment. Your manual due date is kept as a fallback.
+due_date_and_time: Due date and time
 due_date_timezone: "Time zone: {timezone}"
-manual_due_date_invalid: "Enter a valid local date and time."
-manual_due_date_save_error: "Could not save the due date. Your previous date is unchanged. Please try again."
-save_due_date: "Save due date"
-cancel: "Cancel"
-saving: "Saving…"
+manual_due_date_invalid: Enter a valid local date and time.
+manual_due_date_save_error: Could not save the due date. Your previous due date was not changed. Please try again.
+save_due_date: Save due date
+cancel: Cancel
+saving: Saving…
+notification_due_soon_title: Assignment due soon
+notification_due_soon_24h: '"{title}" is due in less than 24 hours.'
+notification_due_soon_1h: '"{title}" is due in less than 1 hour.'
+notification_view_assignment: View assignment
+onboarding_page_title: Welcome to Assign Watch
+onboarding_title: Thank you for installing Assign Watch!
+onboarding_subtitle: Your personal assignment tracker for LEB2
+onboarding_feature_track: Track all your assignments in one place
+onboarding_feature_notify: Get notified before assignments are due
+onboarding_feature_language: Available in English and Thai
+onboarding_get_started: Get started
+onboarding_footer_hint: Visit LEB2 to see something special ✨

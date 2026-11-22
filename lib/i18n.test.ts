@@ -1,6 +1,20 @@
 import { describe, expect, it } from "vitest";
 
-import { isTranslationKey, resolveLocale, translate } from "@/lib/i18n";
+import {
+  EN_MESSAGES,
+  TH_MESSAGES,
+  isTranslationKey,
+  resolveLocale,
+  translate,
+} from "@/lib/i18n";
+
+const PLACEHOLDER_REGEX = /\{(?<name>\w+)\}/gu;
+
+function extractPlaceholders(text: string): string[] {
+  return [...text.matchAll(PLACEHOLDER_REGEX)]
+    .map((match) => match.groups?.name ?? "")
+    .toSorted();
+}
 
 describe("i18n", () => {
   describe("resolveLocale", () => {
@@ -22,67 +36,107 @@ describe("i18n", () => {
     it("retrieves correct strings from yaml for both locales", () => {
       expect(translate("todo", "en")).toBe("To-do");
       expect(translate("todo", "th")).toBe("สิ่งที่ต้องทำ");
+      expect(translate("classes", "en")).toBe("Classes");
+      expect(translate("classes", "th")).toBe("รายวิชา");
+      expect(translate("assignments", "en")).toBe("Assignments");
+      expect(translate("assignments", "th")).toBe("งาน");
+      expect(translate("assignment", "en")).toBe("Assignment");
+      expect(translate("assignment", "th")).toBe("งานที่มอบหมาย");
+      expect(translate("quiz", "en")).toBe("Quiz");
+      expect(translate("quiz", "th")).toBe("แบบทดสอบ");
+      expect(translate("group_type", "en")).toBe("Work mode");
+      expect(translate("group_type", "th")).toBe("รูปแบบงาน");
+      expect(translate("due_date", "en")).toBe("Due date");
+      expect(translate("due_date", "th")).toBe("กำหนดส่ง");
+      expect(translate("posted_date", "en")).toBe("Posted date");
+      expect(translate("posted_date", "th")).toBe("วันที่ประกาศ");
+      expect(translate("asc", "en")).toBe("Earliest first");
+      expect(translate("asc", "th")).toBe("ก่อนไปหลัง");
+      expect(translate("desc", "en")).toBe("Latest first");
+      expect(translate("desc", "th")).toBe("หลังไปก่อน");
+      expect(translate("clear_all", "en")).toBe("Restore all");
+      expect(translate("clear_all", "th")).toBe("เลิกซ่อนทั้งหมด");
+      expect(translate("done_not_submitted_yet", "en")).toBe(
+        "Answered (not submitted)"
+      );
+      expect(translate("done_not_submitted_yet", "th")).toBe("ทำแล้ว (ยังไม่ส่ง)");
       expect(translate("settings", "en")).toBe("Settings");
       expect(translate("settings", "th")).toBe("การตั้งค่า");
       expect(translate("language", "en")).toBe("Language");
       expect(translate("language", "th")).toBe("ภาษา");
       expect(translate("language_desc", "en")).toBe(
-        "Choose your preferred interface language."
+        "Choose your preferred display language."
       );
-      expect(translate("language_desc", "th")).toBe(
-        "เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ"
-      );
-      expect(translate("time_format", "en")).toBe("Time Format");
+      expect(translate("language_desc", "th")).toBe("เลือกภาษาที่ต้องการใช้แสดงผล");
+      expect(translate("time_format", "en")).toBe("Time format");
       expect(translate("time_format", "th")).toBe("รูปแบบเวลา");
       expect(translate("time_format_desc", "en")).toBe(
-        "Choose how time is displayed."
+        "Choose how times are displayed."
       );
-      expect(translate("time_format_desc", "th")).toBe("เลือกลักษณะการแสดงเวลา");
+      expect(translate("time_format_desc", "th")).toBe("เลือกรูปแบบการแสดงเวลา");
       expect(translate("time_format_12h", "en")).toBe("12-hour");
       expect(translate("time_format_12h", "th")).toBe("12 ชั่วโมง");
       expect(translate("time_format_24h", "en")).toBe("24-hour");
       expect(translate("time_format_24h", "th")).toBe("24 ชั่วโมง");
-      expect(translate("keyboard_shortcut", "en")).toBe("Keyboard Shortcut");
-      expect(translate("keyboard_shortcut", "th")).toBe("แป้นพิมพ์ลัด");
+      expect(translate("keyboard_shortcut", "en")).toBe("Keyboard shortcut");
+      expect(translate("keyboard_shortcut", "th")).toBe("ปุ่มลัดแป้นพิมพ์");
       expect(translate("keyboard_shortcut_desc", "en")).toBe(
-        "Toggle the assignment dialog anywhere on LEB2."
+        "Open or close Assign Watch anywhere on LEB2."
       );
       expect(translate("keyboard_shortcut_desc", "th")).toBe(
-        "เปิดหรือปิดหน้าต่างการบ้านที่หน้าไหนของ LEB2 ก็ได้"
+        "เปิดหรือปิดหน้าต่าง Assign Watch ได้จากทุกหน้าบน LEB2"
       );
       expect(translate("shortcut", "en")).toBe("Shortcut");
       expect(translate("shortcut", "th")).toBe("ปุ่มลัด");
       expect(translate("hidden_items_desc", "en")).toBe(
-        "Restore all classes and assignments hidden on LEB2."
+        "Restore all hidden classes and assignments."
       );
       expect(translate("hidden_items_desc", "th")).toBe(
-        "กู้คืนชั้นเรียนและการบ้านทั้งหมดที่ซ่อนไว้บน LEB2"
+        "แสดงรายวิชาและงานที่ซ่อนไว้ทั้งหมดอีกครั้ง"
       );
-      expect(translate("cleared", "en")).toBe("Cleared!");
-      expect(translate("cleared", "th")).toBe("ล้างแล้ว!");
+      expect(translate("cleared", "en")).toBe("Restored!");
+      expect(translate("cleared", "th")).toBe("เลิกซ่อนแล้ว!");
       expect(translate("section", "en")).toBe("Section");
       expect(translate("section", "th")).toBe("กลุ่มที่");
       expect(translate("sponsor", "en")).toBe("Sponsor");
       expect(translate("sponsor", "th")).toBe("สนับสนุน");
-      expect(translate("no_classes", "en")).toBe("No Classes Found");
-      expect(translate("no_classes", "th")).toBe("ไม่พบชั้นเรียน");
+      expect(translate("no_classes", "en")).toBe("No classes found");
+      expect(translate("no_classes", "th")).toBe("ไม่พบรายวิชา");
       expect(translate("no_classes_desc", "en")).toBe(
-        "Go to the classes page on LEB2 to sync your enrolled courses."
+        "Go to the classes page on LEB2 to sync your enrolled classes."
       );
       expect(translate("no_classes_desc", "th")).toBe(
-        "ไปที่หน้ารวมชั้นเรียนบน LEB2 เพื่อซิงค์วิชาที่คุณลงทะเบียน"
+        "ไปที่หน้ารายวิชาบน LEB2 เพื่อซิงค์รายวิชาที่ลงทะเบียนเรียน"
       );
-      expect(translate("go_to_classes", "en")).toBe("Go to Classes");
-      expect(translate("go_to_classes", "th")).toBe("ไปที่ชั้นเรียน");
+      expect(translate("go_to_classes", "en")).toBe("Go to classes");
+      expect(translate("go_to_classes", "th")).toBe("ไปที่หน้ารายวิชา");
+      expect(translate("notification_due_soon_title", "en")).toBe(
+        "Assignment due soon"
+      );
+      expect(translate("notification_due_soon_title", "th")).toBe(
+        "งานใกล้ถึงกำหนดส่ง"
+      );
+      expect(translate("notification_view_assignment", "en")).toBe(
+        "View assignment"
+      );
+      expect(translate("notification_view_assignment", "th")).toBe("เปิดดูงาน");
     });
 
     it("interpolates named tokens", () => {
       expect(translate("tips_shortcut", "en", { shortcut: "⌥ + A" })).toBe(
-        "Press ⌥ + A anywhere on LEB2 to open or close this dialog."
+        "Press ⌥ + A anywhere on LEB2 to open or close Assign Watch."
       );
       expect(translate("tips_shortcut", "th", { shortcut: "⌥ + A" })).toBe(
-        "กด ⌥ + A ที่หน้าไหนของ LEB2 ก็ได้ เพื่อเปิดหรือปิดหน้าต่างนี้"
+        "กด ⌥ + A ได้จากทุกหน้าบน LEB2 เพื่อเปิดหรือปิดหน้าต่าง Assign Watch"
       );
+      expect(translate("more", "en", { count: 2 })).toBe("+2 more");
+      expect(translate("more", "th", { count: 2 })).toBe("อีก 2 รายการ");
+      expect(
+        translate("notification_due_soon_1h", "en", { title: "Lab 1" })
+      ).toBe('"Lab 1" is due in less than 1 hour.');
+      expect(
+        translate("notification_due_soon_1h", "th", { title: "Lab 1" })
+      ).toBe('"Lab 1" จะครบกำหนดส่งในอีกไม่ถึง 1 ชั่วโมง');
     });
 
     it("returns key for missing translation", () => {
@@ -94,6 +148,27 @@ describe("i18n", () => {
       expect(isTranslationKey("valueOf")).toBe(false);
       expect(translate("toString", "en")).toBe("toString");
       expect(translate("valueOf", "th")).toBe("valueOf");
+    });
+  });
+
+  describe("locale parity", () => {
+    it("keeps identical keys, non-empty values, and matching placeholders across locales", () => {
+      const enKeys = Object.keys(EN_MESSAGES).toSorted();
+      const thKeys = Object.keys(TH_MESSAGES).toSorted();
+      expect(enKeys).toEqual(thKeys);
+
+      for (const key of enKeys) {
+        const enValue = EN_MESSAGES[key as keyof typeof EN_MESSAGES];
+        const thValue = TH_MESSAGES[key as keyof typeof TH_MESSAGES];
+
+        expect(typeof enValue).toBe("string");
+        expect(enValue.trim().length).toBeGreaterThan(0);
+        expect(typeof thValue).toBe("string");
+        expect(thValue?.trim().length).toBeGreaterThan(0);
+        expect(extractPlaceholders(thValue ?? "")).toEqual(
+          extractPlaceholders(enValue)
+        );
+      }
     });
   });
 });

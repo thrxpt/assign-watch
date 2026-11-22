@@ -291,7 +291,7 @@ describe("assignment dialog load failures", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Some assignments may not have loaded.");
     expect(html).toContain("Try again");
-    expect(html).not.toContain("Congratulations!");
+    expect(html).not.toContain("All caught up!");
   });
 
   it("shows the Retry-After countdown and disables retry until it expires", () => {
@@ -624,7 +624,7 @@ describe("assignment dialog load failures", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html.split(assignment.title)).toHaveLength(3);
     expect(html).toContain("may be outdated");
-    expect(html).not.toContain("Congratulations!");
+    expect(html).not.toContain("All caught up!");
   });
 
   it("does not show failures from hidden classes", async () => {
@@ -632,13 +632,13 @@ describe("assignment dialog load failures", () => {
     state.results = [result({ error: await requestError(), isError: true })];
     const html = renderToStaticMarkup(<App />);
     expect(html).not.toContain("Some assignments may not have loaded.");
-    expect(html).toContain("Congratulations!");
+    expect(html).toContain("All caught up!");
   });
 
   it("keeps the genuine successful empty state", () => {
     state.results = [result({ data: [] })];
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("Congratulations!");
+    expect(html).toContain("All caught up!");
     expect(html).toContain("Dialog tips");
   });
 
@@ -647,14 +647,14 @@ describe("assignment dialog load failures", () => {
     const html = renderToStaticMarkup(<App />);
     expect(html).toContain("Unable to load assignments");
     expect(html).not.toContain("Some assignments may not have loaded.");
-    expect(html).not.toContain("Congratulations!");
+    expect(html).not.toContain("All caught up!");
   });
 
   it("localizes rate limiting in Thai", async () => {
     state.locale = "th";
     state.results = [result({ error: await requestError(), isError: true })];
     const html = renderToStaticMarkup(<App />);
-    expect(html).toContain("การบ้านบางรายการอาจโหลดไม่สำเร็จ");
+    expect(html).toContain("งานบางรายการอาจโหลดไม่สำเร็จ");
     expect(html).toContain("ลองอีกครั้ง");
   });
 

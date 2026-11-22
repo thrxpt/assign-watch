@@ -3,57 +3,57 @@ calendar: ปฏิทิน
 list_view: มุมมองรายการ
 calendar_view: มุมมองปฏิทิน
 filter: ตัวกรอง
-undated_assignments_description: แสดงงานเหล่านี้ในรายการสิ่งที่ต้องทำ
+undated_assignments_description: รวมงานเหล่านี้ไว้ในรายการสิ่งที่ต้องทำ
 submission_status: สถานะการส่ง
 submitted: ส่งแล้ว
-not_submitted: ยังไม่ได้ส่ง
+not_submitted: ยังไม่ส่ง
 assignment_type: ประเภทงาน
-assignment: การบ้าน
+assignment: งานที่มอบหมาย
 quiz: แบบทดสอบ
-group_type: ประเภทกลุ่ม
+group_type: รูปแบบงาน
 individual: งานเดี่ยว
 group: งานกลุ่ม
-due_date: วันที่กำหนดส่ง
+due_date: กำหนดส่ง
 no_due_date: ไม่มีกำหนดส่ง
 show_undated_assignments: แสดงงานที่ไม่มีกำหนดส่ง
-posted_date: วันที่สั่ง
+posted_date: วันที่ประกาศ
 sort: เรียงลำดับ
 sort_by: เรียงตาม
 order: ลำดับ
-asc: น้อยไปมาก
-desc: มากไปน้อย
+asc: ก่อนไปหลัง
+desc: หลังไปก่อน
 hidden: ที่ซ่อนไว้
 hidden_items: รายการที่ซ่อนไว้
-clear_all: ล้างทั้งหมด
-class: ชั้นเรียน
+clear_all: เลิกซ่อนทั้งหมด
+classes: รายวิชา
+assignments: งาน
 section: กลุ่มที่
-no_assignments: ไม่มีการบ้าน
-no_assignments_desc: ยินดีด้วย! คุณไม่มีการบ้านที่ต้องทำ
-assignments_rate_limited: ส่งคำขอไปยัง LEB2 เกินขีดจำกัด
-assignments_rate_limited_desc: LEB2 จำกัดการร้องขอชั่วคราว จึงไม่สามารถโหลดการบ้านบางส่วนได้ โปรดรอสักครู่ก่อนลองอีกครั้ง
-assignments_rate_limited_inline_desc: การบ้านบางรายการอาจโหลดไม่สำเร็จ
-assignments_load_error: ไม่สามารถโหลดการบ้านได้
-assignments_load_error_desc: ไม่สามารถโหลดการบ้านบางส่วนได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
-assignments_stale_warning: ยังคงแสดงการบ้านที่โหลดไว้ก่อนหน้านี้ ซึ่งอาจไม่ใช่ข้อมูลล่าสุด
+no_assignments: ไม่มีงาน
+no_assignments_desc: ยินดีด้วย! คุณไม่มีงานที่ต้องทำแล้ว
+assignments_rate_limited: เกินขีดจำกัดคำขอของ LEB2
+assignments_rate_limited_desc: LEB2 กำลังจำกัดคำขอชั่วคราว ทำให้โหลดงานบางรายการไม่สำเร็จ โปรดรอสักครู่แล้วลองอีกครั้ง
+assignments_rate_limited_inline_desc: งานบางรายการอาจโหลดไม่สำเร็จ
+assignments_load_error: ไม่สามารถโหลดรายการงานได้
+assignments_load_error_desc: ไม่สามารถโหลดงานบางรายการได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
+assignments_stale_warning: กำลังแสดงงานที่โหลดไว้ก่อนหน้า ซึ่งอาจไม่ใช่ข้อมูลล่าสุด
 try_again: ลองอีกครั้ง
-retry_after: ลองอีกครั้งในอีก {seconds} วินาที
+retry_after: ลองอีกครั้งใน {seconds} วินาที
 retrying: กำลังลองอีกครั้ง…
-no_classes: ไม่พบชั้นเรียน
-no_classes_desc: ไปที่หน้ารวมชั้นเรียนบน LEB2 เพื่อซิงค์วิชาที่คุณลงทะเบียน
-go_to_classes: ไปที่ชั้นเรียน
-done_not_submitted_yet: ทำแล้วแต่ยังไม่ได้ส่ง
-hide_class: ซ่อนชั้นเรียน
+no_classes: ไม่พบรายวิชา
+no_classes_desc: ไปที่หน้ารายวิชาบน LEB2 เพื่อซิงค์รายวิชาที่ลงทะเบียนเรียน
+go_to_classes: ไปที่หน้ารายวิชา
+done_not_submitted_yet: ทำแล้ว (ยังไม่ส่ง)
+hide_class: ซ่อนรายวิชา
 hide_assignment: ซ่อนงาน
 tips: เคล็ดลับ
-tips_desc: คลิกขวาภายในกรอบของแต่ละวิชา หรือแต่ละงาน เพื่อซ่อนได้
-tips_shortcut: >-
-  กด {shortcut} ที่หน้าไหนของ LEB2 ก็ได้ เพื่อเปิดหรือปิดหน้าต่างนี้
-tips_calendar: สลับไปมุมมองปฏิทิน เพื่อดูงานทั้งหมดแบบรายสัปดาห์หรือรายเดือน
-tips_restore: ชั้นเรียนและงานที่ซ่อนไว้ สามารถเอากลับมาได้จากเมนู "ที่ซ่อนไว้"
+tips_desc: คลิกขวาที่รายวิชาหรืองานเพื่อซ่อน
+tips_shortcut: กด {shortcut} ได้จากทุกหน้าบน LEB2 เพื่อเปิดหรือปิดหน้าต่าง Assign Watch
+tips_calendar: สลับไปมุมมองปฏิทินเพื่อดูงานทั้งหมดแบบรายสัปดาห์หรือรายเดือน
+tips_restore: เลิกซ่อนรายวิชาและงานได้จากเมนู "ที่ซ่อนไว้"
 next_tip: เคล็ดลับถัดไป
 group_by: จัดกลุ่มตาม
-group_by_class: ตามวิชา
-group_by_due_date: ตามวันที่กำหนดส่ง
+group_by_class: ตามรายวิชา
+group_by_due_date: ตามกำหนดส่ง
 weekly_view: สัปดาห์
 monthly_view: เดือน
 previous_month: เดือนก่อนหน้า
@@ -62,37 +62,49 @@ go_to_current_month: ไปยังเดือนปัจจุบัน
 previous_week: สัปดาห์ก่อนหน้า
 next_week: สัปดาห์ถัดไป
 go_to_current_week: ไปยังสัปดาห์ปัจจุบัน
-more: เพิ่มเติม
+more: อีก {count} รายการ
 today: วันนี้
 tomorrow: พรุ่งนี้
 settings: การตั้งค่า
 language: ภาษา
 language_auto: อัตโนมัติ
-language_en: อังกฤษ
+language_en: English
 language_th: ไทย
-language_desc: เลือกภาษาของอินเทอร์เฟซที่คุณต้องการ
+language_desc: เลือกภาษาที่ต้องการใช้แสดงผล
 time_format: รูปแบบเวลา
-time_format_desc: เลือกลักษณะการแสดงเวลา
+time_format_desc: เลือกรูปแบบการแสดงเวลา
 time_format_12h: 12 ชั่วโมง
 time_format_24h: 24 ชั่วโมง
 reduce_motion: ลดการเคลื่อนไหว
-reduce_motion_desc: ทำให้การเคลื่อนไหวและการเปลี่ยนหน้าจอต่าง ๆ ในอินเทอร์เฟซสั้นลง
-keyboard_shortcut: แป้นพิมพ์ลัด
-keyboard_shortcut_desc: เปิดหรือปิดหน้าต่างการบ้านที่หน้าไหนของ LEB2 ก็ได้
+reduce_motion_desc: ลดแอนิเมชันและเอฟเฟกต์การเปลี่ยนผ่านทั่วทั้งหน้าจอ
+keyboard_shortcut: ปุ่มลัดแป้นพิมพ์
+keyboard_shortcut_desc: เปิดหรือปิดหน้าต่าง Assign Watch ได้จากทุกหน้าบน LEB2
 shortcut: ปุ่มลัด
-hidden_items_desc: กู้คืนชั้นเรียนและการบ้านทั้งหมดที่ซ่อนไว้บน LEB2
-cleared: ล้างแล้ว!
+hidden_items_desc: แสดงรายวิชาและงานที่ซ่อนไว้ทั้งหมดอีกครั้ง
+cleared: เลิกซ่อนแล้ว!
 sponsor: สนับสนุน
-set_due_date: "กำหนดวันส่ง"
-edit_due_date: "แก้ไขวันส่ง"
-remove_manual_due_date: "ลบวันส่งที่กำหนดเอง"
-manually_set: "กำหนดเอง"
-manual_due_date_description: "บันทึกกำหนดส่งที่ยังไม่มีใน LEB2 โดยเก็บไว้ใน Assign Watch เท่านั้น หาก LEB2 มีกำหนดส่งแล้ว จะใช้วันนั้นแทน"
-manual_due_date_official: "LEB2 มีกำหนดส่งของงานนี้แล้ว วันส่งที่คุณกำหนดเองจะเก็บไว้เป็นวันสำรอง"
-due_date_and_time: "วันและเวลากำหนดส่ง"
+set_due_date: ตั้งกำหนดส่ง
+edit_due_date: แก้ไขกำหนดส่ง
+remove_manual_due_date: ลบกำหนดส่งที่ตั้งเอง
+manually_set: กำหนดเอง
+manual_due_date_description: บันทึกกำหนดส่งที่ไม่มีบน LEB2 ข้อมูลนี้เก็บไว้ใน Assign Watch เท่านั้น หาก LEB2 ระบุกำหนดส่งไว้ ระบบจะยึดตาม LEB2 เป็นหลัก
+manual_due_date_official: LEB2 ระบุกำหนดส่งของงานนี้แล้ว ระบบจะเก็บกำหนดส่งที่คุณตั้งเองไว้เป็นค่าสำรอง
+due_date_and_time: วันและเวลากำหนดส่ง
 due_date_timezone: "เขตเวลา: {timezone}"
-manual_due_date_invalid: "กรุณาระบุวันและเวลาท้องถิ่นให้ถูกต้อง"
-manual_due_date_save_error: "บันทึกวันส่งไม่สำเร็จ วันเดิมยังไม่เปลี่ยนแปลง กรุณาลองอีกครั้ง"
-save_due_date: "บันทึกวันส่ง"
-cancel: "ยกเลิก"
-saving: "กำลังบันทึก…"
+manual_due_date_invalid: โปรดระบุวันและเวลาท้องถิ่นให้ถูกต้อง
+manual_due_date_save_error: ไม่สามารถบันทึกกำหนดส่งได้ กำหนดส่งเดิมยังคงไม่เปลี่ยนแปลง โปรดลองอีกครั้ง
+save_due_date: บันทึกกำหนดส่ง
+cancel: ยกเลิก
+saving: กำลังบันทึก…
+notification_due_soon_title: งานใกล้ถึงกำหนดส่ง
+notification_due_soon_24h: '"{title}" จะครบกำหนดส่งในอีกไม่ถึง 24 ชั่วโมง'
+notification_due_soon_1h: '"{title}" จะครบกำหนดส่งในอีกไม่ถึง 1 ชั่วโมง'
+notification_view_assignment: เปิดดูงาน
+onboarding_page_title: ยินดีต้อนรับสู่ Assign Watch
+onboarding_title: ขอบคุณที่ติดตั้ง Assign Watch!
+onboarding_subtitle: ตัวช่วยติดตามงานของคุณบน LEB2
+onboarding_feature_track: ติดตามงานทั้งหมดของคุณได้ในที่เดียว
+onboarding_feature_notify: รับการแจ้งเตือนก่อนถึงกำหนดส่ง
+onboarding_feature_language: รองรับทั้งภาษาไทยและภาษาอังกฤษ
+onboarding_get_started: เริ่มต้นใช้งาน
+onboarding_footer_hint: เปิด LEB2 เพื่อลองใช้งานได้เลย ✨

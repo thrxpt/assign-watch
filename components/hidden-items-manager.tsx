@@ -155,7 +155,7 @@ export function HiddenItemsManager({
         {hiddenClassItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {t("class")}
+              {t("classes")}
             </DropdownMenuLabel>
             {hiddenClassItems.map((classInfo) => (
               <HiddenClassItem classInfo={classInfo} key={classInfo.id} />
@@ -170,7 +170,7 @@ export function HiddenItemsManager({
         {hiddenAssignmentItems.length > 0 && (
           <DropdownMenuGroup>
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {t("assignment")}
+              {t("assignments")}
             </DropdownMenuLabel>
             {hiddenAssignmentItems.map((assignment) => (
               <HiddenAssignmentItem

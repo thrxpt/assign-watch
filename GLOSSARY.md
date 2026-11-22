@@ -77,3 +77,22 @@ Evaluations run reactively whenever cached assignments or manual dates change, o
 - One-time browser startup listeners must be registered via `browser.runtime.onStartup.addListener(...)`.
 - Extension install, update, and migration tasks must be registered via `browser.runtime.onInstalled.addListener(...)`.
 - Background workers must never initiate unprompted, recurring network requests against external educational platforms; all background checks must read strictly from local extension storage.
+
+## UI & Localization Terminology
+
+Canonical English and Thai terms used across `locales/en.yml`, `locales/th.yml`, and extension pages. Keep UI copy in **sentence case** for English (preserving proper nouns like `LEB2`, `Assign Watch`, `English`, `Thai`, and named views/menus like `Calendar`, `Hidden`), and use a polite-neutral software UI register (`โปรด` rather than `กรุณา`) in Thai.
+
+| Domain concept | English | Thai | Avoid |
+| --- | --- | --- | --- |
+| Class / Classes | `Class` / `Classes` | `รายวิชา` | `courses` (EN), `ชั้นเรียน` / `วิชา` / `หน้ารวมชั้นเรียน` (TH) |
+| Section | `Section` | `กลุ่มที่` | — |
+| Assignment(s) (umbrella) | `Assignment` / `Assignments` | `งาน` / `รายการงาน` | `การบ้าน` (TH) |
+| Assignment (`ASM`) / Quiz (`QUZ`) | `Assignment` / `Quiz` | `งานที่มอบหมาย` / `แบบทดสอบ` | `การบ้าน` (TH) |
+| Work mode (`IND` / `GRP`) | `Work mode` (`Individual` / `Group`) | `รูปแบบงาน` (`งานเดี่ยว` / `งานกลุ่ม`) | `Group type` (EN), `ประเภทกลุ่ม` (TH) |
+| Submission status | `Submission status` (`Submitted` / `Not submitted` / `Answered (not submitted)`) | `สถานะการส่ง` (`ส่งแล้ว` / `ยังไม่ส่ง` / `ทำแล้ว (ยังไม่ส่ง)`) | — |
+| Due date | `Due date` | `กำหนดส่ง` | `วันที่กำหนดส่ง` / `วันส่ง` / `วันเดิม` / `วันสำรอง` (TH) |
+| Manual due date / Manually set | `Manual due date` / `Manually set` | `กำหนดส่งที่ตั้งเอง` / `กำหนดเอง` | — |
+| Posted date | `Posted date` | `วันที่ประกาศ` | `วันที่สั่ง` (TH) |
+| Sort order | `Earliest first` / `Latest first` | `ก่อนไปหลัง` / `หลังไปก่อน` | `Ascending` / `Descending` (EN), `น้อยไปมาก` / `มากไปน้อย` (TH) |
+| Hidden items / Restore all | `Hidden items` / `Restore all` / `Restored!` | `รายการที่ซ่อนไว้` / `เลิกซ่อนทั้งหมด` / `เลิกซ่อนแล้ว!` | `Clear all` / `Cleared!` (EN), `ล้างทั้งหมด` / `ล้างแล้ว!` (TH) |
+| Keyboard shortcut / Shortcut | `Keyboard shortcut` / `Shortcut` | `ปุ่มลัดแป้นพิมพ์` / `ปุ่มลัด` | `แป้นพิมพ์ลัด` (TH) |

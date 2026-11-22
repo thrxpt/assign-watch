@@ -45,7 +45,8 @@ export type TranslationKey =
   | "hidden"
   | "hidden_items"
   | "clear_all"
-  | "class"
+  | "classes"
+  | "assignments"
   | "section"
   | "no_assignments"
   | "no_assignments_desc"
@@ -101,7 +102,19 @@ export type TranslationKey =
   | "shortcut"
   | "hidden_items_desc"
   | "cleared"
-  | "sponsor";
+  | "sponsor"
+  | "notification_due_soon_title"
+  | "notification_due_soon_24h"
+  | "notification_due_soon_1h"
+  | "notification_view_assignment"
+  | "onboarding_page_title"
+  | "onboarding_title"
+  | "onboarding_subtitle"
+  | "onboarding_feature_track"
+  | "onboarding_feature_notify"
+  | "onboarding_feature_language"
+  | "onboarding_get_started"
+  | "onboarding_footer_hint";
 
 export const EN_MESSAGES = enMessages as Record<TranslationKey, string>;
 export const TH_MESSAGES = thMessages as Partial<

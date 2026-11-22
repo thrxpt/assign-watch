@@ -1,8 +1,16 @@
 import { Heart, Link } from "lucide-react";
+import { useEffect } from "react";
 
 import { browser } from "#imports";
+import { I18nProvider, useI18n } from "@/lib/use-i18n";
 
-function App() {
+function PopupContent() {
+  const { locale, t } = useI18n();
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   return (
     <div className="flex h-fit w-80 flex-col items-center justify-center p-6">
       <div className="mb-4 flex flex-col items-center gap-2">
@@ -53,10 +61,18 @@ function App() {
           target="_blank"
         >
           <Heart className="size-3.5" />
-          <span>Sponsor</span>
+          <span>{t("sponsor")}</span>
         </a>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <PopupContent />
+    </I18nProvider>
   );
 }
 

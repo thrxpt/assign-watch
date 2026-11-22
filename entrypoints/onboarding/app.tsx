@@ -1,29 +1,39 @@
 import { Bell, BookCheck, ChevronRight, Languages } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { useEffect } from "react";
 import { browser } from "wxt/browser";
 
 import { buttonVariants } from "@/components/ui/button";
+import type { TranslationKey } from "@/lib/i18n";
+import { I18nProvider, useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
 const features: {
   icon: LucideIcon;
-  text: string;
+  key: TranslationKey;
 }[] = [
   {
     icon: BookCheck,
-    text: "Track all your assignments in one place",
+    key: "onboarding_feature_track",
   },
   {
     icon: Bell,
-    text: "Get notified before deadlines",
+    key: "onboarding_feature_notify",
   },
   {
     icon: Languages,
-    text: "English & Thai language support",
+    key: "onboarding_feature_language",
   },
 ];
 
-function App() {
+function OnboardingContent() {
+  const { locale, t } = useI18n();
+
+  useEffect(() => {
+    document.title = t("onboarding_page_title");
+    document.documentElement.lang = locale;
+  }, [locale, t]);
+
   return (
     <div className="flex min-h-screen items-center justify-center p-8">
       <div className="flex max-w-md flex-col items-center text-center">
@@ -35,22 +45,22 @@ function App() {
           width={80}
         />
         <h1 className="mb-2 font-semibold text-2xl tracking-tight">
-          Thank you for installing Assign Watch!
+          {t("onboarding_title")}
         </h1>
         <p className="mb-8 text-base text-muted-foreground">
-          Your personal assignment tracker for LEB2
+          {t("onboarding_subtitle")}
         </p>
 
         <div className="mx-auto mb-8 space-y-3">
           {features.map((feature) => (
             <div
               className="flex items-center gap-3 rounded-lg bg-card/50 p-3 text-left text-sm"
-              key={feature.text}
+              key={feature.key}
             >
               <div className="rounded-lg bg-muted p-2">
                 <feature.icon className="size-5 shrink-0" />
               </div>
-              <span>{feature.text}</span>
+              <span>{t(feature.key)}</span>
             </div>
           ))}
         </div>
@@ -65,7 +75,7 @@ function App() {
           target="_blank"
         >
           <span className="mr-8 text-primary-foreground transition-opacity duration-500 group-hover:opacity-0">
-            Get Started
+            {t("onboarding_get_started")}
           </span>
           <span className="absolute top-1 right-1 bottom-1 z-10 grid w-1/4 place-items-center rounded-sm bg-primary-foreground/15 transition-all duration-500 group-hover:w-[calc(100%-0.5rem)] group-active:scale-95">
             <ChevronRight className="size-4 stroke-primary-foreground" />
@@ -73,10 +83,18 @@ function App() {
         </a>
 
         <p className="mt-4 text-muted-foreground text-xs">
-          Visit LEB2 to see something special ✨
+          {t("onboarding_footer_hint")}
         </p>
       </div>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <I18nProvider>
+      <OnboardingContent />
+    </I18nProvider>
   );
 }
 

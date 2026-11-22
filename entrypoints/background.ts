@@ -3,23 +3,23 @@ import { defineBackground } from "wxt/utils/define-background";
 
 import { getAssignmentUrl } from "@/lib/assignment";
 import { isCacheClassAssignmentsMessage } from "@/lib/assignment-cache";
+import { resolveLocale, translate } from "@/lib/i18n";
+import type { Locale, TranslationKey } from "@/lib/i18n";
 import { isManualDueDateMessage } from "@/lib/manual-due-date-storage";
 import {
   getAssignmentKey,
   readAssignmentSnapshot,
   resolveAssignment,
 } from "@/lib/manual-due-dates";
-import {
-  DUE_SOON_MESSAGES,
-  reviewDeadlineNotifications,
-} from "@/lib/notification";
+import { reviewDeadlineNotifications } from "@/lib/notification";
 import type { Timeframe } from "@/lib/notification";
 import {
   cachedAssignmentsStorage,
   deadlineNotificationHistoryStorage,
-  manualDueDatesStorage,
   hiddenAssignmentsStorage,
   hiddenClassesStorage,
+  languageStorage,
+  manualDueDatesStorage,
   notifiedAssignments1hStorage,
   notifiedAssignmentsStorage,
   userIdStorage,
@@ -28,6 +28,11 @@ import type { Activity } from "@/types";
 
 const ALARM_NAME = "reviewCachedAssignments";
 const CHECK_INTERVAL_MINUTES = 10;
+
+const DUE_SOON_MESSAGE_KEYS: Record<Timeframe, TranslationKey> = {
+  "1h": "notification_due_soon_1h",
+  "24h": "notification_due_soon_24h",
+};
 
 let backgroundQueue: Promise<void> = Promise.resolve();
 const enqueue = async <T>(task: () => Promise<T>): Promise<T> => {
@@ -42,19 +47,25 @@ const enqueue = async <T>(task: () => Promise<T>): Promise<T> => {
   }
 };
 
-const notifyDueSoon = (assignment: Activity, timeframe: Timeframe) => {
+const notifyDueSoon = (
+  assignment: Activity,
+  timeframe: Timeframe,
+  locale: Locale
+) => {
   const idSuffix = timeframe === "1h" ? "-1h" : "";
   void browser.notifications.create(
     `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}${idSuffix}`,
     {
       buttons: [
         {
-          title: "View Assignment",
+          title: translate("notification_view_assignment", locale),
         },
       ],
       iconUrl: browser.runtime.getURL("/icons/128.png"),
-      message: `"${assignment.title}" ${DUE_SOON_MESSAGES[timeframe]}`,
-      title: "Assignment Due Soon!",
+      message: translate(DUE_SOON_MESSAGE_KEYS[timeframe], locale, {
+        title: assignment.title,
+      }),
+      title: translate("notification_due_soon_title", locale),
       type: "basic",
     }
   );
@@ -71,6 +82,7 @@ const reviewCachedAssignments = async () => {
       manualDueDates,
       history,
       currentUserId,
+      language,
     ] = await Promise.all([
       cachedAssignmentsStorage.getValue(),
       hiddenClassesStorage.getValue(),
@@ -80,12 +92,15 @@ const reviewCachedAssignments = async () => {
       manualDueDatesStorage.getValue(),
       deadlineNotificationHistoryStorage.getValue(),
       userIdStorage.getValue(),
+      languageStorage.getValue(),
     ]);
 
     const snapshot = readAssignmentSnapshot(cached);
     if (snapshot.userId && snapshot.userId !== currentUserId) {
       return;
     }
+
+    const locale = resolveLocale(language);
 
     const result = reviewDeadlineNotifications({
       assignments: snapshot.assignments.map((assignment) =>
@@ -96,7 +111,8 @@ const reviewCachedAssignments = async () => {
       history,
       legacyNotifiedDay: notifiedDay,
       legacyNotifiedHour: notifiedHour,
-      notify: notifyDueSoon,
+      notify: (assignment, timeframe) =>
+        notifyDueSoon(assignment, timeframe, locale),
       now: new Date(),
       userId: snapshot.userId,
     });
