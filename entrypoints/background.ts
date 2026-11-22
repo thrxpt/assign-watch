@@ -34,7 +34,7 @@ import {
   readEnrollmentScope,
   userIdStorage,
 } from "@/lib/storage";
-import type { Activity, EnrollmentScope } from "@/types";
+import type { Activity, AssignmentSnapshot, EnrollmentScope } from "@/types";
 
 const ALARM_NAME = "reviewCachedAssignments";
 const CHECK_INTERVAL_MINUTES = 10;
@@ -181,19 +181,58 @@ const openNotificationAssignment = (notificationId: string) => {
   }
 };
 
-const pruneAssignmentCache = async ({ classes, userId }: EnrollmentScope) => {
-  if (classes === null) {
+const filterCacheForScope = (
+  cached: AssignmentSnapshot,
+  { classes, pendingCachePrune, userId }: EnrollmentScope
+) => {
+  if (pendingCachePrune?.userId === cached.userId) {
+    const removed = new Set(pendingCachePrune.classIds);
+    return cached.assignments.filter(({ class_id }) => !removed.has(class_id));
+  }
+  return cached.userId === userId && classes !== null
+    ? filterEnrolledAssignments(cached.assignments, classes)
+    : cached.assignments;
+};
+
+const pruneAssignmentCache = async (
+  scope: EnrollmentScope,
+  nextUserId = scope.userId
+): Promise<EnrollmentScope["pendingCachePrune"]> => {
+  if (scope.classes === null && !scope.pendingCachePrune) {
     return;
   }
   const cached = readAssignmentSnapshot(
     await cachedAssignmentsStorage.getValue()
   );
-  if (cached.userId !== userId) {
+  if (!cached.userId) {
     return;
   }
-  const assignments = filterEnrolledAssignments(cached.assignments, classes);
-  if (assignments.length < cached.assignments.length) {
-    await cachedAssignmentsStorage.setValue({ assignments, userId });
+  const assignments = filterCacheForScope(cached, scope);
+  if (assignments.length === cached.assignments.length) {
+    return;
+  }
+
+  try {
+    await cachedAssignmentsStorage.setValue({
+      assignments,
+      userId: cached.userId,
+    });
+  } catch (error) {
+    if (cached.userId === nextUserId) {
+      throw error;
+    }
+    // The next owner cannot use this snapshot. Carry its exclusions across
+    // the switch so it can be repaired before its owner becomes active again.
+    const retainedClassIds = new Set(
+      assignments.map(({ class_id }) => class_id)
+    );
+    const removedClassIds = new Set<number>();
+    for (const { class_id } of cached.assignments) {
+      if (!retainedClassIds.has(class_id)) {
+        removedClassIds.add(class_id);
+      }
+    }
+    return { classIds: [...removedClassIds], userId: cached.userId };
   }
 };
 
@@ -221,16 +260,17 @@ const publishEnrollment = (message: PublishEnrollmentMessage) =>
         : crypto.randomUUID();
     const scope: EnrollmentScope = { classes, generation, userId };
 
-    if (previous && previous.generation !== generation) {
-      // Finish any interrupted prune before replacing the roster that
-      // excludes those rows, including when a removed class is re-added.
-      await pruneAssignmentCache(previous);
-    }
-    if (
-      previous?.generation !== generation ||
-      JSON.stringify(previous.classes) !== JSON.stringify(classes)
-    ) {
-      await classInfoStorage.setValue(scope);
+    if (previous?.generation !== generation) {
+      // Repair lingering rows before a new roster for their owner can expose
+      // them again, including when a removed class is re-added.
+      const pendingCachePrune =
+        previous && (await pruneAssignmentCache(previous, userId));
+      await classInfoStorage.setValue({
+        ...scope,
+        ...(pendingCachePrune && { pendingCachePrune }),
+      });
+    } else if (JSON.stringify(previous.classes) !== JSON.stringify(classes)) {
+      await classInfoStorage.setValue({ ...previous, classes });
     }
     await pruneAssignmentCache(scope);
     return { ok: true };

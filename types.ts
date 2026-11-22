@@ -14,6 +14,7 @@ export interface ClassRoster {
 export interface EnrollmentScope {
   classes: ClassInfo[] | null;
   generation: string;
+  pendingCachePrune?: { classIds: number[]; userId: string };
   userId: string;
 }
 
