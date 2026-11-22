@@ -61,7 +61,7 @@ const notifyDueSoon = (
   locale: Locale
 ) => {
   const idSuffix = timeframe === "1h" ? "-1h" : "";
-  void notifications.create(
+  return notifications.create(
     `assignwatch-${assignment.type}-${assignment.class_id}-${assignment.id}${idSuffix}`,
     {
       ...(supportsNotificationButtons() && {
@@ -113,7 +113,7 @@ const reviewCachedAssignments = async () => {
 
     const locale = resolveLocale(language);
 
-    const result = reviewDeadlineNotifications({
+    const result = await reviewDeadlineNotifications({
       assignments: snapshot.assignments.map((assignment) =>
         resolveAssignment(assignment, snapshot.userId, manualDueDates)
       ),

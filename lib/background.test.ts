@@ -3,7 +3,11 @@ import { browser } from "wxt/browser";
 import { fakeBrowser } from "wxt/testing/fake-browser";
 
 import background from "@/entrypoints/background";
-import { readAssignmentSnapshot } from "@/lib/manual-due-dates";
+import {
+  getAssignmentKey,
+  readAssignmentSnapshot,
+} from "@/lib/manual-due-dates";
+import { HOUR_IN_MS } from "@/lib/notification";
 import {
   cachedAssignmentsStorage,
   deadlineNotificationHistoryStorage,
@@ -135,6 +139,97 @@ it("sends a manual deadline reminder when another class has not loaded", async (
   ).toEqual({ assignments: [assignment], userId: "student-a" });
   const history = await deadlineNotificationHistoryStorage.getValue();
   expect(history?.['["student-a",10,101]']?.hour).toBe(true);
+});
+
+it("retries only the rejected reminder and serializes overlapping alarm reviews", async ({
+  onTestFinished,
+}) => {
+  vi.setSystemTime(new Date("2026-10-10T12:00:00Z"));
+  onTestFinished(() => {
+    vi.useRealTimers();
+  });
+  const student = "student-a";
+  await userIdStorage.setValue(student);
+  vi.spyOn(cachedAssignmentsStorage, "watch").mockReturnValue(() => {});
+  const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  const hourDueAt = Date.now() + HOUR_IN_MS;
+  const dayDueAt = Date.now() + 12 * HOUR_IN_MS;
+  const hourAssignment = createMockActivity({
+    due_date: new Date(hourDueAt).toISOString(),
+    id: 101,
+  });
+  const dayAssignment = createMockActivity({
+    due_date: new Date(dayDueAt).toISOString(),
+    id: 102,
+  });
+  const hourKey = getAssignmentKey(student, hourAssignment);
+  const dayKey = getAssignmentKey(student, dayAssignment);
+  const hourId = "assignwatch-ASM-101-101-1h";
+  const dayId = "assignwatch-ASM-101-102";
+  type NotificationOptions = Parameters<typeof browser.notifications.create>[0];
+  const notify = vi
+    .spyOn(browser.notifications, "create")
+    .mockImplementation((id: string | NotificationOptions) =>
+      id === hourId
+        ? Promise.reject(new Error("Browser rejected notification"))
+        : Promise.resolve()
+    );
+  background.main();
+
+  expect(
+    await sendMessage({
+      action: "cacheClassAssignments",
+      assignments: [hourAssignment, dayAssignment],
+      classId: hourAssignment.class_id,
+      classIds: [hourAssignment.class_id],
+      userId: student,
+    })
+  ).toEqual({ ok: true });
+  expect(notify).not.toHaveBeenCalled();
+
+  await drainChecks();
+
+  const firstHistory = {
+    [dayKey]: { day: true, dueAt: dayDueAt, hour: false },
+    [hourKey]: { day: false, dueAt: hourDueAt, hour: false },
+  };
+  expect(await deadlineNotificationHistoryStorage.getValue()).toEqual(
+    firstHistory
+  );
+  expect(notify.mock.calls.map(([id]) => id)).toEqual([hourId, dayId]);
+  expect(logError).toHaveBeenCalledExactlyOnceWith(
+    "Failed to create deadline notification"
+  );
+
+  const deliveryStarted = Promise.withResolvers<void>();
+  const delivery = Promise.withResolvers<void>();
+  notify.mockImplementation(() => {
+    deliveryStarted.resolve();
+    return delivery.promise;
+  });
+  const retry = drainChecks();
+  await deliveryStarted.promise;
+  const overlapping = drainChecks();
+  try {
+    expect(await deadlineNotificationHistoryStorage.getValue()).toEqual(
+      firstHistory
+    );
+    expect(notify.mock.calls.map(([id]) => id)).toEqual([
+      hourId,
+      dayId,
+      hourId,
+    ]);
+  } finally {
+    delivery.resolve();
+    await Promise.all([retry, overlapping]);
+  }
+
+  expect(await deadlineNotificationHistoryStorage.getValue()).toEqual({
+    ...firstHistory,
+    [hourKey]: { day: true, dueAt: hourDueAt, hour: true },
+  });
+  expect(notify.mock.calls.map(([id]) => id)).toEqual([hourId, dayId, hourId]);
 });
 
 it("retains the cached records of failed classes and replaces successful classes", async () => {
