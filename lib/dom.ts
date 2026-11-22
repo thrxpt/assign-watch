@@ -1,54 +1,93 @@
 import type { ClassInfo } from "@/types";
 
+const CLASS_ID_PATTERN = /^[0-9]+$/u;
+const TA_SETTINGS_ICON = "li > div > div.icon-setting-2.fix-oncard-btn";
+const CARD_TEXT = "#font-color-main-card p";
+const CARD_FOOTER = "div.card-block.card-footer.flex-container.f-jc-sb.f-ai-c";
+
+export type ClassScrape =
+  | { classes: ClassInfo[]; status: "resolved" }
+  | { status: "unresolved" };
+
+const UNRESOLVED: ClassScrape = { status: "unresolved" };
+
 export function scrapeUserId() {
   const userId =
     document.querySelector<HTMLElement>("[data-userid]")?.dataset.userid;
   return userId;
 }
 
-export function scrapeClassCards() {
-  const classCards = document.querySelectorAll(".class-card");
-  const classTextElements = document.querySelectorAll(
-    "#font-color-main-card p"
-  );
-  const classesInfo: ClassInfo[] = [];
+/** The trimmed student ID the page currently identifies, or null if none. */
+export function readCurrentStudentId(): string | null {
+  const userId = scrapeUserId()?.trim();
+  return userId || null;
+}
 
-  for (const [i, cardElement] of classCards.entries()) {
-    const cardName = cardElement.getAttribute("name");
-    const classId = cardName?.split("-")[1];
-    if (!classId) {
+function readClassId(card: Element): number | null {
+  const rawId = card.getAttribute("name")?.split("-")[1];
+  if (!(rawId && CLASS_ID_PATTERN.test(rawId))) {
+    return null;
+  }
+  const id = Number(rawId);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+function isTeachingAssistantCard(card: Element): boolean {
+  const nextElement = card.nextElementSibling;
+  return (
+    nextElement?.tagName === "UL" &&
+    nextElement.querySelector(TA_SETTINGS_ICON) !== null
+  );
+}
+
+function readClassCard(card: Element): ClassInfo | null {
+  const id = readClassId(card);
+  if (id === null) {
+    return null;
+  }
+
+  // Read text from this card only, never by position across the page.
+  const [titleElement, descriptionElement] = card.querySelectorAll(CARD_TEXT);
+  const title = titleElement?.textContent;
+  if (!title?.trim() || descriptionElement === undefined) {
+    return null;
+  }
+
+  const cardFooter = card.querySelector(CARD_FOOTER);
+  return {
+    description: descriptionElement.textContent ?? "",
+    id,
+    section:
+      cardFooter?.querySelector("span:nth-child(1) > p.h5")?.textContent ?? "",
+    semester:
+      cardFooter?.querySelector("span:nth-child(2) > p.h5")?.textContent ?? "",
+    title,
+  };
+}
+
+/**
+ * Reads the enrolled classes from `/class`. A result is resolved only when at
+ * least one student card exists and every student card is complete; anything
+ * else is unresolved, because unfinished markup cannot prove the enrollment.
+ */
+export function scrapeClassCards(): ClassScrape {
+  const classes = new Map<number, ClassInfo>();
+
+  for (const card of document.querySelectorAll(".class-card")) {
+    if (isTeachingAssistantCard(card)) {
       continue;
     }
 
-    const nextElement = cardElement.nextElementSibling;
-
-    if (nextElement?.tagName === "UL") {
-      const settingsIcon = nextElement.querySelector(
-        "li > div > div.icon-setting-2.fix-oncard-btn"
-      );
-      if (settingsIcon) {
-        continue;
-      }
+    const classInfo = readClassCard(card);
+    if (classInfo === null) {
+      return UNRESOLVED;
     }
-
-    const classTitle = classTextElements[i * 2].textContent;
-    const classDescription = classTextElements[i * 2 + 1].textContent;
-
-    const cardFooter = cardElement.querySelector(
-      "div.card-block.card-footer.flex-container.f-jc-sb.f-ai-c"
-    );
-    const classSection =
-      cardFooter?.querySelector("span:nth-child(1) > p.h5")?.textContent ?? "";
-    const classSemester =
-      cardFooter?.querySelector("span:nth-child(2) > p.h5")?.textContent ?? "";
-
-    classesInfo.push({
-      description: classDescription,
-      id: Number(classId),
-      section: classSection,
-      semester: classSemester,
-      title: classTitle,
-    });
+    if (!classes.has(classInfo.id)) {
+      classes.set(classInfo.id, classInfo);
+    }
   }
-  return classesInfo;
+
+  return classes.size > 0
+    ? { classes: [...classes.values()], status: "resolved" }
+    : UNRESOLVED;
 }

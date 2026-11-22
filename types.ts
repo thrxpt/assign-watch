@@ -6,6 +6,14 @@ export interface ClassInfo {
   title: string;
 }
 
+export interface ClassRoster {
+  classes: ClassInfo[];
+  userId: string;
+}
+
+/** A bare array is a legacy roster with no trusted owner. */
+export type StoredClassRoster = ClassInfo[] | ClassRoster;
+
 export interface RootResponse {
   activities: Activity[];
   user: User[];

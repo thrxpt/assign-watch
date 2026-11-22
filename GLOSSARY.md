@@ -8,7 +8,11 @@ A course the student is enrolled in. Modelled as `ClassInfo` (`types.ts`).
 
 Classes are **scraped** from the LEB2 class page (`/class`) rather than fetched, because there is no API for the enrolment list — see `lib/dom.ts`. TA classes are skipped during scraping: they are identified by a settings icon on the card.
 
-Scraped classes are persisted in `classInfoStorage` (`lib/storage.ts`) so that the assignment dialog can be opened anywhere across LEB2 without redirecting to `/class`. When opened on a page before any classes have been synced, a prompt directs the user to `/class`.
+Scraped classes are persisted in `classInfoStorage` (`lib/storage.ts`) as a **class roster** owned by the student whose `data-userid` the page showed (`{ userId, classes }`), so that the assignment dialog can be opened anywhere across LEB2 without redirecting to `/class`.
+
+A roster is used only when its owner exactly matches the current nonempty student ID. A legacy array, a roster owned by another student, or a page with no identifiable student leaves enrollment **unknown**: no class IDs are queried, Hidden items list no class titles, and both dialog tabs show the sync prompt directing the user to `/class`. An owned roster with no classes is **confirmed empty** and shows the empty-work state in both tabs.
+
+The scraper (`lib/dom.ts`) returns either a **resolved** roster or an **unresolved** result. It reads each student card's title and description inside that card, requires a positive safe-integer class ID, and skips TA cards. It is resolved only when at least one student card exists and every student card is complete; an absent container, unfinished markup, a malformed student card, or a page with no student cards is unresolved. Only a resolved scrape is saved, and only after the page's student is checked again immediately before writing. An unresolved scrape keeps the stored roster. Confirmed empty enrollment is not yet detected on `/class`, because no fully loaded zero-class page has been verified; until then an empty-looking page never replaces a stored roster.
 
 ## Assignment
 
