@@ -132,6 +132,32 @@ describe("scrapeClassCards", () => {
     });
   });
 
+  it("reads several cards in one section when each card is its own text block", () => {
+    render(
+      '<section><div class="class-card" id="font-color-main-card" name="class-1"><p>Class 1</p><p>About 1</p></div><div class="class-card" id="font-color-main-card" name="class-2"><p>Class 2</p><p>About 2</p></div></section>'
+    );
+
+    expect(scrapeClassCards()).toEqual({
+      classes: [
+        {
+          description: "About 1",
+          id: 1,
+          section: "",
+          semester: "",
+          title: "Class 1",
+        },
+        {
+          description: "About 2",
+          id: 2,
+          section: "",
+          semester: "",
+          title: "Class 2",
+        },
+      ],
+      status: "resolved",
+    });
+  });
+
   it("keeps the TA marker on the next sibling list in a shared wrapper", () => {
     render(
       '<section><div class="class-card" name="class-42"></div><ul><li><div><div class="icon-setting-2 fix-oncard-btn"></div></div></li></ul><div id="font-color-main-card"><p>Class 42</p><p>About 42</p></div></section>'

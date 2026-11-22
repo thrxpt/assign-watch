@@ -42,14 +42,18 @@ function isTeachingAssistantCard(card: Element): boolean {
 }
 
 /**
- * The title and description paragraphs for one card: inside the card when it
- * holds a text block, otherwise in its immediate wrapper when that wrapper
- * holds exactly this one card and exactly one text block (the card, an
- * optional TA marker list, and the text block as siblings). Document-level
- * parents and wrappers shared by several cards are never searched.
+ * The title and description paragraphs for one card: inside the card when the
+ * card is itself a text block or holds one, otherwise in its immediate wrapper
+ * when that wrapper holds exactly this one card and exactly one text block (the
+ * card, an optional TA marker list, and the text block as siblings).
+ * Document-level parents and wrappers shared by several cards are never
+ * searched.
  */
 function findCardText(card: Element): Element[] {
-  if (card.querySelector(CARD_TEXT_BLOCK) !== null) {
+  if (
+    card.matches(CARD_TEXT_BLOCK) ||
+    card.querySelector(CARD_TEXT_BLOCK) !== null
+  ) {
     return [...card.querySelectorAll(CARD_TEXT)];
   }
 
