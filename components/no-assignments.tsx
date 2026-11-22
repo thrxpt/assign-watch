@@ -23,7 +23,7 @@ export function NoAssignments({ className }: { className?: string }) {
           <PartyPopper />
         </EmptyMedia>
         <EmptyTitle>{t("no_assignments")}</EmptyTitle>
-        <EmptyDescription>{t("no_assignments_desc")}</EmptyDescription>
+        <EmptyDescription>{t("no_assignments_description")}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );

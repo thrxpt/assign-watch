@@ -64,7 +64,9 @@ export function CalendarAssignmentChip({
                 </>
               )}
               {hasManualDueDate(assignment) && (
-                <span className="ml-1 text-[10px]">({t("manually_set")})</span>
+                <span className="ml-1 text-[10px]">
+                  ({t("manual_due_date_badge")})
+                </span>
               )}
             </a>
           }

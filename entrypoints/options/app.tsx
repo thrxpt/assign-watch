@@ -102,7 +102,7 @@ function OptionsContent() {
                   <span>{t("language")}</span>
                 </div>
                 <p className="mt-1 text-muted-foreground text-xs">
-                  {t("language_desc")}
+                  {t("language_description")}
                 </p>
               </div>
               <Tabs
@@ -138,7 +138,7 @@ function OptionsContent() {
                   <span>{t("time_format")}</span>
                 </div>
                 <p className="mt-1 text-muted-foreground text-xs">
-                  {t("time_format_desc")}
+                  {t("time_format_description")}
                 </p>
               </div>
               <Tabs
@@ -172,7 +172,7 @@ function OptionsContent() {
                     <span>{t("reduce_motion")}</span>
                   </FieldLabel>
                   <FieldDescription id={reduceMotionDescriptionId}>
-                    {t("reduce_motion_desc")}
+                    {t("reduce_motion_description")}
                   </FieldDescription>
                 </FieldContent>
                 <Switch
@@ -192,7 +192,7 @@ function OptionsContent() {
                 <FieldContent className="min-w-0">
                   <FieldLabel htmlFor={undatedId}>
                     <CalendarOff className="size-4 shrink-0 text-muted-foreground" />
-                    <span>{t("show_undated_assignments")}</span>
+                    <span>{t("undated_assignments")}</span>
                   </FieldLabel>
                   <FieldDescription id={undatedDescriptionId}>
                     {t("undated_assignments_description")}
@@ -215,10 +215,10 @@ function OptionsContent() {
               <span>{t("keyboard_shortcut")}</span>
             </div>
             <p className="mt-1 text-muted-foreground text-xs">
-              {t("keyboard_shortcut_desc")}
+              {t("keyboard_shortcut_description")}
             </p>
             <div className="mt-3 flex items-center gap-1 text-xs">
-              <span>{t("shortcut")}:</span>
+              <span>{t("keyboard_shortcut_label")}:</span>
               <ShortcutKbd className="mx-1" />
             </div>
           </div>
@@ -231,7 +231,7 @@ function OptionsContent() {
                   <span>{t("hidden_items")}</span>
                 </div>
                 <p className="mt-1 text-muted-foreground text-xs">
-                  {t("hidden_items_desc")}
+                  {t("hidden_items_description")}
                 </p>
               </div>
               <Button
@@ -241,7 +241,7 @@ function OptionsContent() {
                 variant="outline"
               >
                 <BrushCleaning className="size-3.5" />
-                <span>{cleared ? t("cleared") : t("clear_all")}</span>
+                <span>{cleared ? t("restored") : t("restore_all")}</span>
               </Button>
             </div>
           </div>

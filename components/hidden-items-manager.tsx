@@ -145,7 +145,7 @@ export function HiddenItemsManager({
               variant="outline"
             >
               <BrushCleaning />
-              {t("clear_all")}
+              {t("restore_all")}
             </Button>
           </div>
         </DropdownMenuGroup>

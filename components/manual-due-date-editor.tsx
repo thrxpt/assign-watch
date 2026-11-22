@@ -113,8 +113,8 @@ function ManualDueDateDialog({
           <DialogHeader>
             <DialogTitle>
               {assignment.manualDueDate
-                ? t("edit_due_date")
-                : t("set_due_date")}
+                ? t("manual_due_date_edit")
+                : t("manual_due_date_set")}
             </DialogTitle>
             <DialogDescription>{assignment.title}</DialogDescription>
           </DialogHeader>
@@ -127,7 +127,9 @@ function ManualDueDateDialog({
               data-disabled={saving || hasOfficialDate}
               data-invalid={Boolean(error)}
             >
-              <FieldLabel htmlFor={dateId}>{t("due_date_and_time")}</FieldLabel>
+              <FieldLabel htmlFor={dateId}>
+                {t("manual_due_date_field_label")}
+              </FieldLabel>
               <Input
                 aria-describedby={`${timezoneId}${error ? ` ${errorId}` : ""}`}
                 aria-invalid={Boolean(error)}
@@ -139,7 +141,7 @@ function ManualDueDateDialog({
                 value={value}
               />
               <FieldDescription id={timezoneId}>
-                {t("due_date_timezone", { timezone })}
+                {t("manual_due_date_timezone", { timezone })}
               </FieldDescription>
             </Field>
           </FieldGroup>
@@ -158,7 +160,7 @@ function ManualDueDateDialog({
               {t("cancel")}
             </Button>
             <Button disabled={saving || hasOfficialDate} type="submit">
-              {saving ? t("saving") : t("save_due_date")}
+              {saving ? t("saving") : t("manual_due_date_save")}
             </Button>
           </DialogFooter>
         </form>
