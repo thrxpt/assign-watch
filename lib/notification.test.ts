@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { getAssignmentKey } from "@/lib/manual-due-dates";
-import {
-  HOUR_IN_MS,
-  reviewAssignment,
-  reviewAssignments,
-  reviewDeadlineNotifications,
-} from "@/lib/notification";
+import { HOUR_IN_MS, reviewDeadlineNotifications } from "@/lib/notification";
 import type { Activity } from "@/types";
 
 function createMockActivity(overrides: Partial<Activity> = {}): Activity {
@@ -48,8 +43,8 @@ function createMockActivity(overrides: Partial<Activity> = {}): Activity {
 describe("notification logic", () => {
   const baseNow = new Date("2026-10-10T12:00:00Z");
 
-  it("rearms changed manual deadlines and suppresses unchanged deadlines across sources", () => {
-    const notify = vi.fn();
+  it("rearms changed manual deadlines and suppresses unchanged deadlines across sources", async () => {
+    const notify = vi.fn(() => Promise.resolve());
     const manual = {
       ...createMockActivity({ due_date: null }),
       manualDueDate: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
@@ -65,17 +60,17 @@ describe("notification logic", () => {
       now: baseNow,
       userId: "a",
     };
-    const first = reviewDeadlineNotifications(params);
+    const first = await reviewDeadlineNotifications(params);
     expect(notify).toHaveBeenCalledTimes(1);
     expect(notify).toHaveBeenLastCalledWith(manual, "1h");
-    const repeated = reviewDeadlineNotifications({
+    const repeated = await reviewDeadlineNotifications({
       ...params,
       history: first.history,
     });
     expect(repeated.changed).toBe(false);
     expect(notify).toHaveBeenCalledTimes(1);
     const official = { ...manual, due_date: manual.manualDueDate };
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [official],
       history: first.history,
@@ -87,31 +82,31 @@ describe("notification logic", () => {
         baseNow.getTime() + 12 * HOUR_IN_MS
       ).toISOString(),
     };
-    const edited = reviewDeadlineNotifications({
+    const edited = await reviewDeadlineNotifications({
       ...params,
       assignments: [later],
       history: first.history,
     });
     expect(notify).toHaveBeenCalledTimes(2);
     expect(notify).toHaveBeenLastCalledWith(later, "24h");
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [later],
       history: edited.history,
     });
     expect(notify).toHaveBeenCalledTimes(2);
-    const removed = reviewDeadlineNotifications({
+    const removed = await reviewDeadlineNotifications({
       ...params,
       assignments: [{ ...manual, manualDueDate: undefined }],
       history: edited.history,
     });
     expect(removed.history).not.toHaveProperty(getAssignmentKey("a", manual));
-    reviewDeadlineNotifications({ ...params, history: removed.history });
+    await reviewDeadlineNotifications({ ...params, history: removed.history });
     expect(notify).toHaveBeenCalledTimes(3);
   });
 
-  it("scopes reminder history by student and retains each student's sent state", () => {
-    const notify = vi.fn();
+  it("scopes reminder history by student and retains each student's sent state", async () => {
+    const notify = vi.fn(() => Promise.resolve());
     const assignment = {
       ...createMockActivity({ due_date: null }),
       manualDueDate: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
@@ -127,23 +122,23 @@ describe("notification logic", () => {
       now: baseNow,
       userId: "a",
     };
-    const first = reviewDeadlineNotifications(params);
-    const second = reviewDeadlineNotifications({
+    const first = await reviewDeadlineNotifications(params);
+    const second = await reviewDeadlineNotifications({
       ...params,
       history: first.history,
       userId: "b",
     });
-    reviewDeadlineNotifications({ ...params, history: second.history });
+    await reviewDeadlineNotifications({ ...params, history: second.history });
     expect(notify).toHaveBeenCalledTimes(2);
     expect(Object.keys(second.history)).toHaveLength(2);
   });
 
-  it("preserves existing LEB2 reminder history on first evaluation", () => {
-    const notify = vi.fn();
+  it("preserves existing LEB2 reminder history on first evaluation", async () => {
+    const notify = vi.fn(() => Promise.resolve());
     const assignment = createMockActivity({
       due_date: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
     });
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       assignments: [assignment],
       hiddenAssignments: [],
       hiddenClasses: [],
@@ -157,8 +152,8 @@ describe("notification logic", () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
-  it("does not notify past, submitted, or hidden manual deadlines", () => {
-    const notify = vi.fn();
+  it("does not notify past, submitted, or hidden manual deadlines", async () => {
+    const notify = vi.fn(() => Promise.resolve());
     const assignment = {
       ...createMockActivity({ due_date: null }),
       manualDueDate: new Date(baseNow.getTime() + HOUR_IN_MS).toISOString(),
@@ -173,20 +168,20 @@ describe("notification logic", () => {
       now: baseNow,
       userId: "a",
     };
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [{ ...assignment, manualDueDate: baseNow.toISOString() }],
     });
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [{ ...assignment, activity_submission_id: 10 }],
     });
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [assignment],
       hiddenAssignments: [assignment.id],
     });
-    reviewDeadlineNotifications({
+    await reviewDeadlineNotifications({
       ...params,
       assignments: [assignment],
       hiddenClasses: [assignment.class_id],
@@ -194,168 +189,159 @@ describe("notification logic", () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
-  it("notifies 24h before due date", () => {
-    const notify = vi.fn();
-    const assignment = createMockActivity({
-      due_date: new Date(baseNow.getTime() + 12 * HOUR_IN_MS).toISOString(),
-      id: 42,
+  const review = (
+    assignments: Activity[],
+    overrides: Partial<Parameters<typeof reviewDeadlineNotifications>[0]> = {}
+  ) =>
+    reviewDeadlineNotifications({
+      assignments,
+      hiddenAssignments: [],
+      hiddenClasses: [],
+      history: {},
+      legacyNotifiedDay: [],
+      legacyNotifiedHour: [],
+      notify: vi.fn(() => Promise.resolve()),
+      now: baseNow,
+      userId: "a",
+      ...overrides,
     });
 
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>(),
-      idsHour: new Set<number>(),
-    };
-
-    reviewAssignment(assignment, state, baseNow, notify);
-
-    expect(notify).toHaveBeenCalledWith(assignment, "24h");
-    expect(state.idsDay.has(42)).toBe(true);
-    expect(state.changedDay).toBe(true);
-  });
-
-  it("notifies 1h before due date", () => {
-    const notify = vi.fn();
+  it("notifies 24h before the deadline", async () => {
+    const notify = vi.fn(() => Promise.resolve());
+    const dueAt = baseNow.getTime() + 12 * HOUR_IN_MS;
     const assignment = createMockActivity({
-      due_date: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
-      id: 42,
+      due_date: new Date(dueAt).toISOString(),
     });
 
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>([42]),
-      idsHour: new Set<number>(),
-    };
+    const result = await review([assignment], { notify });
 
-    reviewAssignment(assignment, state, baseNow, notify);
-
-    expect(notify).toHaveBeenCalledWith(assignment, "1h");
-    expect(state.idsHour.has(42)).toBe(true);
-    expect(state.changedHour).toBe(true);
-  });
-  it("notifies only 1h and suppresses 24h when discovered within 1h threshold", () => {
-    const notify = vi.fn();
-    const assignment = createMockActivity({
-      due_date: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
-      id: 42,
+    expect(notify).toHaveBeenCalledExactlyOnceWith(assignment, "24h");
+    expect(result.changed).toBe(true);
+    expect(result.history[getAssignmentKey("a", assignment)]).toEqual({
+      day: true,
+      dueAt,
+      hour: false,
     });
-
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>(),
-      idsHour: new Set<number>(),
-    };
-
-    reviewAssignment(assignment, state, baseNow, notify);
-
-    expect(notify).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith(assignment, "1h");
-    expect(state.idsHour.has(42)).toBe(true);
-    expect(state.idsDay.has(42)).toBe(true);
-    expect(state.changedHour).toBe(true);
-    expect(state.changedDay).toBe(true);
   });
 
-  it("does not re-notify if already notified in timeframe", () => {
-    const notify = vi.fn();
-    const assignment = createMockActivity({
-      due_date: new Date(baseNow.getTime() + 30 * 60 * 1000).toISOString(),
-      id: 42,
-    });
+  it.each([true, false])(
+    "accepts a one-hour reminder with prior day flag %j and sends it once",
+    async (day) => {
+      const notify = vi.fn(() => Promise.resolve());
+      const dueAt = baseNow.getTime() + HOUR_IN_MS;
+      const assignment = createMockActivity({
+        due_date: new Date(dueAt).toISOString(),
+      });
+      const key = getAssignmentKey("a", assignment);
+      const result = await review([assignment], {
+        history: { [key]: { day, dueAt, hour: false } },
+        notify,
+      });
 
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>([42]),
-      idsHour: new Set<number>([42]),
-    };
+      expect(result.changed).toBe(true);
+      expect(result.history[key]).toEqual({ day: true, dueAt, hour: true });
+      const repeated = await review([assignment], {
+        history: result.history,
+        notify,
+      });
+      expect(repeated.changed).toBe(false);
+      expect(notify).toHaveBeenCalledExactlyOnceWith(assignment, "1h");
+    }
+  );
 
-    reviewAssignment(assignment, state, baseNow, notify);
+  it.each([true, false])(
+    "preserves prior day flag %j on one-hour rejection and retries later",
+    async (day) => {
+      const notify = vi
+        .fn(() => Promise.resolve())
+        .mockRejectedValueOnce(new Error("Browser rejected notification"));
+      const dueAt = baseNow.getTime() + HOUR_IN_MS;
+      const assignment = createMockActivity({
+        due_date: new Date(dueAt).toISOString(),
+      });
+      const key = getAssignmentKey("a", assignment);
+      const history = { [key]: { day, dueAt, hour: false } };
+      const logError = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        const failed = await review([assignment], { history, notify });
 
-    expect(notify).not.toHaveBeenCalled();
-    expect(state.changedDay).toBe(false);
-    expect(state.changedHour).toBe(false);
-  });
+        expect(logError).toHaveBeenCalledExactlyOnceWith(
+          "Failed to create deadline notification"
+        );
+        expect(notify).toHaveBeenCalledExactlyOnceWith(assignment, "1h");
+        expect(failed).toEqual({ changed: false, history });
 
-  it("clears notified ids if assignment is submitted", () => {
-    const notify = vi.fn();
+        const retried = await review([assignment], {
+          history: failed.history,
+          notify,
+        });
+        expect(notify).toHaveBeenCalledTimes(2);
+        expect(notify).toHaveBeenLastCalledWith(assignment, "1h");
+        expect(retried.changed).toBe(true);
+        expect(retried.history[key]).toEqual({ day: true, dueAt, hour: true });
+      } finally {
+        logError.mockRestore();
+      }
+    }
+  );
+
+  it("clears reminder history when an assignment is submitted", async () => {
+    const notify = vi.fn(() => Promise.resolve());
+    const dueAt = baseNow.getTime() + 10 * HOUR_IN_MS;
     const assignment = createMockActivity({
       activity_submission_id: 999,
-      due_date: new Date(baseNow.getTime() + 10 * HOUR_IN_MS).toISOString(),
-      id: 42,
+      due_date: new Date(dueAt).toISOString(),
+    });
+    const key = getAssignmentKey("a", assignment);
+
+    const result = await review([assignment], {
+      history: { [key]: { day: true, dueAt, hour: true } },
+      notify,
     });
 
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>([42]),
-      idsHour: new Set<number>([42]),
-    };
-
-    reviewAssignment(assignment, state, baseNow, notify);
-
     expect(notify).not.toHaveBeenCalled();
-    expect(state.idsDay.has(42)).toBe(false);
-    expect(state.idsHour.has(42)).toBe(false);
-    expect(state.changedDay).toBe(true);
-    expect(state.changedHour).toBe(true);
+    expect(result).toEqual({ changed: true, history: {} });
   });
 
-  it.each([null, ""])("skips assignments without due_date (%j)", (dueDate) => {
-    const notify = vi.fn();
-    const assignment = createMockActivity({
-      due_date: dueDate,
-      id: 42,
-    });
+  it.each([null, ""])(
+    "skips assignments without due_date (%j)",
+    async (dueDate) => {
+      const notify = vi.fn(() => Promise.resolve());
+      const assignment = createMockActivity({ due_date: dueDate });
 
-    const state = {
-      changedDay: false,
-      changedHour: false,
-      idsDay: new Set<number>(),
-      idsHour: new Set<number>(),
-    };
+      const result = await review([assignment], { notify });
 
-    reviewAssignment(assignment, state, baseNow, notify);
+      expect(notify).not.toHaveBeenCalled();
+      expect(result).toEqual({ changed: false, history: {} });
+    }
+  );
 
-    expect(notify).not.toHaveBeenCalled();
-    expect(state.idsDay.has(42)).toBe(false);
-  });
-
-  it("reviewAssignments filters out hidden classes and hidden assignments", () => {
-    const notify = vi.fn();
-    const a1 = createMockActivity({
+  it("filters out hidden classes and hidden assignments", async () => {
+    const notify = vi.fn(() => Promise.resolve());
+    const dueAt = baseNow.getTime() + 2 * HOUR_IN_MS;
+    const date = new Date(dueAt).toISOString();
+    const hiddenClass = createMockActivity({
       class_id: 1,
-      due_date: new Date(baseNow.getTime() + 2 * HOUR_IN_MS).toISOString(),
+      due_date: date,
       id: 1,
     });
-    const a2 = createMockActivity({
+    const hiddenAssignment = createMockActivity({
       class_id: 2,
-      due_date: new Date(baseNow.getTime() + 2 * HOUR_IN_MS).toISOString(),
+      due_date: date,
       id: 2,
     });
-    const a3 = createMockActivity({
-      class_id: 3,
-      due_date: new Date(baseNow.getTime() + 2 * HOUR_IN_MS).toISOString(),
-      id: 3,
-    });
+    const visible = createMockActivity({ class_id: 3, due_date: date, id: 3 });
 
-    const result = reviewAssignments({
-      assignments: [a1, a2, a3],
-      hiddenAssignments: [2],
-      hiddenClasses: [1],
-      notifiedDay: [],
-      notifiedHour: [],
+    const result = await review([hiddenClass, hiddenAssignment, visible], {
+      hiddenAssignments: [hiddenAssignment.id],
+      hiddenClasses: [hiddenClass.class_id],
       notify,
-      now: baseNow,
     });
 
-    // a1 is in hiddenClass 1, a2 is in hiddenAssignment 2 -> only a3 notified
-    expect(notify).toHaveBeenCalledTimes(1);
-    expect(notify).toHaveBeenCalledWith(a3, "24h");
-    expect(result.nextNotifiedDay).toEqual([3]);
-    expect(result.changedDay).toBe(true);
+    expect(notify).toHaveBeenCalledExactlyOnceWith(visible, "24h");
+    expect(result.history).toEqual({
+      [getAssignmentKey("a", visible)]: { day: true, dueAt, hour: false },
+    });
+    expect(result.changed).toBe(true);
   });
 });
