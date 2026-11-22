@@ -14,7 +14,7 @@ import type {
 import App from "@/entrypoints/content/app";
 import {
   AssignmentRequestError,
-  fetchAssignments,
+  fetchClassAssignments,
   resetPacingQueue,
 } from "@/lib/api";
 import { translate } from "@/lib/i18n";
@@ -241,7 +241,7 @@ async function requestError(status = 429): Promise<Error> {
     new Response(null, { status, statusText: "Request failed" })
   );
   try {
-    await fetchAssignments([1], "student-1");
+    await fetchClassAssignments(1, "student-1");
   } catch (error) {
     if (error instanceof Error) {
       return error;
@@ -759,5 +759,41 @@ describe("assignment dialog load failures", () => {
     );
     await state.retry?.();
     expect(failed.refetch).not.toHaveBeenCalled();
+  });
+
+  it("checks the latest deadline across batch retry targets when invoked", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-11-17T00:00:00Z"));
+    state.classes.push({ ...state.classes[0], id: 2 });
+    state.hiddenClasses = [2];
+    const visible = result({
+      error: new AssignmentRequestError(
+        429,
+        "Too Many Requests",
+        null,
+        "batch"
+      ),
+      isError: true,
+    });
+    const hidden = result({
+      error: new AssignmentRequestError(
+        429,
+        "Too Many Requests",
+        Date.now() + 2000,
+        "class"
+      ),
+      isError: true,
+    });
+    state.results = [visible, hidden];
+
+    expect(renderToStaticMarkup(<App />)).toContain("Try again in 2s");
+    await state.retry?.();
+    expect(visible.refetch).not.toHaveBeenCalled();
+    expect(hidden.refetch).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(2000);
+    await state.retry?.();
+    expect(visible.refetch).toHaveBeenCalledOnce();
+    expect(hidden.refetch).toHaveBeenCalledOnce();
   });
 });

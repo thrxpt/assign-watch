@@ -6,7 +6,9 @@ The dialog requests assignments for all enrolled classes in one batch and expose
 
 The calendar uses a compact warning above the grid so the error does not compete with the calendar for space. The retry action sits alongside the warning on wider screens and below it on narrow screens.
 
-When LEB2 responds with HTTP 429, display a localized request-limit message asking the student to wait before trying again. If the response has a valid `Retry-After` header, show its remaining wait in the **Try again** button and keep the button disabled until the wait expires. Do not automatically retry that query, including when the dialog is reopened. If the shared batch request is rate limited, **Try again** retries that request once for all enrolled classes; if a per-class fallback is rate limited, it retries only failed visible classes. The action is disabled while a retry is in progress. Other failures receive a general loading-error message and retain the existing three automatic retries.
+When LEB2 responds with HTTP 429, display a localized request-limit message asking the student to wait before trying again. A valid `Retry-After` header can express a delay in seconds or an HTTP date. Show the longest remaining wait among the retry targets in the **Try again** button and keep it disabled until that wait expires. Do not automatically retry that query, including when the dialog is reopened.
+
+If the shared batch request is rate limited, **Try again** starts one batch for all currently enrolled classes. If a per-class fallback is rate limited, **Try again** sends individual requests for the failed visible classes, even after the dialog is reopened. The action stays disabled until all targeted requests finish. Other failures receive a general loading-error message and retain the existing three automatic retries.
 
 Keep assignments already loaded in the current page session visible after a failed refresh, with a warning that they may be outdated. Successful classes remain usable when other classes fail.
 

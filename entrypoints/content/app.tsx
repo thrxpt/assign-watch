@@ -1,5 +1,5 @@
 import { useQueries } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { browser } from "#imports";
 import { AssignmentDialog } from "@/components/assignment-dialog";
@@ -50,6 +50,14 @@ async function openOptionsPage() {
 
 function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [retryingError, setRetryingError] = useState<
+    "rate-limit" | "load-error" | null
+  >(null);
+  // Refetch can start before React renders the progress state.
+  const retryAttempt = useRef<{
+    directClassIds: ReadonlySet<number>;
+    userId: string | null;
+  } | null>(null);
 
   const [allClassInfo] = useStorageState(classInfoStorage);
   const [manualDueDates] = useStorageState(manualDueDatesStorage);
@@ -151,10 +159,14 @@ function App() {
         isHydratedForCurrentClasses &&
         !isRateLimitError(query.state.error),
       queryFn: async () => {
+        const attempt = retryAttempt.current;
+        const fetchDirectly =
+          attempt?.userId === userId &&
+          attempt.directClassIds.has(classInfo.id);
         const data = await fetchClassAssignments(
           classInfo.id,
           userId,
-          batchAssignmentsRequest.fetch()
+          fetchDirectly ? undefined : batchAssignmentsRequest.fetch()
         );
         await cacheClassAssignments(userId, classInfo.id, data, classIds);
         return data;
@@ -165,59 +177,73 @@ function App() {
   });
 
   const hiddenClassIds = new Set(hiddenClasses);
-  const failedQueries = assignments.results.filter(
-    (result, index) =>
-      result.isError && !hiddenClassIds.has(allClassInfo[index].id)
+  const classQueries = assignments.results.map((result, index) => ({
+    classId: allClassInfo[index].id,
+    result,
+  }));
+  const failedQueries = classQueries.filter(
+    ({ classId, result }) => result.isError && !hiddenClassIds.has(classId)
   );
-  const hasStaleData = assignments.results.some((result, index) => {
-    const classInfo = allClassInfo[index];
-    return (
-      classInfo !== undefined &&
-      !hiddenClassIds.has(classInfo.id) &&
+  const hasStaleData = classQueries.some(
+    ({ classId, result }) =>
+      !hiddenClassIds.has(classId) &&
       Boolean(result.data?.length) &&
       (result.dataUpdatedAt === 0 || result.isError)
-    );
-  });
-  const isBatchRateLimited = failedQueries.some(
-    (result) =>
-      isRateLimitError(result.error) &&
-      batchAssignmentsRequest.isError(result.error)
   );
+  const isRateLimited = failedQueries.some(({ result }) =>
+    isRateLimitError(result.error)
+  );
+  const isBatchRateLimited = failedQueries.some(
+    ({ result }) =>
+      isRateLimitError(result.error) && result.error.origin === "batch"
+  );
+  const retryTargets = isBatchRateLimited ? classQueries : failedQueries;
+  const isRetrying =
+    retryingError !== null ||
+    retryTargets.some(({ result }) => result.isFetching);
+  let retryAt: number | null = null;
+  for (const { result } of retryTargets) {
+    if (isRateLimitError(result.error) && result.error.retryAt !== null) {
+      const deadline = result.error.retryAt;
+      retryAt = retryAt === null ? deadline : Math.max(retryAt, deadline);
+    }
+  }
+
   const retryFailedQueries = async () => {
-    const refreshes: Promise<unknown>[] = [];
+    if (
+      retryAttempt.current ||
+      isRetrying ||
+      retryTargets.length === 0 ||
+      (retryAt !== null && retryAt > Date.now())
+    ) {
+      return;
+    }
+
     if (isBatchRateLimited) {
       batchAssignmentsRequest.reset();
     }
-    const retryTargets = isBatchRateLimited
-      ? assignments.results
-      : failedQueries;
-    for (const result of retryTargets) {
-      if (!result.isFetching) {
-        refreshes.push(result.refetch());
-      }
+    retryAttempt.current = {
+      directClassIds: new Set(
+        isRateLimited && !isBatchRateLimited
+          ? retryTargets.map(({ classId }) => classId)
+          : []
+      ),
+      userId,
+    };
+    setRetryingError(isRateLimited ? "rate-limit" : "load-error");
+    try {
+      await Promise.allSettled(
+        retryTargets.map(({ result }) => result.refetch())
+      );
+    } finally {
+      retryAttempt.current = null;
+      setRetryingError(null);
     }
-    await Promise.all(refreshes);
   };
-  let retryAt: number | null = null;
-  for (const result of failedQueries) {
-    if (!isRateLimitError(result.error)) {
-      continue;
-    }
-
-    const rateLimitRetryAt = result.error.retryAt;
-    if (rateLimitRetryAt === null) {
-      continue;
-    }
-
-    retryAt =
-      retryAt === null ? rateLimitRetryAt : Math.max(retryAt, rateLimitRetryAt);
-  }
 
   const loadErrorProps = {
-    isRateLimited: failedQueries.some((result) =>
-      isRateLimitError(result.error)
-    ),
-    isRetrying: failedQueries.some((result) => result.isFetching),
+    isRateLimited: isRateLimited || retryingError === "rate-limit",
+    isRetrying,
     onRetry: retryFailedQueries,
     retryAt,
   };
@@ -267,7 +293,7 @@ function App() {
       calendarItems={calendarItems}
       filters={filters}
       groupState={groupState}
-      hasFailures={failedQueries.length > 0}
+      hasFailures={failedQueries.length > 0 || retryingError !== null}
       hasStaleData={hasStaleData}
       hiddenAssignments={hiddenAssignments}
       hiddenClasses={hiddenClasses}
