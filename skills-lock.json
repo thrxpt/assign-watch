@@ -1,41 +1,47 @@
 {
-  "version": 1,
+  "version": 2,
   "skills": {
     "shadcn": {
       "source": "shadcn/ui",
       "sourceType": "github",
       "skillPath": "skills/shadcn/SKILL.md",
-      "computedHash": "b864a958765563321f485a96f4d59c0bb6539f4286ab6d8b8b66895b7ebd302d"
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8",
+      "commit": "055aa6b7837b1808456a24beb4c97a677864aa82"
     },
     "typescript-advanced-types": {
       "source": "wshobson/agents",
       "sourceType": "github",
       "skillPath": "plugins/javascript-typescript/skills/typescript-advanced-types/SKILL.md",
-      "computedHash": "8cbf2bf600f392d7260e476e3202932a876e2281cda3b15a8b6a5a43f383252d"
+      "computedHash": "34c5b3863fde1fc85981ac583ecaf0140471b374d0b7002ac5bc0bea2cf38b24",
+      "commit": "c96b5f6552dba32e4492307493ee613581430715"
     },
     "ultracite": {
       "source": "haydenbleasel/ultracite",
       "sourceType": "github",
       "skillPath": "skills/ultracite/SKILL.md",
-      "computedHash": "c543d7dd84476545b8f65d14af9ec5e221eb8ee14ebe801cd4315638551d8663"
+      "computedHash": "52eac7a3ac5f3117d8d70f1058eed56403e9755fc93e0ba944c4c501fa560ba6",
+      "commit": "f5c8af0411ddb96114780f5f768d2abd6bd22f7e"
     },
     "vercel-composition-patterns": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/composition-patterns/SKILL.md",
-      "computedHash": "f98931159fa9c7fed043bcd18a891a46dcf89ababa38df13a4c5b7b30dc0ce07"
+      "computedHash": "f711ed8b16162eaa712abbcdbbae6c926f86c57e60127735fecc3ad0dd85b3fa",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb"
     },
     "vercel-react-best-practices": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/react-best-practices/SKILL.md",
-      "computedHash": "3219a1944e404ffc14d1d9d6aef6dd2e3855b81387ee0a044ccbfe14d34c2357"
+      "computedHash": "7991ed4fbecdac23f47c1a40c243e00a212a9e7f3604db93959b3ae11dffe299",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb"
     },
     "web-design-guidelines": {
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "skillPath": "skills/web-design-guidelines/SKILL.md",
-      "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+      "computedHash": "5994e4cfd86144903d2ba750f862b9e36af15e3297aac983679e347b99f6cb71",
+      "commit": "5a37a6329fbad3666c3207392a6a7c0110e92efb"
     }
   }
 }
