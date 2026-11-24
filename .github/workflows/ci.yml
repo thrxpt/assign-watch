@@ -25,8 +25,12 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Setup environment
-        uses: ./.github/actions/setup
+      - name: Setup pnpm and Node.js
+        uses: pnpm/setup@731dfb6463bbd11c11fd0ee11fe00ed0e36d48a1 # v3.2.0
+        with:
+          runtime: node
+          cache: true
+          require-lockfile: true
 
       - name: Check lint and formatting
         run: pnpm check
