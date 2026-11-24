@@ -94,6 +94,7 @@ jobs:
           name: release-archives
           path: .output/assign-watch-${{ steps.meta.outputs.version }}-*.zip
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 7
 
   submit-chrome:
