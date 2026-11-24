@@ -5,13 +5,15 @@ on:
     branches:
       - main
   pull_request:
+  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
@@ -19,21 +21,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: 12
+          persist-credentials: false
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup environment
+        uses: ./.github/actions/setup
 
       - name: Check lint and formatting
         run: pnpm check
