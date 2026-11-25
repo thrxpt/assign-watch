@@ -44,8 +44,8 @@ describe("i18n", () => {
       expect(translate("assignment_type_assignment", "th")).toBe("งานที่มอบหมาย");
       expect(translate("assignment_type_quiz", "en")).toBe("Quiz");
       expect(translate("assignment_type_quiz", "th")).toBe("แบบทดสอบ");
-      expect(translate("work_mode", "en")).toBe("Work mode");
-      expect(translate("work_mode", "th")).toBe("รูปแบบงาน");
+      expect(translate("work_format", "en")).toBe("Work format");
+      expect(translate("work_format", "th")).toBe("รูปแบบการทำงาน");
       expect(translate("due_date", "en")).toBe("Due date");
       expect(translate("due_date", "th")).toBe("กำหนดส่ง");
       expect(translate("posted_date", "en")).toBe("Posted date");
@@ -116,6 +116,20 @@ describe("i18n", () => {
       );
       expect(translate("go_to_classes", "en")).toBe("Go to classes");
       expect(translate("go_to_classes", "th")).toBe("ไปที่หน้ารายวิชา");
+      expect(translate("no_matching_assignments", "en")).toBe(
+        "No matching assignments"
+      );
+      expect(translate("no_matching_assignments", "th")).toBe(
+        "ไม่พบงานที่ตรงกับตัวกรอง"
+      );
+      expect(translate("manual_due_date_remove_error", "en")).toBe(
+        "Could not remove the manual due date. Your previous due date was not changed. Please try again."
+      );
+      expect(translate("manual_due_date_remove_error", "th")).toBe(
+        "ไม่สามารถลบกำหนดส่งที่ตั้งเองได้ กำหนดส่งเดิมยังคงไม่เปลี่ยนแปลง โปรดลองอีกครั้ง"
+      );
+      expect(translate("language_th", "en")).toBe("ไทย");
+      expect(translate("language_th", "th")).toBe("ไทย");
       expect(translate("notification_due_soon_title", "en")).toBe(
         "Assignment due soon"
       );
@@ -178,6 +192,43 @@ describe("i18n", () => {
         expect(extractPlaceholders(thValue ?? "")).toEqual(
           extractPlaceholders(enValue)
         );
+      }
+    });
+
+    it("avoids deprecated glossary terms across English and Thai dictionaries", () => {
+      const avoidedEnglishTerms = [
+        "courses",
+        "group type",
+        "work mode",
+        "ascending",
+        "descending",
+        "clear all",
+        "cleared!",
+      ];
+      const avoidedThaiTerms = [
+        "การบ้าน",
+        "ชั้นเรียน",
+        "ประเภทกลุ่ม",
+        "วันที่สั่ง",
+        "น้อยไปมาก",
+        "มากไปน้อย",
+        "ล้างทั้งหมด",
+        "ล้างแล้ว",
+        "แป้นพิมพ์ลัด",
+        "กรุณา",
+      ];
+
+      for (const [key, value] of Object.entries(EN_MESSAGES)) {
+        const lower = value.toLowerCase();
+        for (const term of avoidedEnglishTerms) {
+          expect(lower, `en.${key} should avoid "${term}"`).not.toContain(term);
+        }
+      }
+
+      for (const [key, value] of Object.entries(TH_MESSAGES)) {
+        for (const term of avoidedThaiTerms) {
+          expect(value, `th.${key} should avoid "${term}"`).not.toContain(term);
+        }
       }
     });
   });

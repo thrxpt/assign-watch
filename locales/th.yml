@@ -25,9 +25,9 @@ status_answered_not_submitted: ทำแล้ว (ยังไม่ส่ง)
 assignment_type: ประเภทงาน
 assignment_type_assignment: งานที่มอบหมาย
 assignment_type_quiz: แบบทดสอบ
-work_mode: รูปแบบงาน
-work_mode_individual: งานเดี่ยว
-work_mode_group: งานกลุ่ม
+work_format: รูปแบบการทำงาน
+work_format_individual: งานเดี่ยว
+work_format_group: งานกลุ่ม
 
 # Sorting & grouping
 sort: เรียงลำดับ
@@ -60,14 +60,16 @@ calendar_more_items: อีก {count} รายการ
 # Empty, error & loading states
 no_assignments: ไม่มีงาน
 no_assignments_description: ยินดีด้วย! คุณไม่มีงานที่ต้องทำแล้ว
+no_matching_assignments: ไม่พบงานที่ตรงกับตัวกรอง
+no_matching_assignments_description: ลองปรับตัวกรองเพื่อดูงานอื่นเพิ่มเติม
 no_classes: ไม่พบรายวิชา
 no_classes_description: ไปที่หน้ารายวิชาบน LEB2 เพื่อซิงค์รายวิชาที่ลงทะเบียนเรียน
 go_to_classes: ไปที่หน้ารายวิชา
-assignments_rate_limited: เกินขีดจำกัดคำขอของ LEB2
-assignments_rate_limited_description: LEB2 กำลังจำกัดคำขอชั่วคราว ทำให้โหลดงานบางรายการไม่สำเร็จ โปรดรอสักครู่แล้วลองอีกครั้ง
+assignments_rate_limited: ถึงขีดจำกัดการโหลดข้อมูลของ LEB2
+assignments_rate_limited_description: LEB2 จำกัดการโหลดข้อมูลชั่วคราว ทำให้โหลดงานบางรายการไม่สำเร็จ โปรดรอสักครู่แล้วลองอีกครั้ง
 assignments_rate_limited_inline_description: งานบางรายการอาจโหลดไม่สำเร็จ
 assignments_load_error: ไม่สามารถโหลดรายการงานได้
-assignments_load_error_description: ไม่สามารถโหลดงานบางรายการได้ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
+assignments_load_error_description: โหลดงานบางรายการไม่สำเร็จ โปรดตรวจสอบการเชื่อมต่อแล้วลองอีกครั้ง
 assignments_stale_warning: กำลังแสดงงานที่โหลดไว้ก่อนหน้า ซึ่งอาจไม่ใช่ข้อมูลล่าสุด
 try_again: ลองอีกครั้ง
 retry_after: ลองอีกครั้งใน {seconds} วินาที
@@ -77,7 +79,7 @@ retrying: กำลังลองอีกครั้ง…
 tip_label: เคล็ดลับ
 tip_hide: คลิกขวาที่รายวิชาหรืองานเพื่อซ่อน
 tip_shortcut: กด {shortcut} ได้จากทุกหน้าบน LEB2 เพื่อเปิดหรือปิดหน้าต่าง Assign Watch
-tip_calendar: สลับไปมุมมองปฏิทินเพื่อดูงานทั้งหมดแบบรายสัปดาห์หรือรายเดือน
+tip_calendar: สลับไปมุมมองปฏิทินเพื่อดูงานแบบรายสัปดาห์หรือรายเดือน
 tip_restore: เลิกซ่อนรายวิชาและงานได้จากเมนู "ที่ซ่อนไว้"
 tip_next: เคล็ดลับถัดไป
 
@@ -86,12 +88,13 @@ manual_due_date_set: ตั้งกำหนดส่ง
 manual_due_date_edit: แก้ไขกำหนดส่ง
 manual_due_date_remove: ลบกำหนดส่งที่ตั้งเอง
 manual_due_date_badge: กำหนดเอง
-manual_due_date_description: บันทึกกำหนดส่งที่ไม่มีบน LEB2 ข้อมูลนี้เก็บไว้ใน Assign Watch เท่านั้น หาก LEB2 ระบุกำหนดส่งไว้ ระบบจะยึดตาม LEB2 เป็นหลัก
+manual_due_date_description: ตั้งกำหนดส่งสำหรับงานที่ไม่มีกำหนดส่งบน LEB2 ข้อมูลนี้เก็บไว้ใน Assign Watch เท่านั้น หาก LEB2 ระบุกำหนดส่งไว้ ระบบจะยึดตาม LEB2 เป็นหลัก
 manual_due_date_official: LEB2 ระบุกำหนดส่งของงานนี้แล้ว ระบบจะเก็บกำหนดส่งที่คุณตั้งเองไว้เป็นค่าสำรอง
 manual_due_date_field_label: วันและเวลากำหนดส่ง
 manual_due_date_timezone: "เขตเวลา: {timezone}"
-manual_due_date_invalid: โปรดระบุวันและเวลาท้องถิ่นให้ถูกต้อง
+manual_due_date_invalid: โปรดระบุวันและเวลาให้ถูกต้อง
 manual_due_date_save_error: ไม่สามารถบันทึกกำหนดส่งได้ กำหนดส่งเดิมยังคงไม่เปลี่ยนแปลง โปรดลองอีกครั้ง
+manual_due_date_remove_error: ไม่สามารถลบกำหนดส่งที่ตั้งเองได้ กำหนดส่งเดิมยังคงไม่เปลี่ยนแปลง โปรดลองอีกครั้ง
 manual_due_date_save: บันทึกกำหนดส่ง
 cancel: ยกเลิก
 saving: กำลังบันทึก…
@@ -108,7 +111,7 @@ time_format_description: เลือกรูปแบบการแสดง�
 time_format_12h: 12 ชั่วโมง
 time_format_24h: 24 ชั่วโมง
 reduce_motion: ลดการเคลื่อนไหว
-reduce_motion_description: ลดแอนิเมชันและเอฟเฟกต์การเปลี่ยนผ่านทั่วทั้งหน้าจอ
+reduce_motion_description: ลดแอนิเมชันและการเคลื่อนไหวของหน้าต่างใช้งาน
 undated_assignments: แสดงงานที่ไม่มีกำหนดส่ง
 undated_assignments_description: รวมงานเหล่านี้ไว้ในรายการสิ่งที่ต้องทำ
 keyboard_shortcut: ปุ่มลัดแป้นพิมพ์

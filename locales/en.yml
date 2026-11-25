@@ -25,9 +25,9 @@ status_answered_not_submitted: Answered (not submitted)
 assignment_type: Assignment type
 assignment_type_assignment: Assignment
 assignment_type_quiz: Quiz
-work_mode: Work mode
-work_mode_individual: Individual
-work_mode_group: Group
+work_format: Work format
+work_format_individual: Individual
+work_format_group: Group
 
 # Sorting & grouping
 sort: Sort
@@ -60,6 +60,8 @@ calendar_more_items: "+{count} more"
 # Empty, error & loading states
 no_assignments: No assignments
 no_assignments_description: All caught up! You have no assignments to do.
+no_matching_assignments: No matching assignments
+no_matching_assignments_description: Try adjusting your filters to see more assignments.
 no_classes: No classes found
 no_classes_description: Go to the classes page on LEB2 to sync your enrolled classes.
 go_to_classes: Go to classes
@@ -90,8 +92,9 @@ manual_due_date_description: Set a due date when one is missing from LEB2. This 
 manual_due_date_official: LEB2 now provides a due date for this assignment. Your manual due date is kept as a fallback.
 manual_due_date_field_label: Due date and time
 manual_due_date_timezone: "Time zone: {timezone}"
-manual_due_date_invalid: Enter a valid local date and time.
+manual_due_date_invalid: Enter a valid date and time.
 manual_due_date_save_error: Could not save the due date. Your previous due date was not changed. Please try again.
+manual_due_date_remove_error: Could not remove the manual due date. Your previous due date was not changed. Please try again.
 manual_due_date_save: Save due date
 cancel: Cancel
 saving: Saving…
@@ -102,7 +105,7 @@ language: Language
 language_description: Choose your preferred display language.
 language_auto: Auto
 language_en: English
-language_th: Thai (ไทย)
+language_th: ไทย
 time_format: Time format
 time_format_description: Choose how times are displayed.
 time_format_12h: 12-hour
@@ -130,4 +133,4 @@ onboarding_feature_track: Track all your assignments in one place
 onboarding_feature_notify: Get notified before assignments are due
 onboarding_feature_language: Available in English and Thai
 onboarding_get_started: Get started
-onboarding_footer_hint: Visit LEB2 to see something special ✨
+onboarding_footer_hint: Open LEB2 to start using Assign Watch ✨

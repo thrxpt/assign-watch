@@ -1,4 +1,4 @@
-import { PartyPopper } from "lucide-react";
+import { FilterX, PartyPopper } from "lucide-react";
 
 import {
   Empty,
@@ -7,11 +7,35 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
+import type { TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/use-i18n";
 import { cn } from "@/lib/utils";
 
-export function NoAssignments({ className }: { className?: string }) {
+export type EmptyReason = "empty" | "filtered";
+
+const EMPTY_STATE_COPY: Record<
+  EmptyReason,
+  { description: TranslationKey; title: TranslationKey }
+> = {
+  empty: {
+    description: "no_assignments_description",
+    title: "no_assignments",
+  },
+  filtered: {
+    description: "no_matching_assignments_description",
+    title: "no_matching_assignments",
+  },
+};
+
+export function NoAssignments({
+  className,
+  reason = "empty",
+}: {
+  className?: string;
+  reason?: EmptyReason;
+}) {
   const { t } = useI18n();
+  const copy = EMPTY_STATE_COPY[reason];
 
   return (
     <Empty className={cn("animate-in fade-in-0 duration-300", className)}>
@@ -20,10 +44,10 @@ export function NoAssignments({ className }: { className?: string }) {
           className="size-9 [&_svg:not([class*='size-'])]:size-5"
           variant="icon"
         >
-          <PartyPopper />
+          {reason === "filtered" ? <FilterX /> : <PartyPopper />}
         </EmptyMedia>
-        <EmptyTitle>{t("no_assignments")}</EmptyTitle>
-        <EmptyDescription>{t("no_assignments_description")}</EmptyDescription>
+        <EmptyTitle>{t(copy.title)}</EmptyTitle>
+        <EmptyDescription>{t(copy.description)}</EmptyDescription>
       </EmptyHeader>
     </Empty>
   );

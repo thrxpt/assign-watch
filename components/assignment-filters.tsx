@@ -141,7 +141,7 @@ export function AssignmentFilters({
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuLabel>{t("work_mode")}</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("work_format")}</DropdownMenuLabel>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.individual}
             className={cn(
@@ -151,7 +151,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "individual", !!checked)
             }
           >
-            {t("work_mode_individual")}
+            {t("work_format_individual")}
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={filters.groupType.group}
@@ -162,7 +162,7 @@ export function AssignmentFilters({
               updateFilter("groupType", "group", !!checked)
             }
           >
-            {t("work_mode_group")}
+            {t("work_format_group")}
           </DropdownMenuCheckboxItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

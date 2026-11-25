@@ -28,9 +28,11 @@ import { assignmentQueryKey } from "@/lib/assignment-query-cache";
 import type * as Dom from "@/lib/dom";
 import { translate } from "@/lib/i18n";
 import type { Locale } from "@/lib/i18n";
+import type { FilterState } from "@/lib/preferences";
 import {
   cachedAssignmentsStorage,
   classInfoStorage,
+  filtersStorage,
   hiddenClassesStorage,
 } from "@/lib/storage";
 import type {
@@ -51,6 +53,7 @@ interface QueryResult {
 }
 
 const state = vi.hoisted(() => ({
+  filters: null as FilterState | null,
   hiddenClasses: [] as number[],
   hiddenItemsClasses: [] as ClassInfo[],
   locale: "en" as Locale,
@@ -177,6 +180,9 @@ vi.mock("@/lib/use-storage-state", () => ({
     }
     if (item === hiddenClassesStorage) {
       return [state.hiddenClasses, vi.fn()];
+    }
+    if (item === filtersStorage && state.filters !== null) {
+      return [state.filters, vi.fn()];
     }
     return [item.fallback, vi.fn()];
   },
@@ -347,6 +353,7 @@ describe("assignment dialog load failures", () => {
     document.body.replaceChildren();
     document.body.dataset.userid = "student-1";
     state.storedClasses = approvedRoster();
+    state.filters = null;
     state.hiddenClasses = [];
     state.hiddenItemsClasses = [];
     state.onScrape = null;
@@ -717,6 +724,45 @@ describe("assignment dialog load failures", () => {
     expect(html).toContain("Dialog tips");
   });
 
+  it("shows a filtered empty state instead of claiming all caught up when filters exclude assignments", () => {
+    const assignment = {
+      activity_submission_id: 0,
+      class_id: 1,
+      due_date: "2099-12-31T12:00:00Z",
+      due_date_exceed: false,
+      group_type: "IND",
+      id: 101,
+      start_date: "2026-09-01T00:00:00Z",
+      title: "Pending homework",
+      type: "ASM",
+    } as Activity;
+    state.filters = {
+      assignmentType: { assignment: false, quiz: true },
+      groupType: { group: true, individual: true },
+      submissionStatus: { notSubmitted: true, submitted: true },
+    };
+    state.results = [result({ data: [assignment] })];
+
+    const html = renderToStaticMarkup(<App />);
+    expect(html).toContain("No matching assignments");
+    expect(html).toContain("Try adjusting your filters");
+    expect(html).not.toContain("All caught up!");
+  });
+
+  it("always keeps the injected LEB2 navbar button label as Assignments ✨", () => {
+    const { navigation } = mountApp();
+    const openButton = navigation.querySelector<HTMLButtonElement>(
+      "button.nav-link.header-link"
+    );
+
+    expect(openButton?.textContent).toBe("Assignments ✨");
+
+    state.locale = "th";
+    act(renderApp);
+
+    expect(openButton?.textContent).toBe("Assignments ✨");
+  });
+
   it("distinguishes other failures from rate limiting", async () => {
     state.results = [result({ error: await requestError(500), isError: true })];
     const html = renderToStaticMarkup(<App />);
@@ -1039,6 +1085,7 @@ describe("in-flight assignment requests across enrollment changes", () => {
     document.body.replaceChildren();
     document.body.dataset.userid = "student-1";
     state.storedClasses = approvedRoster();
+    state.filters = null;
     state.hiddenClasses = [];
     state.locale = "en";
     setPageUrl("/");

@@ -189,8 +189,8 @@ export function Assignment({
                 >
                   {assignment.group_type === "IND" ? <User /> : <Users />}
                   {assignment.group_type === "IND"
-                    ? t("work_mode_individual")
-                    : t("work_mode_group")}
+                    ? t("work_format_individual")
+                    : t("work_format_group")}
                 </StatusBadge>
               </div>
             </div>
