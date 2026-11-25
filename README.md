@@ -4,7 +4,7 @@
     Assign Watch
   </h1>
   <p>
-    View all your assignments in LEB2 in one place
+    View all your assignments on LEB2 in one place.
   </p>
 </div>
 
@@ -18,11 +18,11 @@ By default, LEB2 requires students to navigate individual class pages to view as
 
 ### The Solution
 
-Assign Watch aggregates all your assignments across courses, providing instant visibility into your academic commitments with an intuitive, feature-rich interface.
+Assign Watch brings together all your assignments across classes in one view, without opening each class page separately.
 
 ## Features
 
-- **Unified Dashboard:** View all assignments across courses in one place.
+- **Unified Dashboard:** View all assignments across classes in one place.
 - **Calendar View:** Visualize your workload with an interactive weekly or monthly calendar.
 - **Notifications:** Get timely alerts for assignments that are due soon.
 - **Customizable View:** Hide or show classes or assignments you don't want to see.
