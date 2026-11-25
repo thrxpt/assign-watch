@@ -25,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { TranslationKey } from "@/lib/i18n";
 import { saveManualDueDate } from "@/lib/manual-due-date-storage";
 import { parseLocalDateTime, toLocalDateTime } from "@/lib/manual-due-dates";
 import { useI18n } from "@/lib/use-i18n";
@@ -48,14 +49,14 @@ export function useManualDueDateEditor(): ManualDueDateActions {
 
 interface ManualDueDateDialogProps {
   assignment: Assignment;
-  initialError: boolean;
+  initialErrorKey: TranslationKey | null;
   userId: string;
   onClose: () => void;
 }
 
 function ManualDueDateDialog({
   assignment,
-  initialError,
+  initialErrorKey,
   userId,
   onClose,
 }: ManualDueDateDialogProps) {
@@ -71,8 +72,8 @@ function ManualDueDateDialog({
     )
   );
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState(
-    initialError ? t("manual_due_date_save_error") : ""
+  const [errorKey, setErrorKey] = useState<TranslationKey | null>(
+    initialErrorKey
   );
   const timezone = useMemo(
     () => new Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -84,16 +85,16 @@ function ManualDueDateDialog({
     event.preventDefault();
     const dueDate = parseLocalDateTime(value);
     if (!dueDate || hasOfficialDate) {
-      setError(t("manual_due_date_invalid"));
+      setErrorKey("manual_due_date_invalid");
       return;
     }
     setSaving(true);
-    setError("");
+    setErrorKey(null);
     try {
       await saveManualDueDate(userId, assignment, dueDate);
       onClose();
     } catch {
-      setError(t("manual_due_date_save_error"));
+      setErrorKey("manual_due_date_save_error");
     } finally {
       setSaving(false);
     }
@@ -125,14 +126,14 @@ function ManualDueDateDialog({
           <FieldGroup>
             <Field
               data-disabled={saving || hasOfficialDate}
-              data-invalid={Boolean(error)}
+              data-invalid={Boolean(errorKey)}
             >
               <FieldLabel htmlFor={dateId}>
                 {t("manual_due_date_field_label")}
               </FieldLabel>
               <Input
-                aria-describedby={`${timezoneId}${error ? ` ${errorId}` : ""}`}
-                aria-invalid={Boolean(error)}
+                aria-describedby={`${timezoneId}${errorKey ? ` ${errorId}` : ""}`}
+                aria-invalid={Boolean(errorKey)}
                 disabled={saving || hasOfficialDate}
                 id={dateId}
                 onChange={(event) => setValue(event.target.value)}
@@ -145,9 +146,9 @@ function ManualDueDateDialog({
               </FieldDescription>
             </Field>
           </FieldGroup>
-          {error && (
+          {errorKey && (
             <p className="text-destructive text-sm" id={errorId} role="alert">
-              {error}
+              {t(errorKey)}
             </p>
           )}
           <DialogFooter className="mx-0 mb-0 rounded-none border-0 bg-transparent p-0">
@@ -180,14 +181,14 @@ export function ManualDueDateProvider({
 }) {
   const [selection, setSelection] = useState<{
     classId: number;
+    errorKey: TranslationKey | null;
     id: number;
-    error: boolean;
   } | null>(null);
   const openEditor = useCallback(
     (assignment: Assignment) =>
       setSelection({
         classId: assignment.class_id,
-        error: false,
+        errorKey: null,
         id: assignment.id,
       }),
     []
@@ -202,7 +203,7 @@ export function ManualDueDateProvider({
       } catch {
         setSelection({
           classId: assignment.class_id,
-          error: true,
+          errorKey: "manual_due_date_remove_error",
           id: assignment.id,
         });
       }
@@ -227,7 +228,7 @@ export function ManualDueDateProvider({
       {selected && userId && (
         <ManualDueDateDialog
           assignment={selected}
-          initialError={selection?.error ?? false}
+          initialErrorKey={selection?.errorKey ?? null}
           key={`${selected.class_id}:${selected.id}`}
           onClose={() => setSelection(null)}
           userId={userId}

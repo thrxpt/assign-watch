@@ -15,7 +15,7 @@ function PopupContent() {
     <div className="flex h-fit w-80 flex-col items-center justify-center p-6">
       <div className="mb-4 flex flex-col items-center gap-2">
         <img
-          alt="Assign Watch Logo"
+          alt="Assign Watch"
           className="size-12"
           height={48}
           src={browser.runtime.getURL("/icons/128.png")}

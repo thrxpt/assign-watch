@@ -18,6 +18,7 @@ import type { PublishEnrollmentMessage } from "@/lib/assignment-cache";
 import { assignmentQueryKey } from "@/lib/assignment-query-cache";
 import { readCurrentStudentId, scrapeClassCards } from "@/lib/dom";
 import { resolveAssignment } from "@/lib/manual-due-dates";
+import { DEFAULT_FILTERS } from "@/lib/preferences";
 import {
   classInfoStorage,
   filtersStorage,
@@ -456,6 +457,16 @@ function App() {
     includeSettled: false,
     includeUndated: showUndatedAssignments,
   });
+  const listEmptyReason =
+    listItems.length === 0 &&
+    visibleAssignments({
+      ...visibility,
+      filters: DEFAULT_FILTERS,
+      includeSettled: false,
+      includeUndated: showUndatedAssignments,
+    }).length > 0
+      ? "filtered"
+      : "empty";
   const calendarItems = visibleAssignments({
     ...visibility,
     includeSettled: true,
@@ -493,6 +504,7 @@ function App() {
       hiddenAssignments={hiddenAssignments}
       hiddenClasses={hiddenClasses}
       isOpen={isModalOpen}
+      listEmptyReason={listEmptyReason}
       listItems={listItems}
       loadErrorProps={loadErrorProps}
       onFiltersChange={setFilters}

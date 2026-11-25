@@ -17,6 +17,7 @@ import { DialogTips } from "@/components/dialog-tips";
 import { HiddenItemsManager } from "@/components/hidden-items-manager";
 import { ManualDueDateProvider } from "@/components/manual-due-date-editor";
 import { NoAssignments } from "@/components/no-assignments";
+import type { EmptyReason } from "@/components/no-assignments";
 import { NoClasses } from "@/components/no-classes";
 import { Button } from "@/components/ui/button";
 import {
@@ -53,6 +54,7 @@ interface AssignmentDialogProps {
   hiddenAssignments: number[];
   hiddenClasses: number[];
   isOpen: boolean;
+  listEmptyReason: EmptyReason;
   listItems: VisibleAssignment[];
   loadErrorProps: LoadErrorProps;
   onFiltersChange: (filters: FilterState) => void;
@@ -78,6 +80,7 @@ export function AssignmentDialog({
   hiddenAssignments,
   hiddenClasses,
   isOpen,
+  listEmptyReason,
   listItems,
   loadErrorProps,
   onFiltersChange,
@@ -129,7 +132,9 @@ export function AssignmentDialog({
     }
 
     if (listItems.length === 0 && pendingClasses.length === 0) {
-      return hasFailures ? null : <NoAssignments className="mt-4" />;
+      return hasFailures ? null : (
+        <NoAssignments className="mt-4" reason={listEmptyReason} />
+      );
     }
 
     const skeletons = pendingClasses.map((classInfo) => (

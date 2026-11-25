@@ -63,7 +63,7 @@ Hiding is a user preference, not a filter — it survives across sessions and is
 
 ## Preferences
 
-The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, group type), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), how the calendar is shown (month or week), whether undated assignments appear in the to-do list, and **Language** (`auto`, `en`, `th`).
+The user's view settings (`lib/preferences.ts`): **Filters** (submission status, assignment type, work format), **Sort** (by due or posted date, asc or desc), **Group** (by class or by due date), how the calendar is shown (month or week), whether undated assignments appear in the to-do list, and **Language** (`auto`, `en`, `th`).
 
 These live in `lib/`, not in the menus that edit them, so that storage and the assignment pipeline can depend on the model without depending on the UI. `lib/` must never import from `components/`.
 
@@ -92,7 +92,7 @@ Canonical English and Thai terms used across `locales/en.yml`, `locales/th.yml`,
 | Section | `Section` | `กลุ่มที่` | — |
 | Assignment(s) (umbrella) | `Assignment` / `Assignments` | `งาน` / `รายการงาน` | `การบ้าน` (TH) |
 | Assignment (`ASM`) / Quiz (`QUZ`) | `Assignment` / `Quiz` | `งานที่มอบหมาย` / `แบบทดสอบ` | `การบ้าน` (TH) |
-| Work mode (`IND` / `GRP`) | `Work mode` (`Individual` / `Group`) | `รูปแบบงาน` (`งานเดี่ยว` / `งานกลุ่ม`) | `Group type` (EN), `ประเภทกลุ่ม` (TH) |
+| Work format (`IND` / `STU`) | `Work format` (`Individual` / `Group`) | `รูปแบบการทำงาน` (`งานเดี่ยว` / `งานกลุ่ม`) | `Group type` / `Work mode` (EN), `ประเภทกลุ่ม` (TH) |
 | Submission status | `Submission status` (`Submitted` / `Not submitted` / `Answered (not submitted)`) | `สถานะการส่ง` (`ส่งแล้ว` / `ยังไม่ส่ง` / `ทำแล้ว (ยังไม่ส่ง)`) | — |
 | Due date | `Due date` | `กำหนดส่ง` | `วันที่กำหนดส่ง` / `วันส่ง` / `วันเดิม` / `วันสำรอง` (TH) |
 | Manual due date / Manually set | `Manual due date` / `Manually set` | `กำหนดส่งที่ตั้งเอง` / `กำหนดเอง` | — |
