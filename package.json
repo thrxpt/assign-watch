@@ -2,7 +2,7 @@
   "name": "assign-watch",
   "description": "View all your assignments on LEB2 in one place.",
   "private": true,
-  "version": "1.9.0",
+  "version": "1.9.1",
   "type": "module",
   "packageManager": "pnpm@12.23.0",
   "scripts": {
