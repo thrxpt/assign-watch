@@ -97,9 +97,8 @@ export function DateGroup({
         <div className="flex w-full flex-col -mt-3">
           {assignments.map((assignment, index) => {
             const classInfo = classInfoMap.get(assignment.class_id);
-            const isAssignmentEntering = enteringAssignmentIds.has(
-              assignment.id
-            );
+            const isAssignmentEntering =
+              !entering && enteringAssignmentIds.has(assignment.id);
             return (
               <Assignment
                 assignment={assignment}

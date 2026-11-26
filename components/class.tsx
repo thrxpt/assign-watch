@@ -84,9 +84,8 @@ export function Class({
               </div>
               <div className="flex w-full flex-col -mt-3">
                 {assignments.map((assignment, index) => {
-                  const isAssignmentEntering = enteringAssignmentIds.has(
-                    assignment.id
-                  );
+                  const isAssignmentEntering =
+                    !entering && enteringAssignmentIds.has(assignment.id);
                   return (
                     <Assignment
                       assignment={assignment}

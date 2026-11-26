@@ -36,6 +36,8 @@ import { useRemovedIds } from "@/lib/use-removed-ids";
 import type { VisibleAssignment } from "@/lib/visible-assignments";
 import type { Activity, Assignment, ClassInfo } from "@/types";
 
+const NO_ENTERING_IDS: ReadonlySet<number> = new Set();
+
 type LoadErrorProps = Omit<
   ComponentProps<typeof AssignmentLoadError>,
   "presentation"
@@ -101,6 +103,22 @@ export function AssignmentDialog({
   // IDs that just left the hidden lists were unhidden and should expand back in.
   const enteringClassIds = useRemovedIds(hiddenClasses);
   const enteringAssignmentIds = useRemovedIds(hiddenAssignments);
+  // Starting at 0fr shrinks the dialog unless existing content holds its height.
+  const hasExistingContent =
+    hasFailures ||
+    pendingClasses.length > 0 ||
+    listItems.some(
+      ({ assignment, classInfo }) =>
+        !exitingAssignmentIds.has(assignment.id) &&
+        !enteringClassIds.has(classInfo.id) &&
+        !enteringAssignmentIds.has(assignment.id)
+    );
+  const activeEnteringClassIds = hasExistingContent
+    ? enteringClassIds
+    : NO_ENTERING_IDS;
+  const activeEnteringAssignmentIds = hasExistingContent
+    ? enteringAssignmentIds
+    : NO_ENTERING_IDS;
 
   const markAssignmentsExiting = (assignmentIds: readonly number[]) => {
     setExitingAssignmentIds((current) => {
@@ -150,12 +168,12 @@ export function AssignmentDialog({
               assignments={group.assignments}
               classInfo={group.classInfo}
               entering={
-                enteringClassIds.has(group.classInfo.id) ||
+                activeEnteringClassIds.has(group.classInfo.id) ||
                 group.assignments.every((assignment) =>
-                  enteringAssignmentIds.has(assignment.id)
+                  activeEnteringAssignmentIds.has(assignment.id)
                 )
               }
-              enteringAssignmentIds={enteringAssignmentIds}
+              enteringAssignmentIds={activeEnteringAssignmentIds}
               exitingAssignmentIds={exitingAssignmentIds}
               key={group.classInfo.id}
               onExitEnd={finishAssignmentsExiting}
@@ -170,9 +188,9 @@ export function AssignmentDialog({
                 classInfoMap={classInfoMap}
                 date={date}
                 entering={assignments.every((assignment) =>
-                  enteringAssignmentIds.has(assignment.id)
+                  activeEnteringAssignmentIds.has(assignment.id)
                 )}
-                enteringAssignmentIds={enteringAssignmentIds}
+                enteringAssignmentIds={activeEnteringAssignmentIds}
                 exitingAssignmentIds={exitingAssignmentIds}
                 key={date ?? "undated"}
                 onExitEnd={finishAssignmentsExiting}
